@@ -1,20 +1,14 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import time
 
-from bson import ObjectId
-
-from factory import mongo_repository_factory
+from mongorepo.base import MongoDTO
+from mongorepo.decorators import mongo_repository_factory
 
 from conf import users_db
 
 
 @dataclass
-class BaseMongoDTO:
-    _id: str = field(default_factory=ObjectId, kw_only=True)
-
-
-@dataclass
-class UserDTO(BaseMongoDTO):
+class UserDTO(MongoDTO):
     username: str
     password: str
 
@@ -29,6 +23,6 @@ class SimpleMongoRepository:
 time.sleep(8)
 repo = SimpleMongoRepository()
 new_user: UserDTO = repo.create(UserDTO(username='new_user', password='34666'))
-user = repo.get(oid=new_user._id)
+user = repo.get_by_id(id=new_user._id)
 print(user)
 print(new_user)
