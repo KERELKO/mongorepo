@@ -9,7 +9,7 @@ services:
     depends_on:
       - mongodb
       - mongo-express
-    command: python3 conf.py
+    command: python3 repo.py
 
   mongodb:
     container_name: mongo-main
@@ -30,4 +30,3 @@ services:
       .env
     depends_on:
       - mongodb
-
