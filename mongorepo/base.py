@@ -1,8 +1,4 @@
-from dataclasses import dataclass, field
-
-from bson import ObjectId
+from typing import TypeVar
 
 
-@dataclass(repr=False)
-class MongoDTO:
-    _id: ObjectId = field(default_factory=ObjectId, kw_only=True)
+DTO = TypeVar('DTO')

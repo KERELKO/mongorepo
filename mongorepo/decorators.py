@@ -1,16 +1,15 @@
 from typing import Callable
 
-from mongorepo.utils import _manage
+from mongorepo.utils import _handle_cls
 
 
 def mongo_repository_factory(
     cls: type | None = None,
     create: bool = True,
-    get_by_id: bool = True,
     get: bool = True,
-    delete_by_id: bool = True,
-    update: bool = True,
     get_all: bool = True,
+    update: bool = True,
+    delete: bool = True,
 ) -> type | Callable:
     """
     MongoDB repository factory, use as decorator,
@@ -28,14 +27,13 @@ def mongo_repository_factory(
     """
 
     def wrapper(cls) -> type:
-        return _manage(
+        return _handle_cls(
             cls=cls,
             create=create,
-            get_by_id=get_by_id,
-            delete_by_id=delete_by_id,
             update=update,
             get_all=get_all,
             get=get,
+            delete=delete,
         )
 
     if cls is None:

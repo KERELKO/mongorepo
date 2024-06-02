@@ -1,16 +1,14 @@
 from dataclasses import dataclass
 import time
 
-from bson import ObjectId
-
-from mongorepo.base import MongoDTO
 from mongorepo.decorators import mongo_repository_factory
+from mongorepo.classes import MongoRepository
 
 from conf import users_db
 
 
 @dataclass
-class UserDTO(MongoDTO):
+class UserDTO:
     username: str = ''
     password: str = ''
 
@@ -22,23 +20,18 @@ class SimpleMongoRepository:
         collection = users_db['users']
 
 
-def test(repo):
+class DummyMongoRepository(MongoRepository[UserDTO]):
+    ...
+
+
+def test_decorator(repo):
     new_user: UserDTO = repo.create(UserDTO(username='new_user', password='34666'))
     assert new_user.username == 'new_user' and new_user.password == '34666'
 
-    retrieved_user: UserDTO = repo.get_by_id(id=new_user._id)
-    assert retrieved_user._id == new_user._id
-
     updated_user: UserDTO = repo.update(
-        dto=UserDTO(username='Artorias', password='1234', _id=ObjectId(retrieved_user._id))
+        dto=UserDTO(username='Artorias', password='1234'), username='new_user'
     )
     assert updated_user.username == 'Artorias', updated_user.username
-
-    is_deleted = repo.delete_by_id(id=updated_user._id)
-    assert is_deleted is True
-
-    user: UserDTO | None = repo.get_by_id(id=new_user._id)
-    assert user is None
 
     user_1 = UserDTO(username='user_1', password='sekg')
     user_2 = UserDTO(username='user_2', password='ri64g')
@@ -52,4 +45,5 @@ def test(repo):
 
 if __name__ == '__main__':
     time.sleep(6)
-    test(SimpleMongoRepository())
+    test_decorator(SimpleMongoRepository())
+    r = DummyMongoRepository(UserDTO, users_db['users'])

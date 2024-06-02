@@ -1,30 +1,17 @@
 from dataclasses import asdict
-from typing import Any, Callable, Iterable, Type, TypeVar
+from typing import Any, Callable, Iterable, Type
 
 from pymongo.collection import Collection
 from bson import ObjectId
 
-from mongorepo.base import MongoDTO
-
-
-DTO = TypeVar('DTO', bound=MongoDTO)
+from mongorepo.base import DTO
 
 
 def _create_method(dto_type: Type[DTO], collection: Collection) -> Callable:
     def create(self, dto: DTO) -> DTO:
-        collection.insert_one(asdict(dto))
+        collection.insert_one(asdict(dto))  # type: ignore
         return dto
     return create
-
-
-def _get_by_id_method(dto_type: Type[DTO], collection: Collection) -> Callable:
-    def get_by_id(self, id: str | ObjectId) -> DTO | None:
-        _id = ObjectId(id) if isinstance(id, str) else id
-        result = collection.find_one({'_id': _id})
-        if not result:
-            return None
-        return dto_type(**result)
-    return get_by_id
 
 
 def _get_all_method(dto_type: Type[DTO], collection: Collection) -> Callable:
@@ -36,27 +23,37 @@ def _get_all_method(dto_type: Type[DTO], collection: Collection) -> Callable:
 
 
 def _update_method(dto_type: Type[DTO], collection: Collection) -> Callable:
-    def update(self, dto: DTO) -> DTO:
-        data = {'$set': asdict(dto)}
-        _id = data['$set'].pop('_id')
-        collection.find_one_and_update(filter={'_id': _id}, update=data)
+    def update(self, dto: DTO, **filter) -> DTO:
+        data = {'$set': {}}
+        for field, value in asdict(dto).items():  # type: ignore
+            if isinstance(value, (int, bool)):
+                data['$set'][field] = value
+            elif not field:
+                continue
+            data['$set'][field] = value
+        collection.find_one_and_update(filter=filter, update=data)
         return dto
     return update
 
 
-def _delete_by_id_method(dto_type: Type[DTO], collection: Collection) -> Callable:
-    def delete_by_id(self, id: str) -> bool:
-        deleted = collection.find_one_and_delete({'_id': ObjectId(id)})
+def _delete_method(dto_type: Type[DTO], collection: Collection) -> Callable:
+    def delete(self, _id: str | None = None, **filters) -> bool:
+        if _id is not None:
+            filters['_id'] = ObjectId(_id)
+        deleted = collection.find_one_and_delete(filters)
         if deleted is not None:
             return True
         return False
-    return delete_by_id
+    return delete
 
 
 def _get_method(dto_type: Type[DTO], collection: Collection) -> Callable:
-    def get(self, **filters) -> DTO | None:
+    def get(self, _id: str | None = None, **filters) -> DTO | None:
+        if _id is not None:
+            filters['_id'] = ObjectId(_id)
         result = collection.find_one(filters)
         if not result:
             return None
+        result.pop('_id')
         return dto_type(**result)
     return get
