@@ -7,7 +7,13 @@ from mongorepo._methods import (
     _create_method,
     _delete_method,
 )
-from mongorepo.base import DTO
+from mongorepo.asyncio._methods import (
+    _get_all_method_async,
+    _get_method_async,
+    _update_method_async,
+    _delete_method_async,
+    _create_method_async,
+)
 
 
 def _handle_cls(
@@ -17,20 +23,36 @@ def _handle_cls(
     get_all: bool,
     update: bool,
     delete: bool,
+    async_: bool = False
 ) -> type:
     attributes = _get_repo_attributes(cls)
     dto = attributes['dto']
     collection = attributes['collection']
     if create:
-        setattr(cls, 'create', _create_method(dto, collection=collection))
+        if not async_:
+            setattr(cls, 'create', _create_method(dto, collection=collection))
+        else:
+            setattr(cls, 'create', _create_method_async(dto, collection=collection))
     if update:
-        setattr(cls, 'update', _update_method(dto, collection=collection))
+        if not async_:
+            setattr(cls, 'update', _update_method(dto, collection=collection))
+        else:
+            setattr(cls, 'update', _update_method_async(dto, collection=collection))
     if get:
-        setattr(cls, 'get', _get_method(dto, collection=collection))
+        if not async_:
+            setattr(cls, 'get', _get_method(dto, collection=collection))
+        else:
+            setattr(cls, 'get', _get_method_async(dto, collection=collection))
     if get_all:
-        setattr(cls, 'get_all', _get_all_method(dto, collection=collection))
+        if not async_:
+            setattr(cls, 'get_all', _get_all_method(dto, collection=collection))
+        else:
+            setattr(cls, 'get_all', _get_all_method_async(dto, collection=collection))
     if delete:
-        setattr(cls, 'delete', _delete_method(dto, collection=collection))
+        if not async_:
+            setattr(cls, 'delete', _delete_method(dto, collection=collection))
+        else:
+            setattr(cls, 'delete', _delete_method_async(dto, collection=collection))
     return cls
 
 
@@ -51,10 +73,3 @@ def _get_repo_attributes(cls) -> dict[str, Any]:
     except AttributeError as e:
         raise AttributeError('Decorated class does not have "collection" inside') from e
     return attributes
-
-
-def convert_to_dto(dto_type: DTO, dct: dict[str, Any]) -> DTO:
-    if hasattr(dto_type, '_id'):
-        return dto_type(**dct)  # type: ignore
-    dct.pop('_id')
-    return dto_type(**dct)  # type: ignore

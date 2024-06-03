@@ -3,7 +3,7 @@ from typing import Callable
 from mongorepo.utils import _handle_cls
 
 
-def mongo_repository_factory(
+def async_mongo_repository_factory(
     cls: type | None = None,
     create: bool = True,
     get: bool = True,
@@ -12,18 +12,18 @@ def mongo_repository_factory(
     delete: bool = True,
 ) -> type | Callable:
     """
-    MongoDB repository factory, use as decorator,
+    Asynchronous MongoDB repository factory, use as decorator,
     decorated class must provide "Meta" class inside
     with variables "dto"(represent simple dataclass) and
-    "collection" (represent mongo collection of type "Collection" from pymongo library)
+    "collection" (represent mongo collection of type "AsyncIOMotorCollection" from motor library)
 
     ### example:
     ```
-    @mongo_repository_factory
+    @async_mongo_repository_factory
     class MongoRepository:
         class Meta:
             dto = UserDTO
-            collection: Collection = db["users"]
+            collection: AsyncIOMotorCollection = db["users"]
     ```
     """
 
@@ -35,6 +35,7 @@ def mongo_repository_factory(
             get_all=get_all,
             get=get,
             delete=delete,
+            async_=True,
         )
 
     if cls is None:
