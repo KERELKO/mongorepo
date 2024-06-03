@@ -26,11 +26,12 @@ def _update_method(dto_type: Type[DTO], collection: Collection) -> Callable:
     def update(self, dto: DTO, **filters: Any) -> DTO:
         data = {'$set': {}}
         for field, value in asdict(dto).items():  # type: ignore
-            if isinstance(value, (int, bool)):
+            if isinstance(value, (int, bool, float)):
                 data['$set'][field] = value
             elif not field:
                 continue
-            data['$set'][field] = value
+            else:
+                data['$set'][field] = value
         collection.find_one_and_update(filter=filters, update=data)
         return dto
     return update

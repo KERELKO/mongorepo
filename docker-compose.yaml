@@ -9,7 +9,7 @@ services:
     depends_on:
       - mongodb
       - mongo-express
-    command: python3 repo.py
+    command: python3 -m http.server 8000
 
   mongodb:
     container_name: mongo-main

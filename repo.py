@@ -45,7 +45,7 @@ def test_decorator(repo):
 
 if __name__ == '__main__':
     time.sleep(6)
-    # test_decorator(SimpleMongoRepository())
+    test_decorator(SimpleMongoRepository())
     r = DummyMongoRepository(collection=users_db['users'])
     user = r.get(username='Artorias')
     print(user)

@@ -3,8 +3,6 @@ from dataclasses import dataclass, field
 import pytest
 from bson import ObjectId
 
-from conf import mongo_client
-
 
 @dataclass
 class SimpleDTO:
