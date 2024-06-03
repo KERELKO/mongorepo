@@ -2,7 +2,7 @@ from dataclasses import dataclass
 import time
 
 from mongorepo.decorators import mongo_repository_factory
-from mongorepo.classes import MongoRepository
+from mongorepo.classes import BaseMongoRepository
 
 from conf import users_db
 
@@ -20,7 +20,7 @@ class SimpleMongoRepository:
         collection = users_db['users']
 
 
-class DummyMongoRepository(MongoRepository[UserDTO]):
+class DummyMongoRepository(BaseMongoRepository[UserDTO]):
     ...
 
 
@@ -45,5 +45,7 @@ def test_decorator(repo):
 
 if __name__ == '__main__':
     time.sleep(6)
-    test_decorator(SimpleMongoRepository())
-    r = DummyMongoRepository(UserDTO, users_db['users'])
+    # test_decorator(SimpleMongoRepository())
+    r = DummyMongoRepository(collection=users_db['users'])
+    user = r.get(username='Artorias')
+    print(user)

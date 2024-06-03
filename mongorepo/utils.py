@@ -7,6 +7,7 @@ from mongorepo._methods import (
     _create_method,
     _delete_method,
 )
+from mongorepo.base import DTO
 
 
 def _handle_cls(
@@ -50,3 +51,10 @@ def _get_repo_attributes(cls) -> dict[str, Any]:
     except AttributeError as e:
         raise AttributeError('Decorated class does not have "collection" inside') from e
     return attributes
+
+
+def convert_to_dto(dto_type: DTO, dct: dict[str, Any]) -> DTO:
+    if hasattr(dto_type, '_id'):
+        return dto_type(**dct)  # type: ignore
+    dct.pop('_id')
+    return dto_type(**dct)  # type: ignore

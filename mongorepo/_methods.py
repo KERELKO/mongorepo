@@ -15,15 +15,15 @@ def _create_method(dto_type: Type[DTO], collection: Collection) -> Callable:
 
 
 def _get_all_method(dto_type: Type[DTO], collection: Collection) -> Callable:
-    def get_all(self, **filters: dict[str, Any]) -> Iterable[DTO]:
+    def get_all(self, **filters: Any) -> Iterable[DTO]:
         cursor = collection.find(filters)
-        for dto in cursor:
-            yield dto
+        for dct in cursor:
+            yield convert_to_dto(dto_type, dct)  # type: ignore
     return get_all
 
 
 def _update_method(dto_type: Type[DTO], collection: Collection) -> Callable:
-    def update(self, dto: DTO, **filter) -> DTO:
+    def update(self, dto: DTO, **filters: Any) -> DTO:
         data = {'$set': {}}
         for field, value in asdict(dto).items():  # type: ignore
             if isinstance(value, (int, bool)):
@@ -31,13 +31,13 @@ def _update_method(dto_type: Type[DTO], collection: Collection) -> Callable:
             elif not field:
                 continue
             data['$set'][field] = value
-        collection.find_one_and_update(filter=filter, update=data)
+        collection.find_one_and_update(filter=filters, update=data)
         return dto
     return update
 
 
 def _delete_method(dto_type: Type[DTO], collection: Collection) -> Callable:
-    def delete(self, _id: str | None = None, **filters) -> bool:
+    def delete(self, _id: str | None = None, **filters: Any) -> bool:
         if _id is not None:
             filters['_id'] = ObjectId(_id)
         deleted = collection.find_one_and_delete(filters)
@@ -48,12 +48,18 @@ def _delete_method(dto_type: Type[DTO], collection: Collection) -> Callable:
 
 
 def _get_method(dto_type: Type[DTO], collection: Collection) -> Callable:
-    def get(self, _id: str | None = None, **filters) -> DTO | None:
+    def get(self, _id: str | None = None, **filters: Any) -> DTO | None:
         if _id is not None:
             filters['_id'] = ObjectId(_id)
         result = collection.find_one(filters)
         if not result:
             return None
-        result.pop('_id')
-        return dto_type(**result)
+        return convert_to_dto(dto_type, result)  # type: ignore
     return get
+
+
+def convert_to_dto(dto_type: DTO, dct: dict[str, Any]) -> DTO:
+    if hasattr(dto_type, '_id'):
+        return dto_type(**dct)  # type: ignore
+    dct.pop('_id')
+    return dto_type(**dct)  # type: ignore
