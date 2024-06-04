@@ -9,7 +9,7 @@ from mongorepo.base import DTO
 
 class AsyncBasedMongoRepository(Generic[DTO]):
     """
-    ### Asynchronous base repository class,
+    ## Asynchronous base repository class,
     Provide DTO type in type hints, example:
     ```
     class DummyMongoRepository(AsyncBasedMongoRepository[UserDTO]):
@@ -73,6 +73,6 @@ class AsyncBasedMongoRepository(Generic[DTO]):
             return True
         return False
 
-    async def create(self, dto: DTO) -> DTO:
+    async def add(self, dto: DTO) -> DTO:
         await self.collection.insert_one(asdict(dto))  # type: ignore
         return dto

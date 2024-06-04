@@ -5,6 +5,7 @@ from bson import ObjectId
 import pymongo
 from pymongo.collection import Collection
 
+from mongorepo.utils import _create_index
 from mongorepo.base import DTO, Index
 
 
@@ -13,7 +14,7 @@ class BaseMongoRepository(Generic[DTO]):
     ### Base repository class
     #### Extend child class with various methods:
     ```
-    create(self, dto: DTO) -> DTO
+    add(self, dto: DTO) -> DTO
     get(self, _id: str | None = None, **filters) -> DTO | None
     get_all(self, **filters) -> Iterable[DTO]
     update(self, dto: DTO, **filter_) -> DTO
@@ -37,13 +38,13 @@ class BaseMongoRepository(Generic[DTO]):
         self.collection: Collection = collection
         self.dto_type = self.__get_origin()
         if index is not None:
-            self.__create_index(index)
+            _create_index(index, collection=self.collection)
 
-    def __create_index(self, index: Index | str) -> None:
+    def _create_index(self, index: Index | str, collection: Collection) -> None:
         if isinstance(index, str):
             self.collection.create_index(index)
             return
-        index_name = f'user_index_{index.field}_1'
+        index_name = f'index_{index.field}_1'
         if index.name:
             index_name = index.name
         if index_name in self.collection.index_information():
@@ -100,6 +101,6 @@ class BaseMongoRepository(Generic[DTO]):
             return True
         return False
 
-    def create(self, dto: DTO) -> DTO:
+    def add(self, dto: DTO) -> DTO:
         self.collection.insert_one(asdict(dto))  # type: ignore
         return dto

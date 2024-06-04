@@ -26,7 +26,7 @@ def test_all_methods_with_inherited_repo():
     unum = random.randint(1, 4567)
     repo = TestMongoRepository(cl)
 
-    new_dto: SimpleDTO = repo.create(SimpleDTO(x='hey', y=num))
+    new_dto: SimpleDTO = repo.add(SimpleDTO(x='hey', y=num))
     assert new_dto.x == 'hey'
 
     updated_dto = repo.update(SimpleDTO(x='hey all!', y=unum), y=num)
@@ -57,7 +57,7 @@ def test_can_get_dto_with_id():
     num = random.randint(1, 12346)
     repo = TestMongoRepository(cl)
 
-    new_dto: DTOWithID = repo.create(DTOWithID(x='dto with id', y=num))
+    new_dto: DTOWithID = repo.add(DTOWithID(x='dto with id', y=num))
     assert new_dto.x == 'dto with id'
 
     dto: DTOWithID = repo.get(y=num)  # type: ignore
@@ -76,7 +76,7 @@ def test_can_handle_complicated_dto():
 
     repo = TestMongoRepository(cl)
 
-    repo.create(ComplicatedDTO(x='comp', y=True, name='You', skills=['h', 'e']))
+    repo.add(ComplicatedDTO(x='comp', y=True, name='You', skills=['h', 'e']))
 
     resolved_dto = repo.get(name='You')
     assert resolved_dto.skills == ['h', 'e'] and resolved_dto.x == 'comp'  # type: ignore
@@ -92,7 +92,7 @@ def test_can_update_partially():
 
     repo = TestMongoRepository(cl)
 
-    repo.create(ComplicatedDTO(x='Test', y=True, name='Me'))
+    repo.add(ComplicatedDTO(x='Test', y=True, name='Me'))
     repo.update(name='Me', dto=ComplicatedDTO(x='Test', skills=['hello!'], name='Me'))
 
     updated_dto = repo.get(name='Me')
@@ -109,7 +109,7 @@ def test_can_search_with_id():
 
     repo = TestMongoRepository(cl)
 
-    dto_id = repo.create(DTOWithID(x='ID', y=23450))._id
+    dto_id = repo.add(DTOWithID(x='ID', y=23450))._id
 
     dto: DTOWithID = repo.get(_id=dto_id)  # type: ignore
     assert dto.x == 'ID'
@@ -119,7 +119,7 @@ def test_can_search_with_id():
     cl.drop()
 
 
-def test_can_create_index():
+def test_can_add_index():
     cl = collection_for_simple_dto()
 
     class TestMongoRepository(BaseMongoRepository[SimpleDTO]):

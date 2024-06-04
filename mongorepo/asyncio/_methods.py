@@ -8,11 +8,11 @@ from mongorepo._methods import convert_to_dto
 from mongorepo.base import DTO
 
 
-def _create_method_async(dto_type: Type[DTO], collection: AsyncIOMotorCollection) -> Callable:
-    async def create(self, dto: DTO) -> DTO:
+def _add_method_async(dto_type: Type[DTO], collection: AsyncIOMotorCollection) -> Callable:
+    async def add(self, dto: DTO) -> DTO:
         await collection.insert_one(asdict(dto))  # type: ignore
         return dto
-    return create
+    return add
 
 
 def _get_all_method_async(dto_type: Type[DTO], collection: AsyncIOMotorCollection) -> Callable:

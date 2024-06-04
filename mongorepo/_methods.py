@@ -7,11 +7,11 @@ from bson import ObjectId
 from mongorepo.base import DTO
 
 
-def _create_method(dto_type: Type[DTO], collection: Collection) -> Callable:
-    def create(self, dto: DTO) -> DTO:
+def _add_method(dto_type: Type[DTO], collection: Collection) -> Callable:
+    def add(self, dto: DTO) -> DTO:
         collection.insert_one(asdict(dto))  # type: ignore
         return dto
-    return create
+    return add
 
 
 def _get_all_method(dto_type: Type[DTO], collection: Collection) -> Callable:
