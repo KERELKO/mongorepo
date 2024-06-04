@@ -25,13 +25,14 @@ def _get_all_method_async(dto_type: Type[DTO], collection: AsyncIOMotorCollectio
 
 def _update_method_async(dto_type: Type[DTO], collection: AsyncIOMotorCollection) -> Callable:
     async def update(self, dto: DTO, **filters: Any) -> DTO:
-        data = {'$set': {}}
+        data: dict[str, dict[str, Any]] = {'$set': {}}
         for field, value in asdict(dto).items():  # type: ignore
-            if isinstance(value, (int, bool)):
+            if isinstance(value, (int, bool, float)):
                 data['$set'][field] = value
             elif not field:
                 continue
-            data['$set'][field] = value
+            else:
+                data['$set'][field] = value
         await collection.find_one_and_update(filter=filters, update=data)
         return dto
     return update

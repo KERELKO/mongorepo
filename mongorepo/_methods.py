@@ -24,11 +24,11 @@ def _get_all_method(dto_type: Type[DTO], collection: Collection) -> Callable:
 
 def _update_method(dto_type: Type[DTO], collection: Collection) -> Callable:
     def update(self, dto: DTO, **filters: Any) -> DTO:
-        data = {'$set': {}}
+        data: dict[str, dict[str, Any]] = {'$set': {}}
         for field, value in asdict(dto).items():  # type: ignore
             if isinstance(value, (int, bool, float)):
                 data['$set'][field] = value
-            elif not field:
+            elif not value:
                 continue
             else:
                 data['$set'][field] = value

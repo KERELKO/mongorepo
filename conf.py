@@ -3,7 +3,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 
 
 def mongo_client(mongo_uri: str = 'mongodb://mongodb:27017/') -> pymongo.MongoClient:
-    client = pymongo.MongoClient(mongo_uri)
+    client: pymongo.MongoClient = pymongo.MongoClient(mongo_uri)
     return client
 
 

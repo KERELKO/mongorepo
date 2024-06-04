@@ -1,4 +1,5 @@
-from typing import Any
+from dataclasses import fields
+from typing import Any, Type
 
 from mongorepo._methods import (
     _get_method,
@@ -14,6 +15,7 @@ from mongorepo.asyncio._methods import (
     _delete_method_async,
     _create_method_async,
 )
+from mongorepo.base import DTO
 
 
 def _handle_cls(
@@ -73,3 +75,13 @@ def _get_repo_attributes(cls) -> dict[str, Any]:
     except AttributeError as e:
         raise AttributeError('Decorated class does not have "collection" inside') from e
     return attributes
+
+
+def get_default_values(dto: Type[DTO] | DTO) -> dict[str, Any]:
+    default_values = {}
+    for field_info in fields(dto):  # type: ignore
+        if field_info.default is not field_info.default_factory:
+            default_values[field_info.name] = field_info.default
+        else:
+            default_values[field_info.name] = field_info.default_factory()  # type: ignore
+    return default_values

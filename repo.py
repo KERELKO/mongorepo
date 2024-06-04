@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import time
+from typing import Any
 
 from mongorepo.decorators import mongo_repository_factory
 from mongorepo.classes import BaseMongoRepository
@@ -24,7 +25,7 @@ class DummyMongoRepository(BaseMongoRepository[UserDTO]):
     ...
 
 
-def test_decorator(repo):
+def test_decorator(repo: Any) -> None:
     new_user: UserDTO = repo.create(UserDTO(username='new_user', password='34666'))
     assert new_user.username == 'new_user' and new_user.password == '34666'
 

@@ -1,7 +1,15 @@
+from dataclasses import dataclass
 from typing import Any, Iterable, Protocol, TypeVar
 
-
 DTO = TypeVar('DTO')
+
+
+@dataclass
+class Index:
+    field: str
+    name: str | None = None
+    desc: bool = True
+    unique: bool = False
 
 
 class IMongoRepository(Protocol[DTO]):

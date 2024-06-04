@@ -55,7 +55,7 @@ class AsyncBasedMongoRepository(Generic[DTO]):
             yield self._convert_to_dto(doc)
 
     async def update(self, dto: DTO, **filter_: Any) -> DTO:
-        data = {'$set': {}}
+        data: dict[str, dict[str, Any]] = {'$set': {}}
         for field, value in asdict(dto).items():  # type: ignore
             if isinstance(value, (int, bool)):
                 data['$set'][field] = value

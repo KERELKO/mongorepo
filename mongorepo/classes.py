@@ -2,19 +2,15 @@ from dataclasses import asdict
 from typing import Any, Generic, Iterable, TypeVar, get_args
 
 from bson import ObjectId
+import pymongo
 from pymongo.collection import Collection
 
-from mongorepo.base import DTO
+from mongorepo.base import DTO, Index
 
 
 class BaseMongoRepository(Generic[DTO]):
     """
-    ### Base repository class,
-    Provide DTO type in type hints, example:
-    ```
-    class DummyMongoRepository(MongoRepository[UserDTO]):
-        ...
-    ```
+    ### Base repository class
     #### Extend child class with various methods:
     ```
     create(self, dto: DTO) -> DTO
@@ -23,10 +19,41 @@ class BaseMongoRepository(Generic[DTO]):
     update(self, dto: DTO, **filter_) -> DTO
     delete(self, _id: str | None = None, **filters) -> bool
     ```
+    Provide DTO type in type hints, example:
+    ```
+    class DummyMongoRepository(MongoRepository[UserDTO]):
+        ...
+    ```
+    If you want to create an index use mongorepo.Index or just a name of the field to put string on
+    ```
+    def __init__(
+        self,
+        collection: pymongo.Collection,
+        index: mongorepo.Index | str | None = None
+    ) -> None:
+    ```
     """
-    def __init__(self, collection: Collection) -> None:
+    def __init__(self, collection: Collection, index: Index | str | None = None) -> None:
         self.collection: Collection = collection
         self.dto_type = self.__get_origin()
+        if index is not None:
+            self.__create_index(index)
+
+    def __create_index(self, index: Index | str) -> None:
+        if isinstance(index, str):
+            self.collection.create_index(index)
+            return
+        index_name = f'user_index_{index.field}_1'
+        if index.name:
+            index_name = index.name
+        if index_name in self.collection.index_information():
+            return
+        direction = pymongo.DESCENDING if index.desc else pymongo.ASCENDING
+        self.collection.create_index(
+            [(index.field, direction)],
+            name=index_name,
+            unique=index.unique
+        )
 
     @classmethod
     def __get_origin(cls) -> type:
@@ -55,9 +82,9 @@ class BaseMongoRepository(Generic[DTO]):
             yield self._convert_to_dto(doc)
 
     def update(self, dto: DTO, **filter_: Any) -> DTO:
-        data = {'$set': {}}
+        data: dict[str, dict[str, Any]] = {'$set': {}}
         for field, value in asdict(dto).items():  # type: ignore
-            if isinstance(value, (int, bool)):
+            if isinstance(value, (int, bool, float)):
                 data['$set'][field] = value
             elif not field:
                 continue
