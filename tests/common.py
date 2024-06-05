@@ -15,7 +15,7 @@ class SimpleDTO:
 class DTOWithID:
     x: str
     y: int
-    _id: ObjectId = field(default_factory=ObjectId, kw_only=True)
+    _id: str = field(default_factory=lambda: str(ObjectId()), kw_only=True)
 
 
 @dataclass

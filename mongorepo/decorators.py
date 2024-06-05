@@ -33,7 +33,8 @@ def mongo_repository_factory(
         class Meta:
             dto = UserDTO
             collection: Collection = db["users"]
-            index = mongorepo.Index(field="name")
+            index = mongorepo.base.Index(field="name")
+            method_access = mongorepo.base.Access.PROTECTED
     ```
     """
 

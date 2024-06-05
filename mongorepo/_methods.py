@@ -2,7 +2,6 @@ from dataclasses import asdict
 from typing import Any, Callable, Iterable, Type
 
 from pymongo.collection import Collection
-from bson import ObjectId
 
 from mongorepo.base import DTO
 
@@ -40,7 +39,7 @@ def _update_method(dto_type: Type[DTO], collection: Collection) -> Callable:
 def _delete_method(dto_type: Type[DTO], collection: Collection) -> Callable:
     def delete(self, _id: str | None = None, **filters: Any) -> bool:
         if _id is not None:
-            filters['_id'] = ObjectId(_id)
+            filters['_id'] = _id
         deleted = collection.find_one_and_delete(filters)
         if deleted is not None:
             return True
@@ -51,7 +50,7 @@ def _delete_method(dto_type: Type[DTO], collection: Collection) -> Callable:
 def _get_method(dto_type: Type[DTO], collection: Collection) -> Callable:
     def get(self, _id: str | None = None, **filters: Any) -> DTO | None:
         if _id is not None:
-            filters['_id'] = ObjectId(_id)
+            filters['_id'] = _id
         result = collection.find_one(filters)
         if not result:
             return None
@@ -59,8 +58,8 @@ def _get_method(dto_type: Type[DTO], collection: Collection) -> Callable:
     return get
 
 
-def convert_to_dto(dto_type: DTO, dct: dict[str, Any]) -> DTO:
-    if hasattr(dto_type, '_id'):
-        return dto_type(**dct)  # type: ignore
+def convert_to_dto(dto_type: Type[DTO], dct: dict[str, Any]) -> DTO:
+    if '_id' in dto_type.__dict__['__annotations__']:
+        return dto_type(**dct)
     dct.pop('_id')
-    return dto_type(**dct)  # type: ignore
+    return dto_type(**dct)

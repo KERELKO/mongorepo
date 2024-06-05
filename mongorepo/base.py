@@ -1,15 +1,23 @@
 from dataclasses import dataclass
+from enum import Enum
 from typing import Any, Iterable, Protocol, TypeVar
+
 
 DTO = TypeVar('DTO')
 
 
-@dataclass
+@dataclass(repr=False, slots=True, eq=False)
 class Index:
     field: str
     name: str | None = None
     desc: bool = True
     unique: bool = False
+
+
+class Access(int, Enum):
+    PUBLIC = 0
+    PROTECTED = 1
+    PRIVATE = 2
 
 
 class IMongoRepository(Protocol[DTO]):

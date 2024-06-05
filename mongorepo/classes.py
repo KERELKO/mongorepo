@@ -2,7 +2,6 @@ from dataclasses import asdict
 from typing import Any, Generic, Iterable, TypeVar, get_args
 
 from bson import ObjectId
-import pymongo
 from pymongo.collection import Collection
 
 from mongorepo.utils import _create_index
@@ -40,25 +39,12 @@ class BaseMongoRepository(Generic[DTO]):
         if index is not None:
             _create_index(index, collection=self.collection)
 
-    def _create_index(self, index: Index | str, collection: Collection) -> None:
-        if isinstance(index, str):
-            self.collection.create_index(index)
-            return
-        index_name = f'index_{index.field}_1'
-        if index.name:
-            index_name = index.name
-        if index_name in self.collection.index_information():
-            return
-        direction = pymongo.DESCENDING if index.desc else pymongo.ASCENDING
-        self.collection.create_index(
-            [(index.field, direction)],
-            name=index_name,
-            unique=index.unique
-        )
-
     @classmethod
     def __get_origin(cls) -> type:
-        dto_type = get_args(cls.__orig_bases__[0])[0]  # type: ignore
+        try:
+            dto_type = get_args(cls.__orig_bases__[0])[0]  # type: ignore
+        except IndexError:
+            raise AttributeError('"DTO type" was not provided in the class declaration')
         if isinstance(dto_type, TypeVar):
             raise AttributeError('"DTO type" was not provided in the class declaration')
         return dto_type

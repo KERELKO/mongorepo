@@ -18,7 +18,7 @@ from mongorepo.asyncio._methods import (
     _delete_method_async,
     _add_method_async,
 )
-from mongorepo.base import DTO, Index
+from mongorepo.base import DTO, Access, Index
 
 
 def _handle_cls(
@@ -33,16 +33,18 @@ def _handle_cls(
     dto = attributes['dto']
     collection = attributes['collection']
     index = attributes['index']
+    prefix = get_prefix(access=attributes['method_access'], cls=cls)
+
     if add:
-        setattr(cls, 'add', _add_method(dto, collection=collection))
+        setattr(cls, f'{prefix}add', _add_method(dto, collection=collection))
     if update:
-        setattr(cls, 'update', _update_method(dto, collection=collection))
+        setattr(cls, f'{prefix}update', _update_method(dto, collection=collection))
     if get:
-        setattr(cls, 'get', _get_method(dto, collection=collection))
+        setattr(cls, f'{prefix}get', _get_method(dto, collection=collection))
     if get_all:
-        setattr(cls, 'get_all', _get_all_method(dto, collection=collection))
+        setattr(cls, f'{prefix}get_all', _get_all_method(dto, collection=collection))
     if delete:
-        setattr(cls, 'delete', _delete_method(dto, collection=collection))
+        setattr(cls, f'{prefix}delete', _delete_method(dto, collection=collection))
     if index is not None:
         _create_index(index=index, collection=collection)
     return cls
@@ -60,16 +62,18 @@ def _handle_cls_async(
     dto = attributes['dto']
     collection = attributes['collection']
     index = attributes['index']
+    prefix = get_prefix(access=attributes['method_access'], cls=cls)
+
     if add:
-        setattr(cls, 'add', _add_method_async(dto, collection=collection))
+        setattr(cls, f'{prefix}add', _add_method_async(dto, collection=collection))
     if update:
-        setattr(cls, 'update', _update_method_async(dto, collection=collection))
+        setattr(cls, f'{prefix}update', _update_method_async(dto, collection=collection))
     if get:
-        setattr(cls, 'get', _get_method_async(dto, collection=collection))
+        setattr(cls, f'{prefix}get', _get_method_async(dto, collection=collection))
     if get_all:
-        setattr(cls, 'get_all', _get_all_method_async(dto, collection=collection))
+        setattr(cls, f'{prefix}get_all', _get_all_method_async(dto, collection=collection))
     if delete:
-        setattr(cls, 'delete', _delete_method_async(dto, collection=collection))
+        setattr(cls, f'{prefix}delete', _delete_method_async(dto, collection=collection))
     if index is not None:
         _create_index(index=index, collection=collection)
     return cls
@@ -94,6 +98,9 @@ def _get_repo_attributes(cls) -> dict[str, Any]:
 
     index: Index | str | None = getattr(meta, 'index', None)
     attributes['index'] = index
+
+    method_access: Access | None = getattr(meta, 'method_access', None)
+    attributes['method_access'] = method_access
 
     return attributes
 
@@ -121,5 +128,16 @@ def _create_index(index: Index | str, collection: Collection) -> None:
     collection.create_index(
         [(index.field, direction)],
         name=index_name,
-        unique=index.unique
+        unique=index.unique,
     )
+
+
+def get_prefix(access: Access | None, cls: type | None = None) -> str:
+    match access:
+        case Access.PRIVATE:
+            prefix = f'_{cls.__name__}__' if cls else '__'
+        case Access.PROTECTED:
+            prefix = '_'
+        case Access.PUBLIC | None:
+            prefix = ''
+    return prefix

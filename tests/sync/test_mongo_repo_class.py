@@ -1,6 +1,5 @@
+# type: ignore
 import random
-
-from bson import ObjectId
 
 from mongorepo.base import Index
 
@@ -63,8 +62,6 @@ def test_can_get_dto_with_id():
     dto: DTOWithID = repo.get(y=num)  # type: ignore
     assert dto._id is not None
 
-    assert isinstance(dto._id, ObjectId)
-
     cl.drop()
 
 
@@ -113,8 +110,6 @@ def test_can_search_with_id():
 
     dto: DTOWithID = repo.get(_id=dto_id)  # type: ignore
     assert dto.x == 'ID'
-
-    assert isinstance(dto._id, ObjectId)
 
     cl.drop()
 

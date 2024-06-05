@@ -1,7 +1,7 @@
+# type: ignore
 import random
 
-from bson import ObjectId
-
+from mongorepo.base import Access
 from tests.common import (
     SimpleDTO,
     DTOWithID,
@@ -65,8 +65,6 @@ def test_can_get_dto_with_id():
     dto: DTOWithID = repo.get(y=num)
     assert dto._id is not None
 
-    assert isinstance(dto._id, ObjectId)
-
     cl.drop()
 
 
@@ -122,6 +120,44 @@ def test_can_search_with_id():
     dto: DTOWithID = repo.get(_id=dto_id)
     assert dto.x == 'ID'
 
-    assert isinstance(dto._id, ObjectId)
-
     cl.drop()
+
+
+def test_can_make_methods_protected():
+    cl = collection_for_simple_dto()
+
+    @mongo_repository_factory
+    class TestMongoRepository:
+        class Meta:
+            dto = SimpleDTO
+            collection = cl
+            method_access = Access.PROTECTED
+
+        def access_protected_method(self):
+            _ = self._get(name='Antony')  # type: ignore
+
+    repo = TestMongoRepository()
+    # check if repository has protected fields
+    _ = repo._get(name='Antony')
+    _ = repo._get_all()
+    repo.access_protected_method()
+
+
+def test_can_make_methods_private():
+    cl = collection_for_simple_dto()
+
+    @mongo_repository_factory
+    class TestMongoRepository:
+        class Meta:
+            dto = SimpleDTO
+            collection = cl
+            method_access = Access.PRIVATE
+
+        def get(self) -> None:
+            _ = self._TestMongoRepository__get(id='370r-o0-o23')  # type: ignore
+            return None
+
+    repo = TestMongoRepository()
+    # check if repository has private fields
+    assert hasattr(repo, '_TestMongoRepository__get')
+    assert repo.get() is None
