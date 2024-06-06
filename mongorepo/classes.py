@@ -1,4 +1,4 @@
-from dataclasses import asdict
+from dataclasses import asdict, is_dataclass
 from typing import Any, Generic, Iterable
 
 from pymongo.collection import Collection
@@ -40,6 +40,8 @@ class BaseMongoRepository(Generic[DTO]):
     ) -> None:
         self.collection = self.__get_collection(collection)
         self.dto_type = _get_dto_type_from_origin(self.__class__)
+        if not is_dataclass(self.dto_type):
+            raise exceptions.NotDataClass
         if index is not None:
             _create_index(index, collection=self.collection)
 

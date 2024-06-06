@@ -10,7 +10,7 @@ from mongorepo.base import DTO
 
 def _add_method_async(dto_type: Type[DTO], collection: AsyncIOMotorCollection) -> Callable:
     async def add(self, dto: DTO) -> DTO:
-        await collection.insert_one(asdict(dto))  # type: ignore
+        await collection.insert_one(asdict(dto))
         return dto
     return add
 
@@ -19,14 +19,14 @@ def _get_all_method_async(dto_type: Type[DTO], collection: AsyncIOMotorCollectio
     async def get_all(self, **filters: Any) -> AsyncGenerator[DTO, None]:
         cursor = collection.find(filters)
         async for dct in cursor:
-            yield convert_to_dto(dto_type, dct)  # type: ignore
+            yield convert_to_dto(dto_type, dct)
     return get_all
 
 
 def _update_method_async(dto_type: Type[DTO], collection: AsyncIOMotorCollection) -> Callable:
     async def update(self, dto: DTO, **filters: Any) -> DTO:
         data: dict[str, dict[str, Any]] = {'$set': {}}
-        for field, value in asdict(dto).items():  # type: ignore
+        for field, value in asdict(dto).items():
             if isinstance(value, (int, bool, float)):
                 data['$set'][field] = value
             elif not field:
@@ -56,5 +56,5 @@ def _get_method_async(dto_type: Type[DTO], collection: AsyncIOMotorCollection) -
         result = await collection.find_one(filters)
         if not result:
             return None
-        return convert_to_dto(dto_type, result)  # type: ignore
+        return convert_to_dto(dto_type, result)
     return get

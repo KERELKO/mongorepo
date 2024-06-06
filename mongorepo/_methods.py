@@ -8,7 +8,7 @@ from mongorepo.base import DTO
 
 def _add_method(dto_type: Type[DTO], collection: Collection) -> Callable:
     def add(self, dto: DTO) -> DTO:
-        collection.insert_one(asdict(dto))  # type: ignore
+        collection.insert_one(asdict(dto))
         return dto
     return add
 
@@ -17,14 +17,14 @@ def _get_all_method(dto_type: Type[DTO], collection: Collection) -> Callable:
     def get_all(self, **filters: Any) -> Iterable[DTO]:
         cursor = collection.find(filters)
         for dct in cursor:
-            yield convert_to_dto(dto_type, dct)  # type: ignore
+            yield convert_to_dto(dto_type, dct)
     return get_all
 
 
 def _update_method(dto_type: Type[DTO], collection: Collection) -> Callable:
     def update(self, dto: DTO, **filters: Any) -> DTO:
         data: dict[str, dict[str, Any]] = {'$set': {}}
-        for field, value in asdict(dto).items():  # type: ignore
+        for field, value in asdict(dto).items():
             if isinstance(value, (int, bool, float)):
                 data['$set'][field] = value
             elif not value:
@@ -54,7 +54,7 @@ def _get_method(dto_type: Type[DTO], collection: Collection) -> Callable:
         result = collection.find_one(filters)
         if not result:
             return None
-        return convert_to_dto(dto_type, result)  # type: ignore
+        return convert_to_dto(dto_type, result)
     return get
 
 

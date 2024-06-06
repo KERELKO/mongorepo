@@ -26,3 +26,8 @@ class NoCollectionException(MongoRepoException):
 
     def __str__(self) -> str:
         return 'Collection was not provided' + ' in "Meta" class' if self.with_meta else ''
+
+
+class NotDataClass(MongoRepoException):
+    def __str__(self) -> str:
+        return 'Provided dto type does not implement dataclass interface'

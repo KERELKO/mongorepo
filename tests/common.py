@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 
 from bson import ObjectId
 
-from conf import mongo_client
+from conf import mongo_client, async_mongo_client
 
 
 @dataclass
@@ -33,13 +33,15 @@ class NestedDTO:
     dtos: list[SimpleDTO] = field(default_factory=list)
 
 
-def collection_for_complicated_dto():
+def collection_for_complicated_dto(async_client=False):
     return mongo_client()['dto_complicated_db']['dto']
 
 
-def collection_for_simple_dto():
+def collection_for_simple_dto(async_client=False):
+    if async_client:
+        return async_mongo_client()['dto_simple_db']['dto']
     return mongo_client()['dto_simple_db']['dto']
 
 
-def collection_for_dto_with_id():
+def collection_for_dto_with_id(async_client=False):
     return mongo_client()['dto_with_id_db']['dto']

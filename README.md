@@ -2,7 +2,7 @@
 Simple lib for python &amp; mongodb, provides auto repository factory based on DTO type
 ```python
 from dataclasses import dataclass
-from mongorepo.decorators import mongo_repository_factory
+from mongorepo.decorators import mongo_repository
 from mongorepo.classes import BaseMongoRepository
 from conf import users_db
 
@@ -11,7 +11,7 @@ class UserDTO:
     username: str = ''
     password: str = ''
 
-@mongo_repository_factory
+@mongo_repository
 class SimpleMongoRepository:
     class Meta:
         dto = UserDTO
@@ -48,8 +48,8 @@ if __name__ == '__main__':
 
 ## TODO
 - [ ] Add dynamic replacement for methods
-- [ ] Bound DTO TypVar to DataClass interface
-- [ ] Test asyncio support
+- [x] Bound DTO TypeVar to DataClass interface
+- [x] Test asyncio support
 - [ ] Post it on PyPi
 - [ ] Make comfortable interface
 - [ ] Check if class is dataclass

@@ -3,17 +3,13 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Generic, Protocol
 
-import pytest
-
 from tests.common import (
     DTOWithID,
-    ComplicatedDTO,
     collection_for_dto_with_id,
-    collection_for_complicated_dto,
 )
 
 from mongorepo.base import DTO, Access
-from mongorepo.decorators import mongo_repository_factory
+from mongorepo.decorators import mongo_repository
 from mongorepo.classes import BaseMongoRepository
 
 from conf import mongo_client
@@ -21,7 +17,7 @@ from conf import mongo_client
 
 def test_decorator_with_abstract_class():
     # Suppose we have abstract repository in our architecture
-    # but mongo_repository_factory's methods does not fit to it
+    # but mongo_repository's methods does not fit to it
     # there is the simplest way to fix it
 
     # NOTE: we can't use @abstractmethod because it's will raise an error
@@ -39,7 +35,7 @@ def test_decorator_with_abstract_class():
         password: str
 
     # Solution
-    @mongo_repository_factory
+    @mongo_repository
     class MongoUserRepository(AbstractUserRepository[UserDTO]):
         class Meta:
             dto = UserDTO
@@ -124,7 +120,7 @@ def test_decorator_with_protocol_and_dto_with_id():
         def get_by_id(self, id: str) -> DTOWithID | None:
             ...
 
-    @mongo_repository_factory
+    @mongo_repository
     class MongoRepository:
         class Meta:
             dto = DTOWithID
@@ -149,43 +145,3 @@ def test_decorator_with_protocol_and_dto_with_id():
     assert resolved_dto.y == 10
 
     assert resolved_dto._id == dto_id
-
-
-@pytest.mark.skip(reason='Not implemented yet')
-def test_can_replace_methods_with_parent_class_methods():
-    # Idea: to dinamically replace methods of mongo repo class with parent class methods
-
-    class BaseRepository(Generic[DTO]):
-        def get_by_x(self, x: str) -> DTO | None:
-            ...
-
-        def create(self, dto: DTO) -> DTO:
-            ...
-
-        def get_list(self, offset: int = 0, limit: int = 20) -> list[DTO]:
-            ...
-
-        def delete_by_id(self, id: str) -> DTO:
-            ...
-
-    class MongoRepository(BaseMongoRepository[ComplicatedDTO], BaseRepository[ComplicatedDTO]):
-        class Meta:
-            parent_methods: dict[str, str] = {
-                'get': 'get_by_x',
-                'add': 'create',
-                'get_all': 'get_list',
-                'delete': 'delete_by_id',
-            }
-
-    repo = MongoRepository(collection_for_complicated_dto())
-    dto = ComplicatedDTO(x='x')
-    repo.create(dto=dto)
-
-    dto_x = repo.get_by_x(x=dto.x)
-    assert dto_x is not None
-
-    for dto in repo.get_list(offset=0, limit=2):
-        assert isinstance(dto, ComplicatedDTO)
-
-    deleted_dto = repo.delete_by_x(x=dto_x.x)
-    assert deleted_dto is not None

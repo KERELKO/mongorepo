@@ -2,7 +2,8 @@ from dataclasses import dataclass
 import time
 from typing import Any
 
-from mongorepo.decorators import mongo_repository_factory
+from mongorepo.base import Access, Index
+from mongorepo.decorators import mongo_repository
 from mongorepo.classes import BaseMongoRepository
 
 from conf import users_db
@@ -14,11 +15,12 @@ class UserDTO:
     password: str = ''
 
 
-@mongo_repository_factory
-class SimpleMongoRepository:
+@mongo_repository(get_all=False)
+class SimpleMongoRepository[UserDTO]:  # type: ignore
     class Meta:
-        dto = UserDTO
         collection = users_db['users']
+        method_access = Access.PUBLIC
+        index = Index(field='username', name='username_index', unique=True)
 
 
 class DummyMongoRepository(BaseMongoRepository[UserDTO]):

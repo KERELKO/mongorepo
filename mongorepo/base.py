@@ -1,9 +1,13 @@
-from dataclasses import dataclass
+from dataclasses import Field, dataclass
 from enum import Enum
-from typing import Any, Iterable, Protocol, TypeVar
+from typing import Any, ClassVar, Iterable, Protocol, TypeVar
 
 
-DTO = TypeVar('DTO')
+class DataclassInstance(Protocol):
+    __dataclass_fields__: ClassVar[dict[str, Field[Any]]]
+
+
+DTO = TypeVar('DTO', bound=DataclassInstance)
 
 
 @dataclass(repr=False, slots=True, eq=False)

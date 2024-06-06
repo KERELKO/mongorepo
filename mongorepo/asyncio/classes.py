@@ -1,10 +1,13 @@
-from dataclasses import asdict
-from typing import Any, AsyncGenerator, Generic, TypeVar, get_args
+import asyncio
+from dataclasses import asdict, is_dataclass
+from typing import Any, AsyncGenerator, Generic
 
-from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorCollection
 
-from mongorepo.base import DTO
+from mongorepo import exceptions
+from mongorepo.base import DTO, Index
+from mongorepo.utils import _get_dto_type_from_origin, _get_meta_attributes
+from mongorepo.asyncio.utils import _create_index_async
 
 
 class AsyncBasedMongoRepository(Generic[DTO]):
@@ -24,16 +27,32 @@ class AsyncBasedMongoRepository(Generic[DTO]):
     async delete(self, _id: str | None = None, **filters) -> bool
     ```
     """
-    def __init__(self, collection: AsyncIOMotorCollection) -> None:
-        self.collection: AsyncIOMotorCollection = collection
-        self.dto_type = self.__get_origin()
+    def __init__(
+        self,
+        collection: AsyncIOMotorCollection | None = None,
+        index: Index | str | None = None,
+    ) -> None:
+        self.collection = self.__get_collection(collection)
+        self.dto_type = _get_dto_type_from_origin(self.__class__)
+        if not is_dataclass(self.dto_type):
+            raise exceptions.NotDataClass
+        if index is not None:
+            asyncio.run(_create_index_async(index, collection=self.collection))
 
     @classmethod
-    def __get_origin(cls) -> type:
-        dto_type = get_args(cls.__orig_bases__[0])[0]  # type: ignore
-        if isinstance(dto_type, TypeVar):
-            raise AttributeError('"DTO type" was not provided in the class declaration')
-        return dto_type
+    def __get_collection(cls, collection: AsyncIOMotorCollection | None) -> AsyncIOMotorCollection:
+        if collection is not None:
+            return collection
+        try:
+            attrs = _get_meta_attributes(cls, raise_exceptions=False)
+        except exceptions.NoMetaException:
+            raise exceptions.MongoRepoException(
+                '"Meta" class with "collection" was not defined in the class'
+            )
+        if attrs['collection'] is None:
+            raise exceptions.NoCollectionException
+        defined_collection = attrs['collection']
+        return defined_collection
 
     def _convert_to_dto(self, dct: dict[str, Any]) -> DTO:
         if hasattr(self.dto_type, '_id'):
@@ -43,7 +62,7 @@ class AsyncBasedMongoRepository(Generic[DTO]):
 
     async def get(self, _id: str | None = None, **filters: Any) -> DTO | None:
         if _id is not None:
-            filters['_id'] = ObjectId(_id)
+            filters['_id'] = _id
         result = await self.collection.find_one(filters)
         if not result:
             return None
@@ -67,7 +86,7 @@ class AsyncBasedMongoRepository(Generic[DTO]):
 
     async def delete(self, _id: str | None = None, **filters: Any) -> bool:
         if _id is not None:
-            filters['_id'] = ObjectId(_id)
+            filters['_id'] = _id
         deleted = await self.collection.find_one_and_delete(filters)
         if deleted is not None:
             return True

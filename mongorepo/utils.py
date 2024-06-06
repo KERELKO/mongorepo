@@ -1,4 +1,4 @@
-from dataclasses import fields
+from dataclasses import fields, is_dataclass
 from typing import Any, Type, get_args
 
 import pymongo
@@ -11,18 +11,8 @@ from mongorepo._methods import (
     _add_method,
     _delete_method,
 )
-from mongorepo.asyncio._methods import (
-    _get_all_method_async,
-    _get_method_async,
-    _update_method_async,
-    _delete_method_async,
-    _add_method_async,
-)
 from mongorepo.base import DTO, Access, Index
 from mongorepo import exceptions
-
-
-AVAILABLE_METHODS = ['add', 'get', 'get_all', 'update', 'delete']
 
 
 def _handle_cls(
@@ -37,6 +27,8 @@ def _handle_cls(
     dto = attributes['dto']
     if not dto:
         dto = _get_dto_type_from_origin(cls)
+        if not is_dataclass(dto):
+            raise exceptions.NotDataClass
     collection = attributes['collection']
     index = attributes['index']
     prefix = get_prefix(access=attributes['method_access'], cls=cls)
@@ -51,37 +43,6 @@ def _handle_cls(
         setattr(cls, f'{prefix}get_all', _get_all_method(dto, collection=collection))
     if delete:
         setattr(cls, f'{prefix}delete', _delete_method(dto, collection=collection))
-    if index is not None:
-        _create_index(index=index, collection=collection)
-    return cls
-
-
-def _handle_cls_async(
-    cls,
-    add: bool,
-    get: bool,
-    get_all: bool,
-    update: bool,
-    delete: bool,
-) -> type:
-    attributes = _get_meta_attributes(cls, raise_exceptions=False)
-    dto = attributes['dto']
-    if not dto:
-        dto = _get_dto_type_from_origin(cls)
-    collection = attributes['collection']
-    index = attributes['index']
-    prefix = get_prefix(access=attributes['method_access'], cls=cls)
-
-    if add:
-        setattr(cls, f'{prefix}add', _add_method_async(dto, collection=collection))
-    if update:
-        setattr(cls, f'{prefix}update', _update_method_async(dto, collection=collection))
-    if get:
-        setattr(cls, f'{prefix}get', _get_method_async(dto, collection=collection))
-    if get_all:
-        setattr(cls, f'{prefix}get_all', _get_all_method_async(dto, collection=collection))
-    if delete:
-        setattr(cls, f'{prefix}delete', _delete_method_async(dto, collection=collection))
     if index is not None:
         _create_index(index=index, collection=collection)
     return cls

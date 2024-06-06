@@ -1,9 +1,9 @@
 from typing import Callable
 
-from mongorepo.utils import _handle_cls
+from mongorepo.asyncio.utils import _handle_cls_async
 
 
-def mongo_repository(
+def async_mongo_repository(
     cls: type | None = None,
     add: bool = True,
     get: bool = True,
@@ -15,27 +15,30 @@ def mongo_repository(
     ## MongoDB repository factory, use as decorator
 
     * decorated class must provide `Meta` class inside
-    with variables "dto"(represent simple dataclass) and
-    `collection` (represent mongo collection of type `Collection` from `pymongo` library)
+    with variables "dto"(dataclass interface) and
+    `collection` (motor collection: `AsyncIOMotorCollection`).
+
+    #### NOTE: dto can also be defined in generic class type hints
 
     * You can also provide `index` field that can be just a string name of the field
     which you want to make index field or it can be instance of `mongorepo.base.Index`
     with extended settings
+    * `method_access` to make all methods private, protected or public
+    (use mongorepo.base.Access class)
 
     ### usage example:
     ```
-    @mongo_repository(delete=False)
-    class MongoRepository:
+    @async_mongo_repository
+    class MongoRepository[UserDTO]:
         class Meta:
-            dto = UserDTO
-            collection: Collection = db["users"]
+            collection: AsyncIOMotorCollection = db["users"]
             index = mongorepo.base.Index(field="name")
             method_access = mongorepo.base.Access.PROTECTED
     ```
     """
 
     def wrapper(cls) -> type:
-        return _handle_cls(
+        return _handle_cls_async(
             cls=cls,
             add=add,
             update=update,

@@ -1,8 +1,6 @@
 # type: ignore
 import random
 
-import pytest
-
 from mongorepo.base import Access
 from tests.common import (
     SimpleDTO,
@@ -13,13 +11,13 @@ from tests.common import (
     collection_for_simple_dto,
 )
 
-from mongorepo.decorators import mongo_repository_factory
+from mongorepo.decorators import mongo_repository
 
 
 def test_all_methods_with_decorator():
     cl = collection_for_simple_dto()
 
-    @mongo_repository_factory
+    @mongo_repository
     class TestMongoRepository:
         class Meta:
             dto = SimpleDTO
@@ -52,7 +50,7 @@ def test_all_methods_with_decorator():
 def test_can_get_dto_with_id():
     cl = collection_for_dto_with_id()
 
-    @mongo_repository_factory
+    @mongo_repository
     class TestMongoRepository:
         class Meta:
             dto = DTOWithID
@@ -73,7 +71,7 @@ def test_can_get_dto_with_id():
 def test_can_handle_complicated_dto():
     cl = collection_for_complicated_dto()
 
-    @mongo_repository_factory
+    @mongo_repository
     class TestMongoRepository:
         class Meta:
             dto = ComplicatedDTO
@@ -91,7 +89,7 @@ def test_can_handle_complicated_dto():
 def test_can_update_partially():
     cl = collection_for_complicated_dto()
 
-    @mongo_repository_factory
+    @mongo_repository
     class TestMongoRepository:
         class Meta:
             dto = ComplicatedDTO
@@ -110,7 +108,7 @@ def test_can_update_partially():
 def test_can_search_with_id():
     cl = collection_for_dto_with_id()
 
-    @mongo_repository_factory
+    @mongo_repository
     class TestMongoRepository:
         class Meta:
             dto = DTOWithID
@@ -128,7 +126,7 @@ def test_can_search_with_id():
 def test_can_make_methods_protected():
     cl = collection_for_simple_dto()
 
-    @mongo_repository_factory
+    @mongo_repository
     class TestMongoRepository:
         class Meta:
             dto = SimpleDTO
@@ -148,7 +146,7 @@ def test_can_make_methods_protected():
 def test_can_make_methods_private():
     cl = collection_for_simple_dto()
 
-    @mongo_repository_factory
+    @mongo_repository
     class TestMongoRepository:
         class Meta:
             dto = SimpleDTO
@@ -165,17 +163,3 @@ def test_can_make_methods_private():
     assert hasattr(repo, f'_{TestMongoRepository.__name__}__get')
 
     assert repo.get() is True
-
-
-@pytest.mark.skip(reason='Not impelented yet')
-def test_can_access_dto_in_type_hints():
-    cl = collection_for_simple_dto()
-
-    @mongo_repository_factory(is_async=False, delete=False, get_all=False)
-    class TestMongoRepository[SimpleDTO]:  # type: ignore
-        class Meta:
-            collection = cl
-
-    repo = TestMongoRepository()
-    assert hasattr(repo, 'add')
-    assert not hasattr(repo, 'delete')

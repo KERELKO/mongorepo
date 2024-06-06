@@ -5,7 +5,7 @@ import pytest
 
 from mongorepo.base import DTO
 from mongorepo.classes import BaseMongoRepository
-from mongorepo.decorators import mongo_repository_factory
+from mongorepo.decorators import mongo_repository
 from mongorepo.exceptions import NoDTOTypeException
 
 from tests.common import (  # type: ignore
@@ -19,7 +19,7 @@ from tests.common import (  # type: ignore
 def test_can_access_dto_in_type_hints_decorator():
     cl = collection_for_simple_dto()
 
-    @mongo_repository_factory(is_async=False, delete=False)
+    @mongo_repository(delete=False)
     class TestMongoRepository[SimpleDTO]:  # type: ignore
         class Meta:
             collection = cl
@@ -41,7 +41,7 @@ def test_can_access_dto_type_in_type_hints_class_repo():
 def test_cannot_access_dto_type_in_type_hints_decorator():
     with pytest.raises(NoDTOTypeException):
 
-        @mongo_repository_factory
+        @mongo_repository
         class TestMongoRepository:
             class Meta:
                 ...

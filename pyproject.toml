@@ -12,6 +12,7 @@ motor = "^3.4.0"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.2.1"
+pytest-asyncio = "^0.23.7"
 
 [build-system]
 requires = ["poetry-core"]
