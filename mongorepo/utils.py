@@ -1,5 +1,5 @@
 from dataclasses import fields
-from typing import Any, Type
+from typing import Any, Type, get_args
 
 import pymongo
 from pymongo.collection import Collection
@@ -19,6 +19,10 @@ from mongorepo.asyncio._methods import (
     _add_method_async,
 )
 from mongorepo.base import DTO, Access, Index
+from mongorepo import exceptions
+
+
+AVAILABLE_METHODS = ['add', 'get', 'get_all', 'update', 'delete']
 
 
 def _handle_cls(
@@ -29,8 +33,10 @@ def _handle_cls(
     update: bool,
     delete: bool,
 ) -> type:
-    attributes = _get_repo_attributes(cls)
+    attributes = _get_meta_attributes(cls, raise_exceptions=False)
     dto = attributes['dto']
+    if not dto:
+        dto = _get_dto_type_from_origin(cls)
     collection = attributes['collection']
     index = attributes['index']
     prefix = get_prefix(access=attributes['method_access'], cls=cls)
@@ -58,8 +64,10 @@ def _handle_cls_async(
     update: bool,
     delete: bool,
 ) -> type:
-    attributes = _get_repo_attributes(cls)
+    attributes = _get_meta_attributes(cls, raise_exceptions=False)
     dto = attributes['dto']
+    if not dto:
+        dto = _get_dto_type_from_origin(cls)
     collection = attributes['collection']
     index = attributes['index']
     prefix = get_prefix(access=attributes['method_access'], cls=cls)
@@ -79,23 +87,30 @@ def _handle_cls_async(
     return cls
 
 
-def _get_repo_attributes(cls) -> dict[str, Any]:
+def _get_meta_attributes(cls, raise_exceptions: bool = True) -> dict[str, Any]:
     attributes = {}
     try:
         meta = cls.__dict__['Meta']
-    except AttributeError as e:
-        raise AttributeError('Decorated class does not have "Meta" class inside') from e
+    except (AttributeError, KeyError) as e:
+        raise exceptions.NoMetaException from e
     try:
         dto = meta.dto
         attributes['dto'] = dto
     except AttributeError as e:
-        raise AttributeError('Decorated class does not have DTO type inside') from e
+        if raise_exceptions:
+            raise exceptions.NoDTOTypeException from e
+        else:
+            attributes['dto'] = None
     try:
         collection = meta.collection
         attributes['collection'] = collection
     except AttributeError as e:
-        raise AttributeError('Decorated class does not have "collection" inside') from e
+        if raise_exceptions:
+            raise exceptions.NoCollectionException from e
+        else:
+            attributes['collection'] = None
 
+    # Optional variables
     index: Index | str | None = getattr(meta, 'index', None)
     attributes['index'] = index
 
@@ -106,6 +121,7 @@ def _get_repo_attributes(cls) -> dict[str, Any]:
 
 
 def get_default_values(dto: Type[DTO] | DTO) -> dict[str, Any]:
+    """Returns dictionary of default values for a dataclass or dataclass instance"""
     default_values = {}
     for field_info in fields(dto):  # type: ignore
         if field_info.default is not field_info.default_factory:
@@ -116,6 +132,12 @@ def get_default_values(dto: Type[DTO] | DTO) -> dict[str, Any]:
 
 
 def _create_index(index: Index | str, collection: Collection) -> None:
+    """
+    ### Creates an index for the collection
+    * index parameter can be string or mongorepo.base.Index
+    * If index is string, create standard mongodb index
+    * If it's `mongorepo.base.Index` creates index with user's settings
+    """
     if isinstance(index, str):
         collection.create_index(index)
         return
@@ -133,6 +155,10 @@ def _create_index(index: Index | str, collection: Collection) -> None:
 
 
 def get_prefix(access: Access | None, cls: type | None = None) -> str:
+    """
+    Returns string prefix according to Access value,
+    * it can be `'_'`, `'__'`, `_{cls.__name__}__` or `''`
+    """
     match access:
         case Access.PRIVATE:
             prefix = f'_{cls.__name__}__' if cls else '__'
@@ -141,3 +167,15 @@ def get_prefix(access: Access | None, cls: type | None = None) -> str:
         case Access.PUBLIC | None:
             prefix = ''
     return prefix
+
+
+def _get_dto_type_from_origin(cls) -> type:
+    try:
+        if not hasattr(cls, '__orig_bases__'):
+            raise exceptions.NoDTOTypeException
+        dto_type: type = get_args(cls.__orig_bases__[0])[0]  # type: ignore
+    except IndexError:
+        raise exceptions.NoDTOTypeException
+    if dto_type is DTO:
+        raise exceptions.NoDTOTypeException
+    return dto_type

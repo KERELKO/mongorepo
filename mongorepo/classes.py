@@ -1,11 +1,11 @@
 from dataclasses import asdict
-from typing import Any, Generic, Iterable, TypeVar, get_args
+from typing import Any, Generic, Iterable
 
-from bson import ObjectId
 from pymongo.collection import Collection
 
-from mongorepo.utils import _create_index
+from mongorepo.utils import _create_index, _get_dto_type_from_origin, _get_meta_attributes
 from mongorepo.base import DTO, Index
+from mongorepo import exceptions
 
 
 class BaseMongoRepository(Generic[DTO]):
@@ -28,26 +28,35 @@ class BaseMongoRepository(Generic[DTO]):
     ```
     def __init__(
         self,
-        collection: pymongo.Collection,
+        collection: pymongo.Collection | None = None,
         index: mongorepo.Index | str | None = None
     ) -> None:
     ```
     """
-    def __init__(self, collection: Collection, index: Index | str | None = None) -> None:
-        self.collection: Collection = collection
-        self.dto_type = self.__get_origin()
+    def __init__(
+        self,
+        collection: Collection | None = None,
+        index: Index | str | None = None,
+    ) -> None:
+        self.collection = self.__get_collection(collection)
+        self.dto_type = _get_dto_type_from_origin(self.__class__)
         if index is not None:
             _create_index(index, collection=self.collection)
 
     @classmethod
-    def __get_origin(cls) -> type:
+    def __get_collection(cls, collection: Collection | None) -> Collection:
+        if collection is not None:
+            return collection
         try:
-            dto_type = get_args(cls.__orig_bases__[0])[0]  # type: ignore
-        except IndexError:
-            raise AttributeError('"DTO type" was not provided in the class declaration')
-        if isinstance(dto_type, TypeVar):
-            raise AttributeError('"DTO type" was not provided in the class declaration')
-        return dto_type
+            attrs = _get_meta_attributes(cls, raise_exceptions=False)
+        except exceptions.NoMetaException:
+            raise exceptions.MongoRepoException(
+                '"Meta" class with "collecton" was not defined in the class'
+            )
+        if attrs['collection'] is None:
+            raise exceptions.NoCollectionException
+        defined_collection = attrs['collection']
+        return defined_collection
 
     def _convert_to_dto(self, dct: dict[str, Any]) -> DTO:
         if hasattr(self.dto_type, '_id'):
@@ -57,7 +66,7 @@ class BaseMongoRepository(Generic[DTO]):
 
     def get(self, _id: str | None = None, **filters: Any) -> DTO | None:
         if _id is not None:
-            filters['_id'] = ObjectId(_id)
+            filters['_id'] = _id
         result = self.collection.find_one(filters)
         if not result:
             return None
@@ -81,7 +90,7 @@ class BaseMongoRepository(Generic[DTO]):
 
     def delete(self, _id: str | None = None, **filters: Any) -> bool:
         if _id is not None:
-            filters['_id'] = ObjectId(_id)
+            filters['_id'] = _id
         deleted = self.collection.find_one_and_delete(filters)
         if deleted is not None:
             return True

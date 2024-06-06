@@ -44,3 +44,14 @@ if __name__ == '__main__':
     inherited_repo = DummyMongoRepository(collection=users_db['users'])
     test_repo(inherited_repo)
 ```
+
+
+## TODO
+- [ ] Add dynamic replacement for methods
+- [ ] Bound DTO TypVar to DataClass interface
+- [ ] Test asyncio support
+- [ ] Post it on PyPi
+- [ ] Make comfortable interface
+- [ ] Check if class is dataclass
+- [x] Fix the problem with private methods, they cannot
+    be access in the instance of repo but can outside the instance

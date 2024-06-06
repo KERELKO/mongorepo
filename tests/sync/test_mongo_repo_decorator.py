@@ -1,6 +1,8 @@
 # type: ignore
 import random
 
+import pytest
+
 from mongorepo.base import Access
 from tests.common import (
     SimpleDTO,
@@ -153,11 +155,27 @@ def test_can_make_methods_private():
             collection = cl
             method_access = Access.PRIVATE
 
-        def get(self) -> None:
-            _ = self._TestMongoRepository__get(id='370r-o0-o23')  # type: ignore
-            return None
+        def get(self) -> bool:
+            _ = self.__get(id='370r-o0-o23')  # type: ignore
+            return True
 
     repo = TestMongoRepository()
-    # check if repository has private fields
-    assert hasattr(repo, '_TestMongoRepository__get')
-    assert repo.get() is None
+
+    # check if repository has private fields, this name cause of the mangling
+    assert hasattr(repo, f'_{TestMongoRepository.__name__}__get')
+
+    assert repo.get() is True
+
+
+@pytest.mark.skip(reason='Not impelented yet')
+def test_can_access_dto_in_type_hints():
+    cl = collection_for_simple_dto()
+
+    @mongo_repository_factory(is_async=False, delete=False, get_all=False)
+    class TestMongoRepository[SimpleDTO]:  # type: ignore
+        class Meta:
+            collection = cl
+
+    repo = TestMongoRepository()
+    assert hasattr(repo, 'add')
+    assert not hasattr(repo, 'delete')

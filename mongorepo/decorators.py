@@ -15,13 +15,13 @@ def mongo_repository_factory(
     """
     ## MongoDB repository factory, use as decorator
 
-    * decorated class must provide "Meta" class inside
+    * decorated class must provide `Meta` class inside
     with variables "dto"(represent simple dataclass) and
-    "collection" (represent mongo collection of type "Collection" from pymongo library
-    or async collection from motor: AsyncIOMotorCollection if is_async=True).
+    `collection` (represent mongo collection of type `Collection` from `pymongo` library
+    or async collection from motor: `AsyncIOMotorCollection` if is_async=True).
 
-    * You can also provide index field that can be just a string name of the field
-    which you want to make index field or it can be instance of mongorepo.Index
+    * You can also provide `index` field that can be just a string name of the field
+    which you want to make index field or it can be instance of `mongorepo.base.Index`
     with extended settings
 
     ### If is_async=True then all added methods will be asynchronous
