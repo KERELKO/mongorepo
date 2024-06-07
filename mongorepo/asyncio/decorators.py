@@ -29,8 +29,9 @@ def async_mongo_repository(
     ### usage example:
     ```
     @async_mongo_repository
-    class MongoRepository[UserDTO]:
+    class MongoRepository:
         class Meta:
+            dto = UserDTO
             collection: AsyncIOMotorCollection = db["users"]
             index = mongorepo.base.Index(field="name")
             method_access = mongorepo.base.Access.PROTECTED

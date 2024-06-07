@@ -84,7 +84,7 @@ def _get_meta_attributes(cls, raise_exceptions: bool = True) -> dict[str, Any]:
 def get_default_values(dto: Type[DTO] | DTO) -> dict[str, Any]:
     """Returns dictionary of default values for a dataclass or dataclass instance"""
     default_values = {}
-    for field_info in fields(dto):  # type: ignore
+    for field_info in fields(dto):
         if field_info.default is not field_info.default_factory:
             default_values[field_info.name] = field_info.default
         else:
@@ -105,8 +105,6 @@ def _create_index(index: Index | str, collection: Collection) -> None:
     index_name = f'index_{index.field}_1'
     if index.name:
         index_name = index.name
-    if index_name in collection.index_information():
-        return
     direction = pymongo.DESCENDING if index.desc else pymongo.ASCENDING
     collection.create_index(
         [(index.field, direction)],
@@ -134,7 +132,7 @@ def _get_dto_type_from_origin(cls) -> type:
     try:
         if not hasattr(cls, '__orig_bases__'):
             raise exceptions.NoDTOTypeException
-        dto_type: type = get_args(cls.__orig_bases__[0])[0]  # type: ignore
+        dto_type: type = get_args(cls.__orig_bases__[0])[0]
     except IndexError:
         raise exceptions.NoDTOTypeException
     if dto_type is DTO:

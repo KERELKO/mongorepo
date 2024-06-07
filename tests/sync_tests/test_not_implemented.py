@@ -20,11 +20,13 @@ def test_can_access_dto_in_type_hints_decorator():
     cl = collection_for_simple_dto()
 
     @mongo_repository(delete=False)
-    class TestMongoRepository[SimpleDTO]:  # type: ignore
+    class TestMongoRepository:
         class Meta:
+            dto = SimpleDTO
             collection = cl
 
     repo = TestMongoRepository()
+
     assert hasattr(repo, 'add')
     assert not hasattr(repo, 'delete')
 

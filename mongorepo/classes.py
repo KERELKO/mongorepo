@@ -72,7 +72,7 @@ class BaseMongoRepository(Generic[DTO]):
         result = self.collection.find_one(filters)
         if not result:
             return None
-        return self._convert_to_dto(result)  # type: ignore
+        return self._convert_to_dto(result)
 
     def get_all(self, **filters: Any) -> Iterable[DTO]:
         cursor = self.collection.find(filters)
@@ -81,7 +81,7 @@ class BaseMongoRepository(Generic[DTO]):
 
     def update(self, dto: DTO, **filter_: Any) -> DTO:
         data: dict[str, dict[str, Any]] = {'$set': {}}
-        for field, value in asdict(dto).items():  # type: ignore
+        for field, value in asdict(dto).items():
             if isinstance(value, (int, bool, float)):
                 data['$set'][field] = value
             elif not field:
@@ -99,5 +99,5 @@ class BaseMongoRepository(Generic[DTO]):
         return False
 
     def add(self, dto: DTO) -> DTO:
-        self.collection.insert_one(asdict(dto))  # type: ignore
+        self.collection.insert_one(asdict(dto))
         return dto
