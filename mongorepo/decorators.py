@@ -12,7 +12,7 @@ def mongo_repository(
     delete: bool = True,
 ) -> type | Callable:
     """
-    ## MongoDB repository factory, use as decorator
+    ## Decorator for mongo repositories
 
     * decorated class must provide `Meta` class inside
     with variables "dto"(represent simple dataclass) and
@@ -21,6 +21,9 @@ def mongo_repository(
     * You can also provide `index` field that can be just a string name of the field
     which you want to make index field or it can be instance of `mongorepo.base.Index`
     with extended settings
+
+    * Use `method_access` in Meta class of the decorated class to make all methods
+    private, protected or public (use mongorepo.base.Access enum)
 
     ### usage example:
     ```

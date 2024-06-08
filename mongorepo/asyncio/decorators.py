@@ -12,19 +12,18 @@ def async_mongo_repository(
     delete: bool = True,
 ) -> type | Callable:
     """
-    ## MongoDB repository factory, use as decorator
+    ## Async MongoDB repository decorator
 
     * decorated class must provide `Meta` class inside
     with variables "dto"(dataclass interface) and
     `collection` (motor collection: `AsyncIOMotorCollection`).
 
-    #### NOTE: dto can also be defined in generic class type hints
-
     * You can also provide `index` field that can be just a string name of the field
     which you want to make index field or it can be instance of `mongorepo.base.Index`
     with extended settings
-    * `method_access` to make all methods private, protected or public
-    (use mongorepo.base.Access class)
+
+    * Use `method_access` in Meta class of the decorated class to make all methods
+    private, protected or public (use mongorepo.base.Access enum)
 
     ### usage example:
     ```

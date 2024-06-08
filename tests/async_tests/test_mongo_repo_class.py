@@ -1,5 +1,7 @@
 # type: ignore
 import random
+
+from mongorepo.base import Index
 from mongorepo.asyncio.classes import AsyncBasedMongoRepository
 from tests.common import SimpleDTO, collection_for_simple_dto
 
@@ -8,7 +10,8 @@ async def test_all_methods_with_inherited_repo():
     cl = collection_for_simple_dto(async_client=True)
 
     class TestMongoRepository(AsyncBasedMongoRepository[SimpleDTO]):
-        ...
+        class Meta:
+            index = Index(field='y', name='async_index_y', unique=True)
 
     num = random.randint(1, 12346)
     unum = random.randint(1, 4567)
@@ -33,4 +36,4 @@ async def test_all_methods_with_inherited_repo():
     dto = await repo.get(y=unum)
     assert dto is None
 
-    cl.drop()
+    # cl.drop()

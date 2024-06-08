@@ -8,6 +8,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.12"
 motor = "^3.4.0"
+asgiref = "^3.8.1"
 
 
 [tool.poetry.group.test.dependencies]

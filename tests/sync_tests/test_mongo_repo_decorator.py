@@ -1,6 +1,8 @@
 # type: ignore
 import random
 
+import pytest
+
 from mongorepo.base import Access
 from tests.common import (
     SimpleDTO,
@@ -11,6 +13,7 @@ from tests.common import (
     collection_for_simple_dto,
 )
 
+from mongorepo.exceptions import NoDTOTypeException
 from mongorepo.decorators import mongo_repository
 
 
@@ -159,7 +162,31 @@ def test_can_make_methods_private():
 
     repo = TestMongoRepository()
 
-    # check if repository has private fields, this name cause of the mangling
+    # check if repository has private fields, this name because of the mangling
     assert hasattr(repo, f'_{TestMongoRepository.__name__}__get')
 
     assert repo.get() is True
+
+
+def test_can_access_dto_in_type_hints_decorator():
+    cl = collection_for_simple_dto()
+
+    @mongo_repository(delete=False)
+    class TestMongoRepository:
+        class Meta:
+            dto = SimpleDTO
+            collection = cl
+
+    repo = TestMongoRepository()
+
+    assert hasattr(repo, 'add')
+    assert not hasattr(repo, 'delete')
+
+
+def test_cannot_access_dto_type_in_type_hints_decorator():
+    with pytest.raises(NoDTOTypeException):
+
+        @mongo_repository
+        class TestMongoRepository:
+            class Meta:
+                ...

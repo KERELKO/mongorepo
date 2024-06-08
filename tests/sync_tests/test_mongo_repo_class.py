@@ -1,7 +1,12 @@
 # type: ignore
 import random
+from typing import Generic
 
-from mongorepo.base import Index
+import pytest
+
+from mongorepo.base import Index, DTO
+from mongorepo.exceptions import NoDTOTypeException
+from mongorepo.classes import BaseMongoRepository
 
 from tests.common import (
     SimpleDTO,
@@ -11,8 +16,6 @@ from tests.common import (
     collection_for_dto_with_id,
     collection_for_simple_dto,
 )
-
-from mongorepo.classes import BaseMongoRepository
 
 
 def test_all_methods_with_inherited_repo():
@@ -126,3 +129,40 @@ def test_can_add_index():
     assert 'y_index' in repo.collection.index_information()
 
     cl.drop()
+
+
+def test_can_access_dto_type_in_type_hints_class_repo():
+    cl = collection_for_simple_dto()
+
+    class TestMongoRepository(BaseMongoRepository[SimpleDTO]):
+        ...
+
+    _ = TestMongoRepository(cl)
+
+
+def test_cannot_access_dto_type_in_type_hints_class():
+    with pytest.raises(NoDTOTypeException):
+        class TestMongoRepository(BaseMongoRepository):
+            ...
+
+        _ = TestMongoRepository(collection=collection_for_simple_dto())
+
+
+def test_move_collection_init_to_meta_in_class_repo():
+    class TestMongoRepository(BaseMongoRepository[SimpleDTO]):
+        class Meta:
+            collection = collection_for_simple_dto()
+
+    repo = TestMongoRepository()
+    assert hasattr(repo, 'add')
+
+
+def test_cannot_access_dto_type_with_class_inheritance():
+    with pytest.raises(NoDTOTypeException):
+        class A(Generic[DTO]):
+            ...
+
+        class B(BaseMongoRepository, A):
+            ...
+
+        _ = B(collection=collection_for_simple_dto())

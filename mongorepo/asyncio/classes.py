@@ -1,4 +1,3 @@
-import asyncio
 from dataclasses import asdict, is_dataclass
 from typing import Any, AsyncGenerator, Generic
 
@@ -7,7 +6,6 @@ from motor.motor_asyncio import AsyncIOMotorCollection
 from mongorepo import exceptions
 from mongorepo.base import DTO, Index
 from mongorepo.utils import _get_dto_type_from_origin, _get_meta_attributes
-from mongorepo.asyncio.utils import _create_index_async
 
 
 class AsyncBasedMongoRepository(Generic[DTO]):
@@ -33,11 +31,20 @@ class AsyncBasedMongoRepository(Generic[DTO]):
         index: Index | str | None = None,
     ) -> None:
         self.collection = self.__get_collection(collection)
+
         self.dto_type = _get_dto_type_from_origin(self.__class__)
         if not is_dataclass(self.dto_type):
             raise exceptions.NotDataClass
+
+        self.__set_index(index)
+
+    def __set_index(self, index: Index | None | str) -> None:
+        if index is None:
+            attrs = _get_meta_attributes(self.__class__, raise_exceptions=False)
+        index = attrs['index']
         if index is not None:
-            asyncio.run(_create_index_async(index, collection=self.collection))
+            ...
+            # async_to_sync(_create_index_async(index, collection=self.collection))  # type: ignore
 
     @classmethod
     def __get_collection(cls, collection: AsyncIOMotorCollection | None) -> AsyncIOMotorCollection:

@@ -52,6 +52,8 @@ if __name__ == '__main__':
 - [x] Test asyncio support
 - [ ] Post it on PyPi
 - [ ] Make comfortable interface
-- [ ] Check if class is dataclass
+- [x] Check if class is dataclass
 - [x] Fix the problem with private methods, they cannot
     be access in the instance of repo but can outside the instance
+- [ ] Add more methods
+- [ ] Solve problem with creation of async index

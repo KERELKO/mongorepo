@@ -1,4 +1,3 @@
-import asyncio
 from dataclasses import is_dataclass
 
 import pymongo
@@ -30,7 +29,7 @@ def _handle_cls_async(
         if not is_dataclass(dto):
             raise exceptions.NotDataClass
     collection = attributes['collection']
-    index = attributes['index']
+    # index = attributes['index']
     prefix = get_prefix(access=attributes['method_access'], cls=cls)
 
     if add:
@@ -43,14 +42,8 @@ def _handle_cls_async(
         setattr(cls, f'{prefix}get_all', _get_all_method_async(dto, collection=collection))
     if delete:
         setattr(cls, f'{prefix}delete', _delete_method_async(dto, collection=collection))
-    if index is not None:
-        if asyncio.get_event_loop().is_running():
-            asyncio.ensure_future(
-                _create_index_async(index=index, collection=collection)
-            )
-        else:
-            loop = asyncio.get_event_loop()
-            loop.run_until_complete(_create_index_async(index=index, collection=collection))
+    # if index is not None:
+    #     async_to_sync(_create_index_async(index=index, collection=collection))
     return cls
 
 
@@ -67,8 +60,6 @@ async def _create_index_async(index: Index | str, collection: AsyncIOMotorCollec
     index_name = f'index_{index.field}_1'
     if index.name:
         index_name = index.name
-    if index_name in await collection.index_information():
-        return
     direction = pymongo.DESCENDING if index.desc else pymongo.ASCENDING
     await collection.create_index(
         [(index.field, direction)],
