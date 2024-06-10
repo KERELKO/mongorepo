@@ -28,10 +28,10 @@ def _handle_cls(
     if index is not None:
         create_index(index=index, collection=collection)
 
-    if array_fields is not None:
-        _set_integer_fields_methods(cls, array_fields=array_fields)
-
     if integer_fields is not None:
-        _set_array_fields_methods(cls, integer_fields=integer_fields)
+        _set_integer_fields_methods(cls, integer_fields=integer_fields)
+
+    if array_fields is not None:
+        _set_array_fields_methods(cls, array_fields=array_fields)
 
     return cls

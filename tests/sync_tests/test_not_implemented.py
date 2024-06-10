@@ -1,3 +1,4 @@
+# type: ignore
 from abc import ABC
 from typing import Generic
 
@@ -5,7 +6,10 @@ import pytest
 
 from mongorepo import DTO
 from mongorepo.decorators import substitute
-from tests.common import ComplicatedDTO, collection_for_complicated_dto
+from tests.common import (
+    ComplicatedDTO,
+    collection_for_complicated_dto,
+)
 
 
 @pytest.mark.skip(reason='Not implemented')

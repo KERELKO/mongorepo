@@ -1,5 +1,6 @@
-from dataclasses import fields, is_dataclass
-from typing import Any, Type, get_args
+from dataclasses import is_dataclass
+from typing import Any, Type, get_args, get_origin
+from types import GenericAlias
 
 import pymongo
 from pymongo.collection import Collection
@@ -12,8 +13,8 @@ def _get_collection_and_dto(cls: type, raise_exceptions: bool = True) -> dict[st
     attributes: dict[str, Any] = {}
     meta = get_meta(cls)
     try:
-        dto_type = meta.dto_type
-        attributes['dto_type'] = dto_type
+        dto = meta.dto
+        attributes['dto'] = dto
     except AttributeError as e:
         if raise_exceptions:
             raise exceptions.NoDTOTypeException from e
@@ -62,11 +63,11 @@ def get_meta(cls: type) -> Any:
 def get_default_values(dto: Type[DTO] | DTO) -> dict[str, Any]:
     """Returns dictionary of default values for a dataclass or dataclass instance"""
     default_values = {}
-    for field_info in fields(dto):
-        if field_info.default is not field_info.default_factory:
-            default_values[field_info.name] = field_info.default
-        else:
-            default_values[field_info.name] = field_info.default_factory()  # type: ignore
+    for field_name, value in dto.__annotations__.items():
+        if isinstance(value, type):
+            default_values[field_name] = value
+        elif isinstance(value, GenericAlias):
+            default_values[field_name] = get_origin(value)
     return default_values
 
 
@@ -119,3 +120,11 @@ def _get_dto_from_origin(cls: type) -> Any:
         raise exceptions.NotDataClass
 
     return dto
+
+
+def is_immutable(obj: Any) -> bool:
+    try:
+        hash(obj)
+    except TypeError:
+        return False
+    return True

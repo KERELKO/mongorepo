@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Annotated
 
 from mongorepo.subst import substitute_class_methods
 from mongorepo.handlers import _handle_cls
@@ -12,8 +12,8 @@ def mongo_repository(
     update: bool = True,
     delete: bool = True,
     update_field: bool = False,
-    integer_fields: list[str] | None = None,
-    array_fields: list[str] | None = None,
+    integer_fields: list[Annotated[str, 'field names']] | None = None,
+    array_fields: list[Annotated[str, 'field names']] | None = None,
 ) -> type | Callable:
     """
     ## Decorator for mongo repositories

@@ -64,11 +64,12 @@ def _replace_field_value_method(dto_type: Type[DTO], collection: Collection) -> 
 
 # TODO: add support + async support
 def _update_integer_field_method(
-    dto_type: Type[DTO], collection: Collection, field_name: str, weight: int = 1,
+    dto_type: Type[DTO], collection: Collection, field_name: str, _weight: int = 1,
 ) -> Callable:
-    def update_interger_field(self, **filters) -> DTO | None:
+    def update_interger_field(self, weight: int = 0, **filters) -> DTO | None:
+        w = weight if weight != 0 else _weight
         document = collection.find_one_and_update(
-            filter=filters, update={'$inc': {field_name: weight}},
+            filter=filters, update={'$inc': {field_name: w}}, return_document=True
         )
         return convert_to_dto(dto_type=dto_type, dct=document) if document else None
     return update_interger_field
@@ -80,7 +81,7 @@ def _update_list_field_method(
 ) -> Callable:
     def update_list(self, value: Any, **filters) -> Any:
         document = collection.find_one_and_update(
-            filter=filters, update={command: {field_name: value}},
+            filter=filters, update={command: {field_name: value}}, return_document=True
         )
         return convert_to_dto(dto_type=dto_type, dct=document) if document else None
     return update_list
