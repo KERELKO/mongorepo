@@ -11,7 +11,7 @@ from mongorepo.asyncio._methods import (
     _add_method_async,
 )
 from mongorepo import Index
-from mongorepo.utils import _get_dto_type_from_origin, _get_meta_attributes, get_prefix
+from mongorepo.utils import _get_dto_from_origin, _get_meta_attributes, get_prefix
 from motor.motor_asyncio import AsyncIOMotorCollection
 
 
@@ -26,7 +26,7 @@ def _handle_cls_async(
     attributes = _get_meta_attributes(cls, raise_exceptions=False)
     dto = attributes['dto']
     if not dto:
-        dto = _get_dto_type_from_origin(cls)
+        dto = _get_dto_from_origin(cls)
         if not is_dataclass(dto):
             raise exceptions.NotDataClass
     collection = attributes['collection']

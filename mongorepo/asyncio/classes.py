@@ -5,7 +5,7 @@ from motor.motor_asyncio import AsyncIOMotorCollection
 
 from mongorepo import exceptions
 from mongorepo import DTO, Index
-from mongorepo.utils import _get_dto_type_from_origin, _get_meta_attributes
+from mongorepo.utils import _get_dto_from_origin, _get_meta_attributes
 from mongorepo.asyncio.utils import _run_asyncio_create_index
 
 
@@ -22,7 +22,7 @@ class AsyncBasedMongoRepository(Generic[DTO]):
     async create(self, dto: DTO) -> DTO
     async get(self, _id: str | None = None, **filters) -> DTO | None
     async get_all(self, **filters) -> Iterable[DTO]
-    async update(self, dto: DTO, **filter_) -> DTO
+    async update(self, dto: DTO, **filters) -> DTO
     async delete(self, _id: str | None = None, **filters) -> bool
     ```
     """
@@ -42,7 +42,7 @@ class AsyncBasedMongoRepository(Generic[DTO]):
             cls.collection = collection
             _run_asyncio_create_index(index, collection=collection)
 
-        cls.dto_type = _get_dto_type_from_origin(cls)
+        cls.dto_type = _get_dto_from_origin(cls)
         if not is_dataclass(cls.dto_type):
             raise exceptions.NotDataClass
 
@@ -50,7 +50,7 @@ class AsyncBasedMongoRepository(Generic[DTO]):
 
     def __init__(self, collection: AsyncIOMotorCollection | None = None) -> None:
         self.collection = self.__get_collection(collection)
-        self.dto_type = _get_dto_type_from_origin(self.__class__)
+        self.dto_type = _get_dto_from_origin(self.__class__)
 
     @classmethod
     def __get_collection(cls, collection: AsyncIOMotorCollection | None) -> AsyncIOMotorCollection:
@@ -73,20 +73,16 @@ class AsyncBasedMongoRepository(Generic[DTO]):
         dct.pop('_id')
         return self.dto_type(**dct)
 
-    async def get(self, _id: str | None = None, **filters: Any) -> DTO | None:
-        if _id is not None:
-            filters['_id'] = _id
+    async def get(self, **filters: Any) -> DTO | None:
         result = await self.collection.find_one(filters)
-        if not result:
-            return None
-        return self._convert_to_dto(result)
+        return self._convert_to_dto(result) if result else None
 
     async def get_all(self, **filters: Any) -> AsyncGenerator[DTO, None]:
         cursor = self.collection.find(filters)
         async for doc in cursor:
             yield self._convert_to_dto(doc)
 
-    async def update(self, dto: DTO, **filter_: Any) -> DTO:
+    async def update(self, dto: DTO, **filters: Any) -> DTO:
         data: dict[str, dict[str, Any]] = {'$set': {}}
         for field, value in asdict(dto).items():
             if isinstance(value, (int, bool)):
@@ -94,16 +90,12 @@ class AsyncBasedMongoRepository(Generic[DTO]):
             elif not field:
                 continue
             data['$set'][field] = value
-        await self.collection.find_one_and_update(filter=filter_, update=data)
+        await self.collection.find_one_and_update(filter=filters, update=data)
         return dto
 
-    async def delete(self, _id: str | None = None, **filters: Any) -> bool:
-        if _id is not None:
-            filters['_id'] = _id
+    async def delete(self, **filters: Any) -> bool:
         deleted = await self.collection.find_one_and_delete(filters)
-        if deleted is not None:
-            return True
-        return False
+        return True if deleted else False
 
     async def add(self, dto: DTO) -> DTO:
         await self.collection.insert_one(asdict(dto))

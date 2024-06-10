@@ -1,7 +1,7 @@
 from typing import Callable
 
 from mongorepo.subst import substitute_class_methods
-from mongorepo.utils import _handle_cls
+from mongorepo.handlers import _handle_cls
 
 
 def mongo_repository(
@@ -11,6 +11,9 @@ def mongo_repository(
     get_all: bool = True,
     update: bool = True,
     delete: bool = True,
+    update_field: bool = False,
+    integer_fields: list[str] | None = None,
+    array_fields: list[str] | None = None,
 ) -> type | Callable:
     """
     ## Decorator for mongo repositories
@@ -46,6 +49,9 @@ def mongo_repository(
             get_all=get_all,
             get=get,
             delete=delete,
+            update_field=update_field,
+            integer_fields=integer_fields,
+            array_fields=array_fields,
         )
 
     if cls is None:
