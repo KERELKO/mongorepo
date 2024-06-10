@@ -19,6 +19,9 @@ def get_available_meta_attributes(list_names: bool = False) -> dict[str, str] | 
         ),
         'dto': 'sets default dto for repository, repository saves data in the format of the dto',
         'collection': 'sets default collection for repository',
+        'substitute': (
+            'substitutes methods of mongorepo decorator or class with provided or inherited class'
+        ),
     }
     if list_names:
         return list(attrs.keys())

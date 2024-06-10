@@ -63,3 +63,12 @@ def convert_to_dto(dto_type: Type[DTO], dct: dict[str, Any]) -> DTO:
         return dto_type(**dct)
     dct.pop('_id')
     return dto_type(**dct)
+
+
+METHOD_NAME__CALLABLE = {
+    'get': _get_method,
+    'add': _add_method,
+    'update': _update_method,
+    'delete': _delete_method,
+    'get_all': _get_all_method,
+}

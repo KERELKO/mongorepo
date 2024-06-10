@@ -1,5 +1,6 @@
 from typing import Callable
 
+from mongorepo.subst import substitute_class_methods
 from mongorepo.utils import _handle_cls
 
 
@@ -51,3 +52,13 @@ def mongo_repository(
         return wrapper
 
     return wrapper(cls)
+
+
+def substitute(source_cls: type) -> type | Callable:
+    def wrapper(target_cls) -> type:
+        return substitute_class_methods(
+            target_cls=target_cls,
+            source_cls=source_cls
+        )
+
+    return wrapper

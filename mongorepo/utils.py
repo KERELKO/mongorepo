@@ -78,6 +78,9 @@ def _get_meta_attributes(cls, raise_exceptions: bool = True) -> dict[str, Any]:
     method_access: Access | None = getattr(meta, 'method_access', None)
     attributes['method_access'] = method_access
 
+    substitute: dict[str, str] | None = getattr(meta, 'substitute', None)
+    attributes['substitute'] = substitute
+
     return attributes
 
 
