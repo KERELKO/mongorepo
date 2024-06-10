@@ -3,7 +3,7 @@ import random
 
 import pytest
 
-from mongorepo.base import Access
+from mongorepo import Access
 from tests.common import (
     SimpleDTO,
     DTOWithID,

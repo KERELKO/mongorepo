@@ -1,6 +1,6 @@
 from dataclasses import Field, dataclass
 from enum import Enum
-from typing import Any, ClassVar, Iterable, Protocol, TypeVar
+from typing import Any, ClassVar, Protocol, TypeVar
 
 
 class DataclassInstance(Protocol):
@@ -15,7 +15,7 @@ def get_available_meta_attributes(list_names: bool = False) -> dict[str, str] | 
         'index': 'creates index for a collection',
         'method_access': (
             'added methods will be private, '
-            'protected or public, use mongorepo.base.Access'
+            'protected or public, use mongorepo.Access'
         ),
         'dto': 'sets default dto for repository, repository saves data in the format of the dto',
         'collection': 'sets default collection for repository',
@@ -56,20 +56,3 @@ class Access(int, Enum):
     PUBLIC = 0
     PROTECTED = 1
     PRIVATE = 2
-
-
-class IMongoRepository(Protocol[DTO]):
-    def get(self, _id: str | None = None, **filters: Any) -> DTO | None:
-        raise NotImplementedError
-
-    def get_all(self, **filters: Any) -> Iterable[DTO]:
-        raise NotImplementedError
-
-    def update(self, dto: DTO, **filter_: Any) -> DTO:
-        raise NotImplementedError
-
-    def delete(self, _id: str | None = None, **filters: Any) -> bool:
-        raise NotImplementedError
-
-    def create(self, dto: DTO) -> DTO:
-        raise NotImplementedError

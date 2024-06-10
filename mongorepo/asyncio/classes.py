@@ -4,8 +4,9 @@ from typing import Any, AsyncGenerator, Generic
 from motor.motor_asyncio import AsyncIOMotorCollection
 
 from mongorepo import exceptions
-from mongorepo.base import DTO, Index
+from mongorepo import DTO, Index
 from mongorepo.utils import _get_dto_type_from_origin, _get_meta_attributes
+from mongorepo.asyncio.utils import _run_asyncio_create_index
 
 
 class AsyncBasedMongoRepository(Generic[DTO]):
@@ -25,26 +26,31 @@ class AsyncBasedMongoRepository(Generic[DTO]):
     async delete(self, _id: str | None = None, **filters) -> bool
     ```
     """
-    def __init__(
-        self,
-        collection: AsyncIOMotorCollection | None = None,
-        index: Index | str | None = None,
-    ) -> None:
-        self.collection = self.__get_collection(collection)
 
-        self.dto_type = _get_dto_type_from_origin(self.__class__)
-        if not is_dataclass(self.dto_type):
+    def __new__(cls) -> 'AsyncBasedMongoRepository':
+        try:
+            meta = _get_meta_attributes(cls, raise_exceptions=False)
+        except exceptions.NoMetaException:
+            return super().__new__(cls)
+        index: Index | str | None = meta['index']
+        if index is not None:
+            collection: AsyncIOMotorCollection | None = meta['collection']
+            if collection is None:
+                raise exceptions.NoCollectionException(
+                    message='Cannot access collection from Meta, to create index'
+                )
+            cls.collection = collection
+            _run_asyncio_create_index(index, collection=collection)
+
+        cls.dto_type = _get_dto_type_from_origin(cls)
+        if not is_dataclass(cls.dto_type):
             raise exceptions.NotDataClass
 
-        self.__set_index(index)
+        return super().__new__(cls)
 
-    def __set_index(self, index: Index | None | str) -> None:
-        if index is None:
-            attrs = _get_meta_attributes(self.__class__, raise_exceptions=False)
-        index = attrs['index']
-        if index is not None:
-            ...
-            # async_to_sync(_create_index_async(index, collection=self.collection))  # type: ignore
+    def __init__(self, collection: AsyncIOMotorCollection | None = None) -> None:
+        self.collection = self.__get_collection(collection)
+        self.dto_type = _get_dto_type_from_origin(self.__class__)
 
     @classmethod
     def __get_collection(cls, collection: AsyncIOMotorCollection | None) -> AsyncIOMotorCollection:
@@ -54,7 +60,7 @@ class AsyncBasedMongoRepository(Generic[DTO]):
             attrs = _get_meta_attributes(cls, raise_exceptions=False)
         except exceptions.NoMetaException:
             raise exceptions.MongoRepoException(
-                '"Meta" class with "collection" was not defined in the class'
+                message='"Meta" class with "collection" was not defined in the class'
             )
         if attrs['collection'] is None:
             raise exceptions.NoCollectionException

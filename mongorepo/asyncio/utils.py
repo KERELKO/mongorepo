@@ -1,5 +1,6 @@
 from dataclasses import is_dataclass
 
+import asyncio
 import pymongo
 from mongorepo import exceptions
 from mongorepo.asyncio._methods import (
@@ -9,7 +10,7 @@ from mongorepo.asyncio._methods import (
     _delete_method_async,
     _add_method_async,
 )
-from mongorepo.base import Index
+from mongorepo import Index
 from mongorepo.utils import _get_dto_type_from_origin, _get_meta_attributes, get_prefix
 from motor.motor_asyncio import AsyncIOMotorCollection
 
@@ -29,7 +30,7 @@ def _handle_cls_async(
         if not is_dataclass(dto):
             raise exceptions.NotDataClass
     collection = attributes['collection']
-    # index = attributes['index']
+    index = attributes['index']
     prefix = get_prefix(access=attributes['method_access'], cls=cls)
 
     if add:
@@ -42,17 +43,25 @@ def _handle_cls_async(
         setattr(cls, f'{prefix}get_all', _get_all_method_async(dto, collection=collection))
     if delete:
         setattr(cls, f'{prefix}delete', _delete_method_async(dto, collection=collection))
-    # if index is not None:
-    #     async_to_sync(_create_index_async(index=index, collection=collection))
+    if index is not None:
+        _run_asyncio_create_index(index=index, collection=collection)
     return cls
+
+
+def _run_asyncio_create_index(index: Index | str, collection: AsyncIOMotorCollection) -> None:
+    loop = asyncio.get_running_loop()
+    if loop.is_running():
+        asyncio.create_task(_create_index_async(index=index, collection=collection))
+    else:
+        loop.run_until_complete(_create_index_async(index=index, collection=collection))
 
 
 async def _create_index_async(index: Index | str, collection: AsyncIOMotorCollection) -> None:
     """
     ### Creates an index for the collection
-    * index parameter can be string or mongorepo.base.Index
+    * index parameter can be string or mongorepo.Index
     * If index is string, create standard mongodb index
-    * If it's `mongorepo.base.Index` creates index with user's settings
+    * If it's `mongorepo.Index` creates index with user's settings
     """
     if isinstance(index, str):
         await collection.create_index(index)

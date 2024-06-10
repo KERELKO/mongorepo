@@ -3,7 +3,7 @@ from typing import Any, Callable, Type, TypeVar
 from pymongo.collection import Collection
 
 from mongorepo import exceptions
-from mongorepo.base import DTO
+from mongorepo import DTO
 from mongorepo.utils import _get_meta_attributes
 from mongorepo._methods import METHOD_NAME__CALLABLE
 
@@ -17,7 +17,7 @@ def substitute_class_methods(target_cls: type, source_cls: type) -> type:
         raise exceptions.NoSubstituteException
 
     for mongo_method, cls_method in substitute.items():
-        substitute_method(
+        __substitute_method(
             method_name=mongo_method,
             target_cls=target_cls,
             source_cls=source_cls,
@@ -28,7 +28,7 @@ def substitute_class_methods(target_cls: type, source_cls: type) -> type:
     return target_cls
 
 
-def substitute_method(
+def __substitute_method(
     method_name: str,
     target_cls: type,
     source_cls: type,

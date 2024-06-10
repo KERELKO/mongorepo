@@ -5,7 +5,7 @@ from motor.motor_asyncio import AsyncIOMotorCollection
 from bson import ObjectId
 
 from mongorepo._methods import convert_to_dto
-from mongorepo.base import DTO
+from mongorepo import DTO
 
 
 def _add_method_async(dto_type: Type[DTO], collection: AsyncIOMotorCollection) -> Callable:

@@ -19,11 +19,11 @@ def async_mongo_repository(
     `collection` (motor collection: `AsyncIOMotorCollection`).
 
     * You can also provide `index` field that can be just a string name of the field
-    which you want to make index field or it can be instance of `mongorepo.base.Index`
+    which you want to make index field or it can be instance of `mongorepo.Index`
     with extended settings
 
     * Use `method_access` in Meta class of the decorated class to make all methods
-    private, protected or public (use mongorepo.base.Access enum)
+    private, protected or public (use mongorepo.Access enum)
 
     ### usage example:
     ```
@@ -32,8 +32,8 @@ def async_mongo_repository(
         class Meta:
             dto = UserDTO
             collection: AsyncIOMotorCollection = db["users"]
-            index = mongorepo.base.Index(field="name")
-            method_access = mongorepo.base.Access.PROTECTED
+            index = mongorepo.Index(field="name")
+            method_access = mongorepo.Access.PROTECTED
     ```
     """
 

@@ -3,7 +3,7 @@ from typing import Any, Callable, Iterable, Type
 
 from pymongo.collection import Collection
 
-from mongorepo.base import DTO
+from mongorepo import DTO
 
 
 def _add_method(dto_type: Type[DTO], collection: Collection) -> Callable:

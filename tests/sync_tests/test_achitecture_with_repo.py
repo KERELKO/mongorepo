@@ -2,13 +2,12 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Generic, Protocol
-
 from tests.common import (
     DTOWithID,
     collection_for_dto_with_id,
 )
 
-from mongorepo.base import DTO, Access
+from mongorepo import DTO, Access
 from mongorepo.decorators import mongo_repository
 from mongorepo.classes import BaseMongoRepository
 
@@ -101,7 +100,7 @@ def test_base_mongo_class_with_abstract_class():
             return product
 
     collection = mongo_client()['product_db']['product']
-    repo = MongoProductRepository(collection=collection, index='price')
+    repo = MongoProductRepository(collection=collection)
 
     product = Product(title='phone', price=499, description='the best phone')
     repo.add(dto=product)
@@ -110,6 +109,8 @@ def test_base_mongo_class_with_abstract_class():
 
     assert resolved_product.title == 'phone' and product.price == 499
     assert resolved_product.description == 'the best phone'
+
+    collection.drop()
 
 
 def test_decorator_with_protocol_and_dto_with_id():

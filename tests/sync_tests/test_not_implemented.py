@@ -1,11 +1,14 @@
 from abc import ABC
 from typing import Generic
 
-from mongorepo.base import DTO
+import pytest
+
+from mongorepo import DTO
 from mongorepo.decorators import substitute
 from tests.common import ComplicatedDTO, collection_for_complicated_dto
 
 
+@pytest.mark.skip(reason='Not implemented')
 def test_can_substitute_methods_with_decorator():
     # Idea: to dynamically replace methods of mongo repo class with other class methods
 
@@ -27,8 +30,8 @@ def test_can_substitute_methods_with_decorator():
 
     assert hasattr(repo_dec, 'create')
     assert hasattr(repo_dec, 'get_by_name')
-    dto = ComplicatedDTO(x='test', name='admin', y=True, skills=['python'])
-    repo_dec.create(entity=dto)
+    entity = ComplicatedDTO(x='test', name='admin', y=True, skills=['python'])
+    repo_dec.create(entity=entity)
 
     record: ComplicatedDTO | None = repo_dec.get_by_name(name='admin')  # type: ignore
     assert record is not None

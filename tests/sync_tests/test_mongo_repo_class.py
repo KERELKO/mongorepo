@@ -4,7 +4,7 @@ from typing import Generic
 
 import pytest
 
-from mongorepo.base import Index, DTO
+from mongorepo import Index, DTO
 from mongorepo.exceptions import NoDTOTypeException
 from mongorepo.classes import BaseMongoRepository
 
@@ -119,12 +119,14 @@ def test_can_search_with_id():
 
 def test_can_add_index():
     cl = collection_for_simple_dto()
+    _index = Index(field='y', name='y_index', desc=True, unique=False)
 
     class TestMongoRepository(BaseMongoRepository[SimpleDTO]):
-        ...
+        class Meta:
+            index = _index
+            collection = cl
 
-    index = Index(field='y', name='y_index', desc=True, unique=False)
-    repo = TestMongoRepository(cl, index=index)
+    repo = TestMongoRepository()
 
     assert 'y_index' in repo.collection.index_information()
 

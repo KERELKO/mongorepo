@@ -1,10 +1,11 @@
 # type: ignore
 import random
+import asyncio
 
 import pytest
 
 from mongorepo.asyncio.decorators import async_mongo_repository
-from mongorepo import exceptions
+from mongorepo import exceptions, Index
 
 from tests.common import SimpleDTO, collection_for_simple_dto
 
@@ -57,3 +58,25 @@ async def test_cannot_initialize_class_if_dto_is_not_dataclass():
                 index = 'x'
 
         _ = TestMongoRepository()
+
+
+async def test_can_create_index():
+    cl = collection_for_simple_dto(async_client=True)
+
+    @async_mongo_repository
+    class TestMongoRepository:
+        class Meta:
+            collection = cl
+            dto = SimpleDTO
+            index = Index(field='x', name='async_index_for_x', unique=True)
+
+    r = TestMongoRepository()
+    await r.add(SimpleDTO(x='123', y=23))
+    dto = await r.get(x='123')
+    assert dto is not None
+
+    await asyncio.sleep(2)
+
+    assert 'async_index_for_x' in await cl.index_information()
+
+    await cl.drop()

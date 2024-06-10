@@ -1,11 +1,28 @@
 from dataclasses import asdict, is_dataclass
-from typing import Any, Generic, Iterable
+from typing import Any, Generic, Iterable, Protocol
 
 from pymongo.collection import Collection
 
 from mongorepo.utils import _create_index, _get_dto_type_from_origin, _get_meta_attributes
-from mongorepo.base import DTO, Index
+from mongorepo import DTO, Index
 from mongorepo import exceptions
+
+
+class IMongoRepository(Protocol[DTO]):
+    def get(self, _id: str | None = None, **filters: Any) -> DTO | None:
+        raise NotImplementedError
+
+    def get_all(self, **filters: Any) -> Iterable[DTO]:
+        raise NotImplementedError
+
+    def update(self, dto: DTO, **filter_: Any) -> DTO:
+        raise NotImplementedError
+
+    def delete(self, _id: str | None = None, **filters: Any) -> bool:
+        raise NotImplementedError
+
+    def create(self, dto: DTO) -> DTO:
+        raise NotImplementedError
 
 
 class BaseMongoRepository(Generic[DTO]):
@@ -29,21 +46,34 @@ class BaseMongoRepository(Generic[DTO]):
     def __init__(
         self,
         collection: pymongo.Collection | None = None,
-        index: mongorepo.Index | str | None = None
     ) -> None:
     ```
     """
-    def __init__(
-        self,
-        collection: Collection | None = None,
-        index: Index | str | None = None,
-    ) -> None:
+
+    def __new__(cls, *args, **kwargs) -> 'BaseMongoRepository':
+        try:
+            meta = _get_meta_attributes(cls, raise_exceptions=False)
+        except exceptions.NoMetaException:
+            return super().__new__(cls)
+        index: Index | str | None = meta['index']
+        if index is not None:
+            collection: Collection | None = meta['collection']
+            if collection is None:
+                raise exceptions.NoCollectionException(
+                    message='Cannot access collection from Meta, to create index'
+                )
+            cls.collection = collection
+            _create_index(index=index, collection=collection)
+
+        cls.dto_type = _get_dto_type_from_origin(cls)
+        if not is_dataclass(cls.dto_type):
+            raise exceptions.NotDataClass
+
+        return super().__new__(cls)
+
+    def __init__(self, collection: Collection | None = None) -> None:
         self.collection = self.__get_collection(collection)
         self.dto_type = _get_dto_type_from_origin(self.__class__)
-        if not is_dataclass(self.dto_type):
-            raise exceptions.NotDataClass
-        if index is not None:
-            _create_index(index, collection=self.collection)
 
     @classmethod
     def __get_collection(cls, collection: Collection | None) -> Collection:
@@ -53,7 +83,7 @@ class BaseMongoRepository(Generic[DTO]):
             attrs = _get_meta_attributes(cls, raise_exceptions=False)
         except exceptions.NoMetaException:
             raise exceptions.MongoRepoException(
-                '"Meta" class with "collecton" was not defined in the class'
+                message='"Meta" class with "collecton" was not defined in the class'
             )
         if attrs['collection'] is None:
             raise exceptions.NoCollectionException

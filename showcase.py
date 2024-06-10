@@ -2,7 +2,7 @@ from dataclasses import dataclass
 import time
 from typing import Any
 
-from mongorepo.base import Access, Index
+from mongorepo import Access, Index
 from mongorepo.decorators import mongo_repository
 from mongorepo.classes import BaseMongoRepository
 

@@ -11,7 +11,7 @@ from mongorepo._methods import (
     _add_method,
     _delete_method,
 )
-from mongorepo.base import DTO, Access, Index
+from mongorepo import DTO, Access, Index
 from mongorepo import exceptions
 
 
@@ -98,9 +98,9 @@ def get_default_values(dto: Type[DTO] | DTO) -> dict[str, Any]:
 def _create_index(index: Index | str, collection: Collection) -> None:
     """
     ### Creates an index for the collection
-    * index parameter can be string or mongorepo.base.Index
+    * index parameter can be string or mongorepo.Index
     * If index is string, create standard mongodb index
-    * If it's `mongorepo.base.Index` creates index with user's settings
+    * If it's `mongorepo.Index` creates index with user's settings
     """
     if isinstance(index, str):
         collection.create_index(index)
