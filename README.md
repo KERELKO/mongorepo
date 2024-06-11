@@ -54,17 +54,3 @@ artorias = await repo.get(id='289083')
 print(artorias.skills)
 ['c++', 'java', 'rust', 'c']
 ```
-
-## TODO
-- [ ] Add dynamic replacement for methods
-- [x] Bound DTO TypeVar to DataClass interface
-- [x] Test asyncio support
-- [x] Make comfortable interface
-- [x] Check if class is dataclass
-- [x] Fix the problem with private methods, they cannot be access in the instance of repo but can outside the instance
-- [x] Add more methods
-- [ ] Solve problem with creation of async index
-- [x] Add setup tools and refactor imports
-
-## After TODO
-- [ ] Post it on PyPi
