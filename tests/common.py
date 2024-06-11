@@ -34,6 +34,8 @@ class NestedDTO:
 
 
 def collection_for_complicated_dto(async_client=False):
+    if async_client:
+        return async_mongo_client()['dto_complicated_db']['dto']
     return mongo_client()['dto_complicated_db']['dto']
 
 
@@ -44,4 +46,6 @@ def collection_for_simple_dto(async_client=False):
 
 
 def collection_for_dto_with_id(async_client=False):
+    if async_client:
+        return async_mongo_client()['dto_with_id_db']['dto']
     return mongo_client()['dto_with_id_db']['dto']

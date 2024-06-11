@@ -128,3 +128,10 @@ def is_immutable(obj: Any) -> bool:
     except TypeError:
         return False
     return True
+
+
+def convert_to_dto(dto_type: Type[DTO], dct: dict[str, Any]) -> DTO:
+    if '_id' in dto_type.__dict__['__annotations__']:
+        return dto_type(**dct)
+    dct.pop('_id')
+    return dto_type(**dct)

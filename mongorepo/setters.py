@@ -17,6 +17,7 @@ from mongorepo._methods import (
     _add_method,
     _update_method,
     _update_field_method,
+    _pop_list_method,
 )
 from mongorepo.asyncio._methods import (
     _update_field_method_async,
@@ -27,6 +28,7 @@ from mongorepo.asyncio._methods import (
     _get_all_method_async,
     _get_method_async,
     _update_method_async,
+    _pop_list_method_async,
 )
 
 
@@ -54,6 +56,9 @@ def _set_array_fields_methods(
             remove_method = _update_list_field_method_async(
                 dto_type=dto, collection=collection, field_name=field, command='$pull',
             )
+            pop_method = _pop_list_method_async(
+                dto_type=dto, collection=collection, field_name=field,
+            )
         else:
             append_method = _update_list_field_method(
                 dto_type=dto, collection=collection, field_name=field, command='$push'
@@ -61,9 +66,13 @@ def _set_array_fields_methods(
             remove_method = _update_list_field_method(
                 dto_type=dto, collection=collection, field_name=field, command='$pull',
             )
-        append_method.__name__ = f'{prefix}append_to_{field}'
-        remove_method.__name__ = f'{prefix}remove_from_{field}'
+            pop_method = _pop_list_method(dto_type=dto, collection=collection, field_name=field)
 
+        pop_method.__name__ = f'{prefix}{field}__pop'
+        append_method.__name__ = f'{prefix}{field}__append'
+        remove_method.__name__ = f'{prefix}{field}__remove'
+
+        setattr(cls, pop_method.__name__, pop_method)
         setattr(cls, append_method.__name__, append_method)
         setattr(cls, remove_method.__name__, remove_method)
 

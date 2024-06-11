@@ -3,7 +3,7 @@ from typing import Any, Callable, Type, AsyncGenerator
 
 from motor.motor_asyncio import AsyncIOMotorCollection
 
-from mongorepo._methods import convert_to_dto
+from mongorepo.utils import convert_to_dto
 from mongorepo import DTO, exceptions
 
 
@@ -67,8 +67,8 @@ def _update_field_method_async(dto_type: Type[DTO], collection: AsyncIOMotorColl
 def _update_integer_field_method_async(
     dto_type: Type[DTO], collection: AsyncIOMotorCollection, field_name: str, _weight: int = 1,
 ) -> Callable:
-    async def update_interger_field(self, weight: int = 0, **filters) -> DTO | None:
-        w = weight if weight != 0 else _weight
+    async def update_interger_field(self, weight: int | None = None, **filters) -> DTO | None:
+        w = weight if weight is not None else _weight
         document = await collection.find_one_and_update(
             filter=filters, update={'$inc': {field_name: w}}, return_document=True
         )
@@ -88,6 +88,19 @@ def _update_list_field_method_async(
         )
         return convert_to_dto(dto_type=dto_type, dct=document) if document else None
     return update_list
+
+
+def _pop_list_method_async(
+    dto_type: Type[DTO],
+    collection: AsyncIOMotorCollection,
+    field_name: str,
+) -> Callable:
+    async def pop_list(self, **filters) -> Any | None:
+        document = await collection.find_one_and_update(
+            filter=filters, update={'$pop': {field_name: 1}},
+        )
+        return document[field_name][-1] if document else None
+    return pop_list
 
 
 METHOD_NAME__CALLABLE: dict[str, Callable] = {

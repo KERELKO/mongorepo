@@ -60,7 +60,7 @@ class AsyncBasedMongoRepository(Generic[DTO]):
             attrs = _get_meta_attributes(cls, raise_exceptions=False)
         except exceptions.NoMetaException:
             raise exceptions.MongoRepoException(
-                message='"Meta" class with "collection" was not defined in the class'
+                message='"Meta" class with "collection" variable was not defined in the class'
             )
         if attrs['collection'] is None:
             raise exceptions.NoCollectionException

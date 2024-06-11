@@ -52,9 +52,9 @@ if __name__ == '__main__':
 - [x] Test asyncio support
 - [x] Make comfortable interface
 - [x] Check if class is dataclass
-- [x] Fix the problem with private methods, they cannot, be access in the instance of repo but can outside the instance
+- [x] Fix the problem with private methods, they cannot be access in the instance of repo but can outside the instance
 - [x] Add more methods
-- [x] Solve problem with creation of async index
+- [ ] Solve problem with creation of async index
 - [x] Add setup tools and refactor imports
 
 ## After TODO

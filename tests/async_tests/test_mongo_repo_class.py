@@ -38,4 +38,4 @@ async def test_all_methods_with_inherited_repo():
     dto = await repo.get(y=unum)
     assert dto is None
 
-    # cl.drop()
+    cl.drop()

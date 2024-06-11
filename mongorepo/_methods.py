@@ -3,6 +3,7 @@ from typing import Any, Callable, Iterable, Type
 
 from pymongo.collection import Collection
 
+from mongorepo.utils import convert_to_dto
 from mongorepo import DTO, exceptions
 
 
@@ -66,8 +67,8 @@ def _update_field_method(dto_type: Type[DTO], collection: Collection) -> Callabl
 def _update_integer_field_method(
     dto_type: Type[DTO], collection: Collection, field_name: str, _weight: int = 1,
 ) -> Callable:
-    def update_interger_field(self, weight: int = 0, **filters) -> DTO | None:
-        w = weight if weight != 0 else _weight
+    def update_interger_field(self, weight: int | None = None, **filters) -> DTO | None:
+        w = weight if weight is not None else _weight
         document = collection.find_one_and_update(
             filter=filters, update={'$inc': {field_name: w}}, return_document=True
         )
@@ -78,7 +79,7 @@ def _update_integer_field_method(
 def _update_list_field_method(
     dto_type: Type[DTO], collection: Collection, field_name: str, command: str = '$push',
 ) -> Callable:
-    def update_list(self, value: Any, **filters) -> Any:
+    def update_list(self, value: Any, **filters) -> DTO | None:
         document = collection.find_one_and_update(
             filter=filters, update={command: {field_name: value}}, return_document=True
         )
@@ -86,11 +87,13 @@ def _update_list_field_method(
     return update_list
 
 
-def convert_to_dto(dto_type: Type[DTO], dct: dict[str, Any]) -> DTO:
-    if '_id' in dto_type.__dict__['__annotations__']:
-        return dto_type(**dct)
-    dct.pop('_id')
-    return dto_type(**dct)
+def _pop_list_method(dto_type: Type[DTO], collection: Collection, field_name: str) -> Callable:
+    def pop_list(self, **filters) -> Any | None:
+        document = collection.find_one_and_update(
+            filter=filters, update={'$pop': {field_name: 1}},
+        )
+        return document[field_name][-1] if document else None
+    return pop_list
 
 
 METHOD_NAME__CALLABLE: dict[str, Callable] = {
