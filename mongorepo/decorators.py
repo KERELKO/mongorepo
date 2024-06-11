@@ -1,5 +1,6 @@
 from typing import Callable, Annotated
 
+from mongorepo.base import Access
 from mongorepo.subst import substitute_class_methods
 from mongorepo.handlers import _handle_cls
 
@@ -14,6 +15,7 @@ def mongo_repository(
     update_field: bool = False,
     integer_fields: list[Annotated[str, 'field names']] | None = None,
     array_fields: list[Annotated[str, 'field names']] | None = None,
+    method_access: Access | None = None,
 ) -> type | Callable:
     """
     ## Decorator for mongo repositories
@@ -52,6 +54,7 @@ def mongo_repository(
             update_field=update_field,
             integer_fields=integer_fields,
             array_fields=array_fields,
+            method_access=method_access,
         )
 
     if cls is None:

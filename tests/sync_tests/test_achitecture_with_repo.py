@@ -33,12 +33,14 @@ def test_decorator_with_abstract_class():
         username: str
         password: str
 
+    cl = mongo_client()['users_db']['users']
+
     # Solution
     @mongo_repository
     class MongoUserRepository(AbstractUserRepository[UserDTO]):
         class Meta:
             dto = UserDTO
-            collection = mongo_client()['users_db']['users']
+            collection = cl
 
             # We use Access.PROTECTED to avoid clashes with naming
             method_access = Access.PROTECTED
@@ -60,6 +62,8 @@ def test_decorator_with_abstract_class():
 
     resolved_user: UserDTO = repo.get_by_username(username='admin')
     assert resolved_user.username == 'admin'
+
+    cl.drop()
 
 
 def test_base_mongo_class_with_abstract_class():
@@ -121,11 +125,13 @@ def test_decorator_with_protocol_and_dto_with_id():
         def get_by_id(self, id: str) -> DTOWithID | None:
             ...
 
+    cl = collection_for_dto_with_id()
+
     @mongo_repository
     class MongoRepository:
         class Meta:
             dto = DTOWithID
-            collection = collection_for_dto_with_id()
+            collection = cl
             method_access = Access.PROTECTED
 
         def get_by_id(self, id: str) -> DTOWithID | None:
@@ -146,3 +152,5 @@ def test_decorator_with_protocol_and_dto_with_id():
     assert resolved_dto.y == 10
 
     assert resolved_dto._id == dto_id
+
+    cl.drop()

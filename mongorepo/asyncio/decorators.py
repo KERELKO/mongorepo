@@ -1,6 +1,7 @@
 from typing import Callable
 
-from mongorepo.asyncio.utils import _handle_cls_async
+from mongorepo.base import Access
+from mongorepo.handlers import _handle_cls_async
 
 
 def async_mongo_repository(
@@ -10,6 +11,10 @@ def async_mongo_repository(
     get_all: bool = True,
     update: bool = True,
     delete: bool = True,
+    update_field: bool = False,
+    integer_fields: list[str] | None = None,
+    array_fields: list[str] | None = None,
+    method_access: Access | None = None,
 ) -> type | Callable:
     """
     ## Async MongoDB repository decorator
@@ -45,6 +50,10 @@ def async_mongo_repository(
             get_all=get_all,
             get=get,
             delete=delete,
+            update_field=update_field,
+            integer_fields=integer_fields,
+            array_fields=array_fields,
+            method_access=method_access,
         )
 
     if cls is None:

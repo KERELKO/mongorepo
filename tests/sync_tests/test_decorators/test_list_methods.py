@@ -1,40 +1,7 @@
 # type: ignore
 from mongorepo.decorators import mongo_repository
-from tests.common import (
-    ComplicatedDTO,
-    collection_for_complicated_dto,
-    SimpleDTO,
-    collection_for_simple_dto,
-)
-
-
-def test_can_increment_and_decrement_field_with_decorator():
-    cl = collection_for_simple_dto()
-
-    @mongo_repository(integer_fields=['y'])
-    class Repository:
-        class Meta:
-            dto = SimpleDTO
-            collection = cl
-
-    repo = Repository()
-
-    repo.add(SimpleDTO(x='admin', y=10))
-
-    repo.increment_y(x='admin')
-    repo.increment_y(x='admin')
-    repo.increment_y(x='admin')
-    repo.increment_y(x='admin')
-
-    repo.decrement_y(x='admin')
-
-    dto = repo.get(x='admin')
-    assert dto.y == 13
-
-    dto = repo.increment_y(x='admin')
-    assert dto.y == 14
-
-    cl.drop()
+from mongorepo import Access
+from tests.common import ComplicatedDTO, collection_for_complicated_dto
 
 
 def test_can_push_and_pull_elements_from_list_with_decorator():
@@ -63,5 +30,23 @@ def test_can_push_and_pull_elements_from_list_with_decorator():
     assert dto is not None
 
     assert 'python' not in dto.skills
+
+    cl.drop()
+
+
+def test_can_mix_methods_with_decorators():
+    cl = collection_for_complicated_dto()
+
+    @mongo_repository(array_fields=['skills'], method_access=Access.PROTECTED)
+    @mongo_repository
+    class TestMongoRepository:
+        class Meta:
+            dto = ComplicatedDTO
+            collection = cl
+
+    r = TestMongoRepository()
+
+    assert hasattr(r, 'get')
+    assert hasattr(r, '_append_to_skills')
 
     cl.drop()

@@ -31,7 +31,7 @@ def _update_method(dto_type: Type[DTO], collection: Collection) -> Callable:
                 continue
             else:
                 data['$set'][field] = value
-        collection.find_one_and_update(filter=filters, update=data)
+        collection.find_one_and_update(filter=filters, update=data, return_document=True)
         return dto
     return update
 
@@ -50,19 +50,19 @@ def _get_method(dto_type: Type[DTO], collection: Collection) -> Callable:
     return get
 
 
-# TODO: add support + async support
-def _replace_field_value_method(dto_type: Type[DTO], collection: Collection) -> Callable:
+def _update_field_method(dto_type: Type[DTO], collection: Collection) -> Callable:
     def update_field(self, field_name: str, value: Any, **filters) -> DTO | None:
-        if field_name not in dto_type.__dict__['__annotations']:
+        if field_name not in dto_type.__dict__['__annotations__']:
             raise exceptions.MongoRepoException(
-                message=f'{dto_type} does have field "{field_name}"'
+                message=f'{dto_type} does not have field "{field_name}"'
             )
-        result = collection.find_one_and_update(filter=filters, update={field_name: value})
+        result = collection.find_one_and_update(
+            filter=filters, update={'$set': {field_name: value}}, return_document=True,
+        )
         return convert_to_dto(dto_type, result) if result else None
     return update_field
 
 
-# TODO: add support + async support
 def _update_integer_field_method(
     dto_type: Type[DTO], collection: Collection, field_name: str, _weight: int = 1,
 ) -> Callable:
@@ -75,7 +75,6 @@ def _update_integer_field_method(
     return update_interger_field
 
 
-# TODO: add support + async support
 def _update_list_field_method(
     dto_type: Type[DTO], collection: Collection, field_name: str, command: str = '$push',
 ) -> Callable:

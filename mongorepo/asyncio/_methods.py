@@ -51,16 +51,43 @@ def _get_method_async(dto_type: Type[DTO], collection: AsyncIOMotorCollection) -
     return get
 
 
-# TODO: add support
-def _update_field_method(dto_type: Type[DTO], collection: AsyncIOMotorCollection) -> Callable:
+def _update_field_method_async(dto_type: Type[DTO], collection: AsyncIOMotorCollection) -> Callable:
     async def update_field(self, field_name: str, value: Any, **filters) -> DTO | None:
-        if field_name not in dto_type.__dict__['__annotations']:
+        if field_name not in dto_type.__dict__['__annotations__']:
             raise exceptions.MongoRepoException(
                 message=f'{dto_type} does have field "{field_name}"'
             )
-        result = await collection.find_one_and_update(filter=filters, update={field_name: value})
+        result = await collection.find_one_and_update(
+            filter=filters, update={'$set': {field_name: value}}, return_document=True,
+        )
         return convert_to_dto(dto_type, result) if result else None
     return update_field
+
+
+def _update_integer_field_method_async(
+    dto_type: Type[DTO], collection: AsyncIOMotorCollection, field_name: str, _weight: int = 1,
+) -> Callable:
+    async def update_interger_field(self, weight: int = 0, **filters) -> DTO | None:
+        w = weight if weight != 0 else _weight
+        document = await collection.find_one_and_update(
+            filter=filters, update={'$inc': {field_name: w}}, return_document=True
+        )
+        return convert_to_dto(dto_type=dto_type, dct=document) if document else None
+    return update_interger_field
+
+
+def _update_list_field_method_async(
+    dto_type: Type[DTO],
+    collection: AsyncIOMotorCollection,
+    field_name: str,
+    command: str = '$push',
+) -> Callable:
+    async def update_list(self, value: Any, **filters) -> Any:
+        document = await collection.find_one_and_update(
+            filter=filters, update={command: {field_name: value}}, return_document=True
+        )
+        return convert_to_dto(dto_type=dto_type, dct=document) if document else None
+    return update_list
 
 
 METHOD_NAME__CALLABLE: dict[str, Callable] = {
