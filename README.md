@@ -1,50 +1,59 @@
 # mongorepo
 Simple lib for python &amp; mongodb, provides auto repository factory based on DTO type
+
+## Example with class
 ```python
-from dataclasses import dataclass
-from mongorepo.decorators import mongo_repository
 from mongorepo.classes import BaseMongoRepository
-from conf import users_db
+
+def mongo_client(mongo_uri: str = 'mongodb://mongodb:27017/') -> pymongo.MongoClient:
+    client: pymongo.MongoClient = pymongo.MongoClient(mongo_uri)
+    return client
 
 @dataclass
 class UserDTO:
     username: str = ''
     password: str = ''
 
-@mongo_repository
-class SimpleMongoRepository:
-    class Meta:
-        dto = UserDTO
-        collection = users_db['users']
-
-class DummyMongoRepository(BaseMongoRepository[UserDTO]):
+class SimpleMongoRepository(BaseMongoRepository[UserDTO]):
     ...
 
-def test_repo(repo):
-    new_user: UserDTO = repo.create(UserDTO(username='new_user', password='34666'))
-    assert new_user.username == 'new_user' and new_user.password == '34666'
-
-    updated_user: UserDTO = repo.update(
-        dto=UserDTO(username='Artorias', password='1234'), username='new_user'
-    )
-    assert updated_user.username == 'Artorias', updated_user.username
-
-    user_1 = UserDTO(username='user_1', password='sekg')
-    user_2 = UserDTO(username='user_2', password='ri64g')
-    repo.create(user_1); repo.create(user_2)  # noqa
-    for user in repo.get_all():
-        assert user is not None
-
-    user_from_get = repo.get(username='user_1')
-    assert user_from_get.username == 'user_1'
-
-if __name__ == '__main__':
-    decorator_repo = SimpleMongoRepository()
-    test_repo(decorator_repo)
-    inherited_repo = DummyMongoRepository(collection=users_db['users'])
-    test_repo(inherited_repo)
+repo = SimpleMongoRepository(collection=mongo_client().users_db.users)
+new_user = UserDTO(username='admin', password='1234')
+repo.add(new_user)
+user = repo.get(username='admin')
+print(user)
+UserDTO(username='admin', password='1234')
 ```
 
+## Example with decorator
+```python
+from mongorepo.asyncio.decorators import async_mongo_repository
+
+def async_mongo_client(mongo_uri: str = 'mongodb://mongodb:27017/') -> AsyncIOMotorClient:
+    async_client = AsyncIOMotorClient(mongo_uri)
+    return async_client
+
+@dataclass
+class Person:
+    id: str
+    name: str
+    skills: list[str] = field(default_factory=list)    
+
+@async_mongo_repository(array_fields=['skills'])
+class MongoRepository:
+    class Meta:
+        dto = Person
+        collection = async_mongo_client().people_db.people
+
+repo = MongoRepository()
+person = Person(id='289083', name='Artorias', skills=['python', 'c++', 'java', 'rust'])
+await repo.add(person)
+await repo.skills__append('c', id='289083')
+await repo.skills__remove('python', id='289083')
+artorias = await repo.get(id='289083')
+print(artorias.skills)
+['c++', 'java', 'rust', 'c']
+```
 
 ## TODO
 - [ ] Add dynamic replacement for methods
