@@ -1,8 +1,18 @@
 from dataclasses import dataclass, field
 
 from bson import ObjectId
+import pymongo
+from motor.motor_asyncio import AsyncIOMotorClient
 
-from conf import mongo_client, async_mongo_client
+
+def mongo_client(mongo_uri: str = 'mongodb://mongodb:27017/') -> pymongo.MongoClient:
+    client: pymongo.MongoClient = pymongo.MongoClient(mongo_uri)
+    return client
+
+
+def async_mongo_client(mongo_uri: str = 'mongodb://mongodb:27017/') -> AsyncIOMotorClient:
+    async_client = AsyncIOMotorClient(mongo_uri)
+    return async_client
 
 
 @dataclass

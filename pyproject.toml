@@ -1,15 +1,13 @@
 [tool.poetry]
-name = "mongo-repo"
+name = "mongorepo"
 version = "0.1.0"
-description = "Simple lib that dynamically creates repositories for mongo db"
+description = "Simple lib that dynamically creates repositories for MongoDB"
 authors = ["artorias <kerelkobarabash@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.12"
 motor = "^3.4.0"
-asgiref = "^3.8.1"
-
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.2.1"
