@@ -18,7 +18,7 @@ def mongo_repository(
     method_access: Access | None = None,
 ) -> type | Callable:
     """
-    ## Decorator for mongo repositories
+    ## Decorator for MongoDB repositories
 
     * decorated class must provide `Meta` class inside
     with variables "dto"(represent simple dataclass) and
@@ -28,8 +28,8 @@ def mongo_repository(
     which you want to make index field or it can be instance of `mongorepo.Index`
     with extended settings
 
-    * Use `method_access` in Meta class of the decorated class to make all methods
-    private, protected or public (use mongorepo.Access enum)
+    * You can use `method_access` to make all methods
+    private, protected or public (use `mongorepo.Access`)
 
     ### usage example:
     ```
@@ -64,6 +64,12 @@ def mongo_repository(
 
 
 def substitute(source_cls: type) -> type | Callable:
+    """
+    ## !Not implemented
+
+    * Decorator that can dynamically substitute methods of
+      mongorepo decorators or classes with source class methods
+    """
     def wrapper(target_cls) -> type:
         return substitute_class_methods(
             target_cls=target_cls,

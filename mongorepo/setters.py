@@ -5,7 +5,7 @@ from mongorepo.base import Access
 from mongorepo.utils import (
     _get_dto_from_origin,
     _get_meta_attributes,
-    get_default_values,
+    get_dto_type_hints,
     get_prefix,
 )
 from mongorepo._methods import (
@@ -38,12 +38,16 @@ def _set_array_fields_methods(
     async_methods: bool = False,
     method_access: Access | None = None,
 ) -> None:
+    """
+    Set base methods for array fields
+    allow `method_access`, `async_method=True` to make this methods async
+    """
     attributes = _get_meta_attributes(cls)
     dto, collection = attributes['dto'], attributes['collection']
     prefix = get_prefix(
         access=attributes['method_access'] if not method_access else method_access, cls=cls
     )
-    dto_fields = get_default_values(dto)
+    dto_fields = get_dto_type_hints(dto)
     for field in array_fields:
         if field not in dto_fields:
             raise exceptions.MongoRepoException(message=f'{dto} does not have "{field}" attribute')
@@ -83,12 +87,16 @@ def _set_integer_fields_methods(
     async_methods: bool = False,
     method_access: Access | None = None,
 ) -> None:
+    """
+    Set base methods for integer fields,
+    allow `method_access`, `async_method=True` to make this methods async
+    """
     attributes = _get_meta_attributes(cls)
     dto, collection = attributes['dto'], attributes['collection']
     prefix = get_prefix(
         access=attributes['method_access'] if not method_access else method_access, cls=cls
     )
-    dto_fields = get_default_values(dto)
+    dto_fields = get_dto_type_hints(dto)
     for field in integer_fields:
         if field not in dto_fields:
             raise exceptions.MongoRepoException(message=f'{dto} does not have "{field}" attribute')
@@ -127,7 +135,10 @@ def _set_crud_methods(
     async_methods: bool = False,
     method_access: Access | None = None,
 ) -> None:
-    """Set crud operations to repository"""
+    """
+    Set CRUD operations to the class
+    allow `method_access`, `async_method=True` to make added methods async
+    """
     attributes = _get_meta_attributes(cls, raise_exceptions=False)
     collection = attributes['collection']
     prefix = get_prefix(

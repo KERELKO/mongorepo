@@ -1,6 +1,10 @@
 # type: ignore
+from dataclasses import dataclass, field
+from typing import List
+
 from mongorepo.decorators import mongo_repository
 from mongorepo import Access
+
 from tests.common import ComplicatedDTO, collection_for_complicated_dto
 
 
@@ -76,3 +80,53 @@ def test_pop_method_with_decorator():
     assert cpp == 'c++'
 
     cl.drop()
+
+
+def test_list_with_different_type_hints_decorator():
+    cl = collection_for_complicated_dto()
+
+    @dataclass
+    class A1:
+        types: list[int]
+
+    @dataclass
+    class A2:
+        types: list = field(default_factory=list)
+
+    @dataclass
+    class A3:
+        types: List[float]
+
+    @dataclass
+    class A4:
+        types: list[str] | List[float] = field(default_factory=list)
+
+    @mongo_repository(array_fields=['types'])
+    class TestA1:
+        class Meta:
+            dto = A1
+            collection = cl
+
+    @mongo_repository(array_fields=['types'])
+    class TestA2:
+        class Meta:
+            dto = A2
+            collection = cl
+
+    @mongo_repository(array_fields=['types'])
+    class TestA3:
+        class Meta:
+            dto = A3
+            collection = cl
+
+    @mongo_repository(array_fields=['types'])
+    class TestA4:
+        class Meta:
+            dto = A4
+            collection = cl
+
+    _ = TestA1()
+    _ = TestA2()
+    _ = TestA3()
+    _ = TestA4()
+    assert True

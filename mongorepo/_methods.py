@@ -102,4 +102,8 @@ METHOD_NAME__CALLABLE: dict[str, Callable] = {
     'update': _update_method,
     'delete': _delete_method,
     'get_all': _get_all_method,
+    'update_field': _update_field_method,
+    'update_list': _update_list_field_method,
+    'pop': _pop_list_method,
+    'update_integer': _update_integer_field_method,
 }

@@ -5,13 +5,12 @@ from typing import Generic, Protocol
 from tests.common import (
     DTOWithID,
     collection_for_dto_with_id,
+    mongo_client,
 )
 
 from mongorepo import DTO, Access
 from mongorepo.decorators import mongo_repository
 from mongorepo.classes import BaseMongoRepository
-
-from conf import mongo_client
 
 
 def test_decorator_with_abstract_class():

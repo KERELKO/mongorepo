@@ -1,3 +1,4 @@
+"""## !Package not implemented"""
 from typing import Any, Callable, Type, TypeVar
 
 from pymongo.collection import Collection

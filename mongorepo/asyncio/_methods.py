@@ -109,4 +109,8 @@ METHOD_NAME__CALLABLE: dict[str, Callable] = {
     'update': _update_method_async,
     'delete': _delete_method_async,
     'get_all': _get_all_method_async,
+    'update_field': _update_field_method_async,
+    'update_list': _update_list_field_method_async,
+    'pop': _pop_list_method_async,
+    'update_integer': _update_integer_field_method_async,
 }

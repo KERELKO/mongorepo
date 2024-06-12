@@ -1,6 +1,5 @@
 from dataclasses import is_dataclass
-from typing import Any, Type, get_args, get_origin
-from types import GenericAlias
+from typing import Any, Type, Union, get_args, get_origin
 
 import pymongo
 from pymongo.collection import Collection
@@ -10,6 +9,7 @@ from mongorepo import exceptions
 
 
 def _get_collection_and_dto(cls: type, raise_exceptions: bool = True) -> dict[str, Any]:
+    """Collect "dto" and "collection" attributes from `Meta` class"""
     attributes: dict[str, Any] = {}
     meta = get_meta(cls)
     try:
@@ -33,6 +33,10 @@ def _get_collection_and_dto(cls: type, raise_exceptions: bool = True) -> dict[st
 
 
 def _get_meta_attributes(cls, raise_exceptions: bool = True) -> dict[str, Any]:
+    """
+    Collect all available attributes from `Meta` class
+    * use `mongorepo.get_available_meta_attributes` to get all available `Meta` attributes
+    """
     attributes: dict[str, Any] = _get_collection_and_dto(
         cls=cls, raise_exceptions=raise_exceptions,
     )
@@ -51,6 +55,9 @@ def _get_meta_attributes(cls, raise_exceptions: bool = True) -> dict[str, Any]:
 
 
 def get_meta(cls: type) -> Any:
+    """
+    Tries to get `Meta` class for the class or raises an exception
+    """
     try:
         meta = cls.__dict__['Meta']
     except (AttributeError, KeyError) as e:
@@ -60,21 +67,25 @@ def get_meta(cls: type) -> Any:
     return meta
 
 
-def get_default_values(dto: Type[DTO] | DTO) -> dict[str, Any]:
-    """Returns dictionary of default values for a dataclass or dataclass instance"""
+def get_dto_type_hints(dto: Type[DTO] | DTO) -> dict[str, Any]:
+    """Returns dictionary of fields' type hints for a dataclass or dataclass instance"""
     default_values = {}
     for field_name, value in dto.__annotations__.items():
+        origin = get_origin(value)
         if isinstance(value, type):
             default_values[field_name] = value
-        elif isinstance(value, GenericAlias):
-            default_values[field_name] = get_origin(value)
+        elif origin is list:
+            default_values[field_name] = origin
+        elif origin is Union:
+            args = get_args(value)
+            default_values[field_name] = get_origin(args[0])
     return default_values
 
 
 def create_index(index: Index | str, collection: Collection) -> None:
     """
     ### Creates an index for the collection
-    * index parameter can be string or mongorepo.Index
+    * index parameter can be string or `mongorepo.Index`
     * If index is string, create standard mongodb index
     * If it's `mongorepo.Index` creates index with user's settings
     """
@@ -108,6 +119,14 @@ def get_prefix(access: Access | None, cls: type | None = None) -> str:
 
 
 def _get_dto_from_origin(cls: type) -> Any:
+    """
+    Tries to get "dto" from origin of the class or raises an exception
+    ```
+    class A[UserDTO]: ...
+    _get_dto_from_origin(A)
+    UserDTO
+    ```
+    """
     try:
         if not hasattr(cls, '__orig_bases__'):
             raise exceptions.NoDTOTypeException
@@ -123,6 +142,7 @@ def _get_dto_from_origin(cls: type) -> Any:
 
 
 def is_immutable(obj: Any) -> bool:
+    """Check if object is immutable"""
     try:
         hash(obj)
     except TypeError:
@@ -131,6 +151,7 @@ def is_immutable(obj: Any) -> bool:
 
 
 def convert_to_dto(dto_type: Type[DTO], dct: dict[str, Any]) -> DTO:
+    """Converts document to dto"""
     if '_id' in dto_type.__dict__['__annotations__']:
         return dto_type(**dct)
     dct.pop('_id')

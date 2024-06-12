@@ -22,6 +22,9 @@ def _handle_cls(
     array_fields: list[str] | None,
     method_access: Access | None,
 ) -> type:
+    """
+    Calls for functions that set different methods and attributes to the class
+    """
     attributes = _get_meta_attributes(cls, raise_exceptions=False)
     collection = attributes['collection']
     index = attributes['index']
@@ -61,6 +64,9 @@ def _handle_cls_async(
     array_fields: list[str] | None,
     method_access: Access | None,
 ) -> type:
+    """
+    Calls for functions that set different async methods and attributes to the class
+    """
     attributes = _get_meta_attributes(cls, raise_exceptions=False)
     collection = attributes['collection']
     index = attributes['index']

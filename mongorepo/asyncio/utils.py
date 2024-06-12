@@ -5,6 +5,9 @@ from motor.motor_asyncio import AsyncIOMotorCollection
 
 
 def _run_asyncio_create_index(index: Index | str, collection: AsyncIOMotorCollection) -> None:
+    """
+    Tries to create an index for `AsyncIOMotorCollection` in async loop or after
+    """
     loop = asyncio.get_running_loop()
     if loop.is_running():
         asyncio.create_task(_create_index_async(index=index, collection=collection))

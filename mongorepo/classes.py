@@ -27,27 +27,22 @@ class IMongoRepository(Protocol[DTO]):
 
 class BaseMongoRepository(Generic[DTO]):
     """
-    ### Base repository class
-    #### Extend child class with various methods:
+    ## Base MongoDB repository class
+    #### Extends child classes with various methods:
     ```
     add(self, dto: DTO) -> DTO
-    get(self, _id: str | None = None, **filters) -> DTO | None
+    get(self, **filters) -> DTO | None
     get_all(self, **filters) -> Iterable[DTO]
     update(self, dto: DTO, **filters) -> DTO
-    delete(self, _id: str | None = None, **filters) -> bool
+    delete(self, **filters) -> bool
     ```
-    Provide DTO type in type hints, example:
+    #### Provide DTO type in type hints, example:
     ```
-    class DummyMongoRepository(MongoRepository[UserDTO]):
+    class DummyMongoRepository(BaseMongoRepository[UserDTO]):
         ...
     ```
-    If you want to create an index use mongorepo.Index or just a name of the field to put string on
-    ```
-    def __init__(
-        self,
-        collection: pymongo.Collection | None = None,
-    ) -> None:
-    ```
+    * If you want to create an index use `mongorepo.Index`
+      or just a name of the field to put index on
     """
 
     def __new__(cls, *args, **kwargs) -> 'BaseMongoRepository':

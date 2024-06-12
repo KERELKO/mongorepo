@@ -1,4 +1,10 @@
 def get_available_meta_attributes(only_names: bool = False) -> dict[str, str] | tuple[str, ...]:
+    """
+    Returns dictionary of available Meta attributes, Meta is a class that contains meta data for
+    `mongorepo` decorators and classes
+
+    Use `only_names=True` to get names of this attributes
+    """
     attrs = {
         'index': 'creates index for a collection',
         'method_access': (
@@ -18,6 +24,11 @@ def get_available_meta_attributes(only_names: bool = False) -> dict[str, str] | 
 
 
 def get_available_repository_methods(only_names: bool = False) -> dict[str, str] | tuple[str, ...]:
+    """
+    Returns dictionary of available methods for `mongorepo` decorators or classes
+
+    Use `only_names=True` to get names of this methods
+    """
     methods = {
         'add': 'add document to a collection, collection stores it in dto format, params: dto: DTO',
         'delete': 'delete document from a collection, params: **filters: Any',

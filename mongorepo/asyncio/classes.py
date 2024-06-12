@@ -12,18 +12,18 @@ from mongorepo.asyncio.utils import _run_asyncio_create_index
 class AsyncBasedMongoRepository(Generic[DTO]):
     """
     ## Asynchronous base repository class,
-    Provide DTO type in type hints, example:
+    #### Provide DTO type in type hints, example:
     ```
     class DummyMongoRepository(AsyncBasedMongoRepository[UserDTO]):
         ...
     ```
-    #### Extend child class with various methods:
+    #### Extend child classes with various methods:
     ```
     async create(self, dto: DTO) -> DTO
-    async get(self, _id: str | None = None, **filters) -> DTO | None
+    async get(self, **filters) -> DTO | None
     async get_all(self, **filters) -> Iterable[DTO]
     async update(self, dto: DTO, **filters) -> DTO
-    async delete(self, _id: str | None = None, **filters) -> bool
+    async delete(self, **filters) -> bool
     ```
     """
 
