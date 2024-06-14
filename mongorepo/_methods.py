@@ -1,29 +1,56 @@
 from dataclasses import asdict
 from typing import Any, Callable, Iterable, Type
 
+from bson import ObjectId
 from pymongo.collection import Collection
 
-from mongorepo.utils import convert_to_dto
+from mongorepo.utils import _get_converter
 from mongorepo import DTO, exceptions
 
 
-def _add_method(dto_type: Type[DTO], collection: Collection) -> Callable:
+def _add_method(
+    dto_type: Type[DTO],
+    collection: Collection,
+    id_field: str | None = None,
+) -> Callable:
+
     def add(self, dto: DTO) -> DTO:
         collection.insert_one(asdict(dto))
         return dto
-    return add
+
+    def add_return_with_id(self, dto: DTO) -> DTO:
+        object_id = ObjectId()
+        dto.__dict__[id_field] = str(object_id)  # type: ignore
+        collection.insert_one({**asdict(dto), '_id': object_id})
+        return dto
+
+    if not id_field:
+        return add
+    return add_return_with_id
 
 
-def _get_all_method(dto_type: Type[DTO], collection: Collection) -> Callable:
+def _get_all_method(
+    dto_type: Type[DTO],
+    collection: Collection,
+    id_field: str | None = None
+) -> Callable:
+    to_dto = _get_converter(id_field=id_field)
+
     def get_all(self, **filters: Any) -> Iterable[DTO]:
         cursor = collection.find(filters)
         for dct in cursor:
-            yield convert_to_dto(dto_type, dct)
+            yield to_dto(dto_type, dct)
     return get_all
 
 
-def _update_method(dto_type: Type[DTO], collection: Collection) -> Callable:
-    def update(self, dto: DTO, **filters: Any) -> DTO:
+def _update_method(
+    dto_type: Type[DTO],
+    collection: Collection,
+    id_field: str | None = None,
+) -> Callable:
+    to_dto = _get_converter(id_field=id_field)
+
+    def update(self, dto: DTO, **filters: Any) -> DTO | None:
         data: dict[str, dict[str, Any]] = {'$set': {}}
         for field, value in asdict(dto).items():
             if isinstance(value, (int, bool, float)):
@@ -32,8 +59,10 @@ def _update_method(dto_type: Type[DTO], collection: Collection) -> Callable:
                 continue
             else:
                 data['$set'][field] = value
-        collection.find_one_and_update(filter=filters, update=data, return_document=True)
-        return dto
+        updated_document: dict[str, Any] | None = collection.find_one_and_update(
+            filter=filters, update=data, return_document=True,
+        )
+        return to_dto(dto_type, updated_document) if updated_document else None
     return update
 
 
@@ -44,14 +73,26 @@ def _delete_method(dto_type: Type[DTO], collection: Collection) -> Callable:
     return delete
 
 
-def _get_method(dto_type: Type[DTO], collection: Collection) -> Callable:
+def _get_method(
+    dto_type: Type[DTO],
+    collection: Collection,
+    id_field: str | None = None,
+) -> Callable:
+    to_dto = _get_converter(id_field=id_field)
+
     def get(self, **filters: Any) -> DTO | None:
         result = collection.find_one(filters)
-        return convert_to_dto(dto_type, result) if result else None
+        return to_dto(dto_type, result) if result else None
     return get
 
 
-def _update_field_method(dto_type: Type[DTO], collection: Collection) -> Callable:
+def _update_field_method(
+    dto_type: Type[DTO],
+    collection: Collection,
+    id_field: str | None = None,
+) -> Callable:
+    to_dto = _get_converter(id_field=id_field)
+
     def update_field(self, field_name: str, value: Any, **filters) -> DTO | None:
         if field_name not in dto_type.__dict__['__annotations__']:
             raise exceptions.MongoRepoException(
@@ -60,30 +101,28 @@ def _update_field_method(dto_type: Type[DTO], collection: Collection) -> Callabl
         result = collection.find_one_and_update(
             filter=filters, update={'$set': {field_name: value}}, return_document=True,
         )
-        return convert_to_dto(dto_type, result) if result else None
+        return to_dto(dto_type, result) if result else None
     return update_field
 
 
 def _update_integer_field_method(
     dto_type: Type[DTO], collection: Collection, field_name: str, _weight: int = 1,
 ) -> Callable:
-    def update_interger_field(self, weight: int | None = None, **filters) -> DTO | None:
+    def update_interger_field(self, weight: int | None = None, **filters) -> None:
         w = weight if weight is not None else _weight
-        document = collection.find_one_and_update(
-            filter=filters, update={'$inc': {field_name: w}}, return_document=True
+        collection.update_one(
+            filter=filters, update={'$inc': {field_name: w}}
         )
-        return convert_to_dto(dto_type=dto_type, dct=document) if document else None
     return update_interger_field
 
 
 def _update_list_field_method(
     dto_type: Type[DTO], collection: Collection, field_name: str, command: str = '$push',
 ) -> Callable:
-    def update_list(self, value: Any, **filters) -> DTO | None:
-        document = collection.find_one_and_update(
-            filter=filters, update={command: {field_name: value}}, return_document=True
+    def update_list(self, value: Any, **filters) -> None:
+        collection.update_one(
+            filter=filters, update={command: {field_name: value}}
         )
-        return convert_to_dto(dto_type=dto_type, dct=document) if document else None
     return update_list
 
 

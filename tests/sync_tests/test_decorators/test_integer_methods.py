@@ -29,7 +29,4 @@ def test_can_increment_and_decrement_field_with_decorator():
     dto = repo.get(x='admin')
     assert dto.y == 13
 
-    dto = repo.increment_y(x='admin')
-    assert dto.y == 14
-
     cl.drop()

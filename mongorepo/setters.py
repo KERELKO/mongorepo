@@ -104,17 +104,17 @@ def _set_integer_fields_methods(
             raise exceptions.MongoRepoException(message=f'"{field}" is not integer field')
         if async_methods:
             incr_method = _update_integer_field_method_async(
-                dto_type=dto, collection=collection, field_name=field, _weight=1,
+                dto_type=dto, collection=collection, field_name=field, _weight=1
             )
             decr_method = _update_integer_field_method_async(
-                dto_type=dto, collection=collection, field_name=field, _weight=-1,
+                dto_type=dto, collection=collection, field_name=field, _weight=-1
             )
         else:
             incr_method = _update_integer_field_method(
-                dto_type=dto, collection=collection, field_name=field, _weight=1,
+                dto_type=dto, collection=collection, field_name=field, _weight=1
             )
             decr_method = _update_integer_field_method(
-                dto_type=dto, collection=collection, field_name=field, _weight=-1,
+                dto_type=dto, collection=collection, field_name=field, _weight=-1
             )
 
         incr_method.__name__ = f'{prefix}increment_{field}'
@@ -144,26 +144,26 @@ def _set_crud_methods(
     prefix = get_prefix(
         access=attributes['method_access'] if not method_access else method_access, cls=cls
     )
-
+    id_field = attributes['id_field']
     dto = attributes['dto']
     if dto is None:
         dto = _get_dto_from_origin(cls)
 
     if add:
         f = _add_method_async if async_methods else _add_method
-        setattr(cls, f'{prefix}add', f(dto, collection=collection))  # type: ignore
+        setattr(cls, f'{prefix}add', f(dto, collection=collection, id_field=id_field))  # type: ignore # noqa
     if update:
         f = _update_method_async if async_methods else _update_method
         setattr(cls, f'{prefix}update', f(dto, collection=collection))  # type: ignore
     if get:
         f = _get_method_async if async_methods else _get_method
-        setattr(cls, f'{prefix}get', f(dto, collection=collection))  # type: ignore
+        setattr(cls, f'{prefix}get', f(dto, collection=collection, id_field=id_field))  # type: ignore # noqa
     if get_all:
         f = _get_all_method_async if async_methods else _get_all_method
-        setattr(cls, f'{prefix}get_all', f(dto, collection=collection))  # type: ignore
+        setattr(cls, f'{prefix}get_all', f(dto, collection=collection, id_field=id_field))  # type: ignore # noqa
     if delete:
         f = _delete_method_async if async_methods else _delete_method
         setattr(cls, f'{prefix}delete', f(dto, collection=collection))  # type: ignore
     if update_field:
         f = _update_field_method_async if async_methods else _update_field_method
-        setattr(cls, f'{prefix}update_field', f(dto, collection=collection))  # type: ignore
+        setattr(cls, f'{prefix}update_field', f(dto, collection=collection, id_field=id_field))  # type: ignore # noqa

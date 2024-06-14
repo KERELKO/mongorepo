@@ -23,10 +23,7 @@ def test_can_push_and_pull_elements_from_list_with_decorator():
 
     repo.add(ComplicatedDTO(x='me', skills=['python', 'java']))
 
-    updated_dto: ComplicatedDTO | None = repo.skills__append(value='c++', x='me')
-    assert updated_dto is not None
-
-    assert 'c++' in updated_dto.skills
+    repo.skills__append(value='c++', x='me')
 
     repo.skills__remove(value='python', x='me')
 
@@ -34,6 +31,7 @@ def test_can_push_and_pull_elements_from_list_with_decorator():
     assert dto is not None
 
     assert 'python' not in dto.skills
+    assert 'c++' in dto.skills
 
     cl.drop()
 

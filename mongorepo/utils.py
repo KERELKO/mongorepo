@@ -1,5 +1,5 @@
 from dataclasses import is_dataclass
-from typing import Any, Type, Union, get_args, get_origin
+from typing import Any, Callable, Type, Union, get_args, get_origin
 
 import pymongo
 from pymongo.collection import Collection
@@ -50,6 +50,9 @@ def _get_meta_attributes(cls, raise_exceptions: bool = True) -> dict[str, Any]:
 
     substitute: dict[str, str] | None = getattr(meta, 'substitute', None)
     attributes['substitute'] = substitute
+
+    id_field: str | None = getattr(meta, 'id_field', None)
+    attributes['id_field'] = id_field
 
     return attributes
 
@@ -151,8 +154,32 @@ def is_immutable(obj: Any) -> bool:
 
 
 def convert_to_dto(dto_type: Type[DTO], dct: dict[str, Any]) -> DTO:
-    """Converts document to dto"""
-    if '_id' in dto_type.__dict__['__annotations__']:
-        return dto_type(**dct)
+    """
+    Converts document to dto, does not include mongodb `_id`
+    """
     dct.pop('_id')
     return dto_type(**dct)
+
+
+def convert_to_dto_with_id(
+    id_field: str | None = None,
+) -> Callable:
+    """
+    Converts document to dto,
+    icludes mongodb `_id` allows to set specific field where to store `_id`
+    """
+    def wrapper(dto_type: Type[DTO], dct: dict[str, Any]) -> DTO:
+        if not id_field:
+            return dto_type(**dct)
+        dct[id_field] = str(dct['_id'])
+        dct.pop('_id')
+        return dto_type(**dct)
+    return wrapper
+
+
+def _get_converter(id_field: Any | None) -> Callable:
+    """Returns `convert_to_dto` or `convert_to_dto_with_id`"""
+    converter = convert_to_dto
+    if id_field:
+        converter = convert_to_dto_with_id(id_field=id_field)
+    return converter

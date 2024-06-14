@@ -17,6 +17,10 @@ def get_available_meta_attributes(only_names: bool = False) -> dict[str, str] | 
             '#Not implemented! Substitutes methods of mongorepo decorator or'
             'class with provided or inherited class'
         ),
+        'id_field': (
+            'mongorepo will store MongoDB _id there in string format, '
+            'only define name of the DTO field in string format'
+        ),
     }
     if only_names:
         return tuple(attrs.keys())

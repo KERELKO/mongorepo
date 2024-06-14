@@ -1,29 +1,56 @@
 from dataclasses import asdict
 from typing import Any, Callable, Type, AsyncGenerator
 
+from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorCollection
 
-from mongorepo.utils import convert_to_dto
+from mongorepo.utils import _get_converter
 from mongorepo import DTO, exceptions
 
 
-def _add_method_async(dto_type: Type[DTO], collection: AsyncIOMotorCollection) -> Callable:
+def _add_method_async(
+    dto_type: Type[DTO],
+    collection: AsyncIOMotorCollection,
+    id_field: str | None = None,
+) -> Callable:
+
     async def add(self, dto: DTO) -> DTO:
         await collection.insert_one(asdict(dto))
         return dto
-    return add
+
+    async def add_return_with_id(self, dto: DTO) -> DTO:
+        object_id = ObjectId()
+        dto.__dict__[id_field] = str(object_id)  # type: ignore
+        await collection.insert_one({**asdict(dto), '_id': object_id})
+        return dto
+
+    if not id_field:
+        return add
+    return add_return_with_id
 
 
-def _get_all_method_async(dto_type: Type[DTO], collection: AsyncIOMotorCollection) -> Callable:
+def _get_all_method_async(
+    dto_type: Type[DTO],
+    collection: AsyncIOMotorCollection,
+    id_field: str | None = None
+) -> Callable:
+    to_dto = _get_converter(id_field=id_field)
+
     async def get_all(self, **filters: Any) -> AsyncGenerator[DTO, None]:
         cursor = collection.find(filters)
         async for dct in cursor:
-            yield convert_to_dto(dto_type, dct)
+            yield to_dto(dto_type, dct)
     return get_all
 
 
-def _update_method_async(dto_type: Type[DTO], collection: AsyncIOMotorCollection) -> Callable:
-    async def update(self, dto: DTO, **filters: Any) -> DTO:
+def _update_method_async(
+    dto_type: Type[DTO],
+    collection: AsyncIOMotorCollection,
+    id_field: str | None = None
+) -> Callable:
+    to_dto = _get_converter(id_field=id_field)
+
+    async def update(self, dto: DTO, **filters: Any) -> DTO | None:
         data: dict[str, dict[str, Any]] = {'$set': {}}
         for field, value in asdict(dto).items():
             if isinstance(value, (int, bool, float)):
@@ -32,8 +59,10 @@ def _update_method_async(dto_type: Type[DTO], collection: AsyncIOMotorCollection
                 continue
             else:
                 data['$set'][field] = value
-        await collection.find_one_and_update(filter=filters, update=data)
-        return dto
+        doc: dict | None = await collection.find_one_and_update(
+            filter=filters, update=data, return_document=True,
+        )
+        return to_dto(dto_type, doc) if doc else None
     return update
 
 
@@ -44,14 +73,26 @@ def _delete_method_async(dto_type: Type[DTO], collection: AsyncIOMotorCollection
     return delete
 
 
-def _get_method_async(dto_type: Type[DTO], collection: AsyncIOMotorCollection) -> Callable:
+def _get_method_async(
+    dto_type: Type[DTO],
+    collection: AsyncIOMotorCollection,
+    id_field: str | None = None
+) -> Callable:
+    to_dto = _get_converter(id_field=id_field)
+
     async def get(self, _id: str | None = None, **filters: Any) -> DTO | None:
         result = await collection.find_one(filters)
-        return convert_to_dto(dto_type, result) if result else None
+        return to_dto(dto_type, result) if result else None
     return get
 
 
-def _update_field_method_async(dto_type: Type[DTO], collection: AsyncIOMotorCollection) -> Callable:
+def _update_field_method_async(
+    dto_type: Type[DTO],
+    collection: AsyncIOMotorCollection,
+    id_field: str | None = None
+) -> Callable:
+    to_dto = _get_converter(id_field=id_field)
+
     async def update_field(self, field_name: str, value: Any, **filters) -> DTO | None:
         if field_name not in dto_type.__dict__['__annotations__']:
             raise exceptions.MongoRepoException(
@@ -60,19 +101,20 @@ def _update_field_method_async(dto_type: Type[DTO], collection: AsyncIOMotorColl
         result = await collection.find_one_and_update(
             filter=filters, update={'$set': {field_name: value}}, return_document=True,
         )
-        return convert_to_dto(dto_type, result) if result else None
+        return to_dto(dto_type, result) if result else None
     return update_field
 
 
 def _update_integer_field_method_async(
-    dto_type: Type[DTO], collection: AsyncIOMotorCollection, field_name: str, _weight: int = 1,
+    dto_type: Type[DTO],
+    collection: AsyncIOMotorCollection,
+    field_name: str, _weight: int = 1,
 ) -> Callable:
-    async def update_interger_field(self, weight: int | None = None, **filters) -> DTO | None:
+    async def update_interger_field(self, weight: int | None = None, **filters) -> None:
         w = weight if weight is not None else _weight
-        document = await collection.find_one_and_update(
-            filter=filters, update={'$inc': {field_name: w}}, return_document=True
+        await collection.find_one_and_update(
+            filter=filters, update={'$inc': {field_name: w}},
         )
-        return convert_to_dto(dto_type=dto_type, dct=document) if document else None
     return update_interger_field
 
 
@@ -82,11 +124,10 @@ def _update_list_field_method_async(
     field_name: str,
     command: str = '$push',
 ) -> Callable:
-    async def update_list(self, value: Any, **filters) -> Any:
-        document = await collection.find_one_and_update(
-            filter=filters, update={command: {field_name: value}}, return_document=True
+    async def update_list(self, value: Any, **filters) -> None:
+        await collection.update_one(
+            filter=filters, update={command: {field_name: value}},
         )
-        return convert_to_dto(dto_type=dto_type, dct=document) if document else None
     return update_list
 
 
