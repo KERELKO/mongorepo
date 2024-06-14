@@ -9,9 +9,13 @@ readme = "README.md"
 python = "^3.12"
 motor = "^3.4.0"
 
-[tool.poetry.group.test.dependencies]
+[tool.poetry.group.dev.dependencies]
 pytest = "^8.2.1"
 pytest-asyncio = "^0.23.7"
+
+
+[tool.poetry.group.docs.dependencies]
+mkdocs-material = "^9.5.26"
 
 [build-system]
 requires = ["poetry-core"]

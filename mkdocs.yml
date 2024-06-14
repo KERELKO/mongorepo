@@ -1,0 +1,14 @@
+site_name: Mongorepo
+theme:
+  name: material
+  palette:
+    primary: green
+nav:
+  - About: 'index.md'
+  - Quick start: 'quick_start.md'
+  - Decorators: 'decorators.md'
+  - Class based repositories: 'class_based_repositories.md'
+  - Architecture issues?: 'architecture_issues.md'
+  - Async support: 'async_support.md'
+  - Meta class: 'meta_class.md'
+repo_url: https://github.com/KERELKO/mongorepo
