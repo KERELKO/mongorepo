@@ -110,6 +110,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#meta-class-is-a-class-that-stores-meta-information-about-class" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -412,6 +417,17 @@
       
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Meta class
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -421,6 +437,83 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#meta-class-is-a-class-that-stores-meta-information-about-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      Meta class is a class that stores meta information about class
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Meta class is a class that stores meta information about class">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#meta-class-with-mongorepo-decorators" class="md-nav__link">
+    <span class="md-ellipsis">
+      Meta class with mongorepo decorators
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dto-and-collection" class="md-nav__link">
+    <span class="md-ellipsis">
+      "dto" and "collection"
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#index-field" class="md-nav__link">
+    <span class="md-ellipsis">
+      Index field
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#extended-settings-for-index" class="md-nav__link">
+    <span class="md-ellipsis">
+      Extended settings for index
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#id-field" class="md-nav__link">
+    <span class="md-ellipsis">
+      ID field
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -444,6 +537,74 @@
   
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#meta-class-is-a-class-that-stores-meta-information-about-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      Meta class is a class that stores meta information about class
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Meta class is a class that stores meta information about class">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#meta-class-with-mongorepo-decorators" class="md-nav__link">
+    <span class="md-ellipsis">
+      Meta class with mongorepo decorators
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dto-and-collection" class="md-nav__link">
+    <span class="md-ellipsis">
+      "dto" and "collection"
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#index-field" class="md-nav__link">
+    <span class="md-ellipsis">
+      Index field
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#extended-settings-for-index" class="md-nav__link">
+    <span class="md-ellipsis">
+      Extended settings for index
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#id-field" class="md-nav__link">
+    <span class="md-ellipsis">
+      ID field
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -462,36 +623,54 @@
 
   <h1>Meta class</h1>
 
-<p>Meta class is crucial if you use mongorepo decorators, Meta class it's required to define 
-"dto" and "collection" it gives repository ability to effectively manipulate with data within collection</p>
-<div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># &quot;dto&quot; it&#39;s simpe class that impements dataclass interface,</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="c1"># collection is type of pymongo.Collection</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nd">@dataclass</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">class</span> <span class="nc">ExampleDTO</span><span class="p">:</span>
+<h2 id="meta-class-is-a-class-that-stores-meta-information-about-class">Meta class is a class that stores meta information about class</h2>
+<h3 id="meta-class-with-mongorepo-decorators">Meta class with mongorepo decorators</h3>
+<p>Meta class is required if you use <code>mongorepo.decorators</code> or <code>mongorepo.asyncio.decorators</code><br />
+it gives repository required knowledge about how and where to store objects defined by user</p>
+<h3 id="dto-and-collection">"dto" and "collection"</h3>
+<p>In Meta class you need to declare <code>dto</code> and <code>collection</code><br />
+1. <strong>dto</strong> - data transfer object, it tells repository how to store and add objects to a collection<br />
+2. <strong>collection</strong> - pymongo.collections.Collection, repository will manipulate data in this collection</p>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># &quot;dto&quot; is simpe class that impements dataclass interface,</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nd">@dataclass</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="k">class</span> <span class="nc">ExampleDTO</span><span class="p">:</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="nd">@mongo_repository</span><span class="p">(</span><span class="n">get_all</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">update_field</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="nd">@mongo_repository</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="k">class</span> <span class="nc">Repository</span><span class="p">:</span>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="k">class</span> <span class="nc">Meta</span><span class="p">:</span>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>        <span class="n">dto</span> <span class="o">=</span> <span class="n">ExampleDTO</span>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>        <span class="n">collection</span> <span class="o">=</span> <span class="n">mongo_client</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">collection</span>
 </span></code></pre></div>
-<div class="language-py highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># You can define index field for a collection in Meta class</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nd">@mongo_repository</span><span class="p">(</span><span class="n">get_all</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">update_field</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="k">class</span> <span class="nc">Repository</span><span class="p">:</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="k">class</span> <span class="nc">Meta</span><span class="p">:</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>        <span class="n">dto</span> <span class="o">=</span> <span class="n">ExampleDTO</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>        <span class="n">collection</span> <span class="o">=</span> <span class="n">mongo_client</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">collection</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>        <span class="n">index</span> <span class="o">=</span> <span class="s1">&#39;id&#39;</span>
+<h3 id="index-field">Index field</h3>
+<p>Within Meta class you can define <code>index</code> field for a collection</p>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nd">@mongo_repository</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">class</span> <span class="nc">Repository</span><span class="p">:</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="k">class</span> <span class="nc">Meta</span><span class="p">:</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>        <span class="n">dto</span> <span class="o">=</span> <span class="n">ExampleDTO</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>        <span class="n">collection</span> <span class="o">=</span> <span class="n">mongo_client</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">collection</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>        <span class="n">index</span> <span class="o">=</span> <span class="s1">&#39;id&#39;</span>
 </span></code></pre></div>
+<h3 id="extended-settings-for-index">Extended settings for index</h3>
+<p>If you want extended Index settings use <code>mongorepo.Index</code>
 <div class="language-py highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span> <span class="nn">mongorepo</span> <span class="kn">import</span> <span class="n">Index</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="c1"># If you want extended Index settings use mongorepo.Index</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="nd">@mongo_repository</span><span class="p">(</span><span class="n">get_all</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">update_field</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="k">class</span> <span class="nc">Repository</span><span class="p">:</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="k">class</span> <span class="nc">Meta</span><span class="p">:</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>        <span class="n">dto</span> <span class="o">=</span> <span class="n">ExampleDTO</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>        <span class="n">collection</span> <span class="o">=</span> <span class="n">mongo_client</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">collection</span>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>        <span class="n">index</span> <span class="o">=</span> <span class="n">Index</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;id_index&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">unique</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nd">@mongo_repository</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="k">class</span> <span class="nc">Repository</span><span class="p">:</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="k">class</span> <span class="nc">Meta</span><span class="p">:</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>        <span class="n">dto</span> <span class="o">=</span> <span class="n">ExampleDTO</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>        <span class="n">collection</span> <span class="o">=</span> <span class="n">mongo_client</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">collection</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>        <span class="n">index</span> <span class="o">=</span> <span class="n">Index</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;id_index&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">unique</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span></code></pre></div></p>
+<h3 id="id-field">ID field</h3>
+<p>Use <code>id_field</code> if you want to declare id field for a dto,
+mongorepo will store generated by MongoDB id there</p>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nd">@mongo_repository</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="k">class</span> <span class="nc">Repository</span><span class="p">:</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="k">class</span> <span class="nc">Meta</span><span class="p">:</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>        <span class="n">dto</span> <span class="o">=</span> <span class="n">ExampleDTO</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>        <span class="n">collection</span> <span class="o">=</span> <span class="n">mongo_client</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">collection</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>        <span class="n">id_field</span> <span class="o">=</span> <span class="s1">&#39;id&#39;</span>
 </span></code></pre></div>
 
 
