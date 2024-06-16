@@ -1,7 +1,6 @@
 from typing import Callable, Annotated
 
 from mongorepo.base import Access
-from mongorepo.subst import substitute_class_methods
 from mongorepo.handlers import _handle_cls
 
 
@@ -61,19 +60,3 @@ def mongo_repository(
         return wrapper
 
     return wrapper(cls)
-
-
-def substitute(source_cls: type) -> type | Callable:
-    """
-    ## !Not implemented
-
-    * Decorator that can dynamically substitute methods of
-      mongorepo decorators or classes with source class methods
-    """
-    def wrapper(target_cls) -> type:
-        return substitute_class_methods(
-            target_cls=target_cls,
-            source_cls=source_cls
-        )
-
-    return wrapper

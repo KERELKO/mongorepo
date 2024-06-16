@@ -43,16 +43,6 @@ class NotDataClass(MongoRepoException):
 
 
 @dataclass(repr=False, eq=False)
-class NoSubstituteException(MongoRepoException):
-    with_meta: bool = True
-
-    def __str__(self) -> str:
-        if self.message:
-            return self.message
-        return 'Substitute was not provided' + ' in "Meta" class' if self.with_meta else ''
-
-
-@dataclass(repr=False, eq=False)
 class InvalidMethodNameException(MongoRepoException):
     method_name: str
     available_methods: tuple[str, ...] | None = None
@@ -64,14 +54,3 @@ class InvalidMethodNameException(MongoRepoException):
         if self.available_methods:
             message += f'\nAvailable methods: {self.available_methods!r}'
         return message
-
-
-@dataclass(repr=False, eq=False)
-class InvalidMethodNameInSourceClassException(MongoRepoException):
-    cls_method_name: str
-    source_cls: type
-
-    def __str__(self) -> str:
-        if self.message:
-            return self.message
-        return f'{self.source_cls.__name__} does have "{self.cls_method_name}" method'

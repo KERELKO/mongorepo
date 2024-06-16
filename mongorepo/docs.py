@@ -13,10 +13,6 @@ def get_available_meta_attributes(only_names: bool = False) -> dict[str, str] | 
         ),
         'dto': 'sets default dto for repository, repository saves data in the format of the dto',
         'collection': 'sets default collection for repository',
-        'substitute': (
-            '#Not implemented! Substitutes methods of mongorepo decorator or'
-            'class with provided or inherited class'
-        ),
         'id_field': (
             'mongorepo will store MongoDB _id there in string format, '
             'only define name of the DTO field in string format'

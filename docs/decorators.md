@@ -1,7 +1,12 @@
 For now, `mongorepo` gives you two decorators for creating repositories:
 `mongo_repository` and `async_mongo_repository`. They have the same functionality,
 but the second one is asynchonous. The decorators have a lot of functionality.
-On this page i will show all available
+On this page I will show all available
+
+### Include and exclude fields
+
+to exclude field or include field in repository just pass name of the field with `True` of `False`
+to the params of decorator
 
 ```py
 # You can add or remove fields if want
@@ -12,10 +17,15 @@ class Repository:
         collection = mongo_client.db.collection
 ```
 
+### Access
+
+If you don't want to make generated fields public you can use `mongorepo.Access` enum  
+it gives decorator required information about how to define fields in the repository.  
+Pass `mongorepo.Access` value to `method_access` argument in the parameters
+
 ```py
 from mongorepo import Access
 
-# You want to make methods private or protected use "method_access"
 @mongo_repository(method_access=Access.PRIVATE)
 class Repository:
     class Meta:
@@ -26,15 +36,21 @@ r = Repository()
 r._add(ExampleDTO())
 ```
 
+### Array fields
+
+If you need ability to update array fields use `array_fields` parameter.  
+`mongo_repository` will add couple methods to repository to manipulate arrays.  
+It takes the name of the list field when creates methods
+
+methods:
+`{field}__append`, `{field}__remove`, `{field}__pop`
+
 ```py
 @dataclass
 class User:
     id: str
     skills: list[str] = field(default_factory=list)    
 
-# If you need ability to update array fields use "array_fields"
-# mongo_repository will add couple methods to repository to manipulate arrays
-# skills__append, skills__remove, skills__pop
 @mongo_repository(array_fields=['skills'])
 class Repository:
     class Meta:
@@ -49,6 +65,13 @@ r.skills__remove('b', id='1')  # remove 'b' from the array
 x = r.skills__pop(id='1')  # variable contains 'x'
 ```
 
+### Integer fields
+
+If you want to manipulate with integer fields use `integer_fields`
+this will add two methods for each integer field:
+`increment_{field}` and `decrement_{field}`  
+`field` - is the name of the dto integer field 
+
 ```py
 @dataclass
 class ExampleDTO:
@@ -56,9 +79,6 @@ class ExampleDTO:
     workers: int
     age: int = 2024
 
-# If you want to manipulate with integer fields use "integer_fields"
-# this will add two methods for each integer field:
-# {field}_increment and {field}_decrement
 @mongo_repository(integer_fields=['workers', 'age'])
 class Repository:
     class Meta:
