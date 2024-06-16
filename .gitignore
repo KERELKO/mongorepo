@@ -1,0 +1,6 @@
+.env
+data/
+.pytest_cache/
+__pycache__/
+showcase.py
+todo.md
