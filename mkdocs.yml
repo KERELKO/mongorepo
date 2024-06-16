@@ -1,4 +1,5 @@
 site_name: Mongorepo
+docs_dir: docs/
 theme:
   name: material
   icon:
