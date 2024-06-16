@@ -25,7 +25,7 @@ async def _create_index_async(index: Index | str, collection: AsyncIOMotorCollec
     if isinstance(index, str):
         await collection.create_index(index)
         return
-    index_name = f'index_{index.field}_1'
+    index_name = f'index_{index.field}'
     if index.name:
         index_name = index.name
     direction = pymongo.DESCENDING if index.desc else pymongo.ASCENDING

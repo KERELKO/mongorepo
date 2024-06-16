@@ -18,7 +18,6 @@ async def test_all_methods_with_async_decorator():
         class Meta:
             dto = SimpleDTO
             collection = cl
-            index = 'x'
 
     num = random.randint(1, 123456)
 
@@ -55,7 +54,6 @@ async def test_cannot_initialize_class_if_dto_is_not_dataclass():
         class TestMongoRepository[Bob]:  # type:ignore
             class Meta:
                 collection = collection_for_simple_dto(async_client=True)
-                index = 'x'
 
         _ = TestMongoRepository()
 

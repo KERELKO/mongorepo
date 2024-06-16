@@ -1,5 +1,6 @@
 # type: ignore
 import random
+import asyncio
 
 from mongorepo import Index
 from mongorepo.asyncio.classes import AsyncBasedMongoRepository
@@ -37,5 +38,7 @@ async def test_all_methods_with_inherited_repo():
 
     dto = await repo.get(y=unum)
     assert dto is None
+
+    await asyncio.sleep(2)
 
     cl.drop()
