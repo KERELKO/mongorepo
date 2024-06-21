@@ -1,5 +1,3 @@
-
-
 from mongorepo.asyncio.utils import _run_asyncio_create_index
 from mongorepo.base import Access
 from mongorepo.setters import (
@@ -17,6 +15,7 @@ def _handle_cls(
     get_all: bool,
     update: bool,
     delete: bool,
+    get_list: bool,
     update_field: bool,
     integer_fields: list[str] | None,
     array_fields: list[str] | None,
@@ -34,6 +33,7 @@ def _handle_cls(
         add=add,
         get=get,
         get_all=get_all,
+        get_list=get_list,
         update=update,
         delete=delete,
         update_field=update_field,
@@ -57,6 +57,7 @@ def _handle_cls_async(
     add: bool,
     get: bool,
     get_all: bool,
+    get_list: bool,
     update: bool,
     delete: bool,
     update_field: bool,
@@ -80,6 +81,7 @@ def _handle_cls_async(
         delete=delete,
         update_field=update_field,
         method_access=method_access,
+        get_list=get_list,
         async_methods=True,
     )
 

@@ -223,3 +223,32 @@ def test_cannot_update_field():
         r.update_field(field_name='c', value=9000, x='123')
 
     cl.drop()
+
+
+def test_get_list_method():
+    cl = collection_for_simple_dto()
+
+    @mongo_repository(get_list=True)
+    class TestMongoRepository:
+        class Meta:
+            dto = SimpleDTO
+            collection = cl
+
+    r = TestMongoRepository()
+    r.add(SimpleDTO(x='123', y=123))
+    r.add(SimpleDTO(x='234', y=999))
+
+    dtos = r.get_list(offset=0, limit=2)
+    assert len(dtos) == 2
+
+    dtos = r.get_list(offset=1, limit=2)
+
+    assert len(dtos) == 1
+    assert dtos[0].x == '234'
+
+    dtos = r.get_list(offset=0, limit=1)
+
+    assert len(dtos) == 1
+    assert dtos[0].x == '123'
+
+    cl.drop()

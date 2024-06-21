@@ -40,6 +40,10 @@ async def test_all_methods_with_async_decorator():
     dto = await repo.get(y=13)
     assert dto is None
 
+    await repo.add(SimpleDTO(x='124', y=909))
+    dtos = await repo.get_list()
+    assert isinstance(dtos, list)
+    assert isinstance(dtos[0], SimpleDTO)
     cl.drop()
 
 

@@ -18,6 +18,7 @@ from mongorepo._methods import (
     _update_method,
     _update_field_method,
     _pop_list_method,
+    _get_list_method,
 )
 from mongorepo.asyncio._methods import (
     _update_field_method_async,
@@ -29,6 +30,7 @@ from mongorepo.asyncio._methods import (
     _get_method_async,
     _update_method_async,
     _pop_list_method_async,
+    _get_list_method_async,
 )
 
 
@@ -130,6 +132,7 @@ def _set_crud_methods(
     get: bool = True,
     delete: bool = True,
     update: bool = True,
+    get_list: bool = True,
     get_all: bool = True,
     update_field: bool = False,
     async_methods: bool = False,
@@ -161,6 +164,9 @@ def _set_crud_methods(
     if get_all:
         f = _get_all_method_async if async_methods else _get_all_method
         setattr(cls, f'{prefix}get_all', f(dto, collection=collection, id_field=id_field))  # type: ignore # noqa
+    if get_list:
+        f = _get_list_method_async if async_methods else _get_list_method
+        setattr(cls, f'{prefix}get_list', f(dto, collection=collection, id_field=id_field))  # type: ignore # noqa
     if delete:
         f = _delete_method_async if async_methods else _delete_method
         setattr(cls, f'{prefix}delete', f(dto, collection=collection))  # type: ignore

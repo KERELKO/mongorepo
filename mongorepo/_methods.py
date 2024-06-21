@@ -29,6 +29,19 @@ def _add_method(
     return add_return_with_id
 
 
+def _get_list_method(
+    dto_type: Type[DTO],
+    collection: Collection,
+    id_field: str | None = None,
+):
+    to_dto = _get_converter(id_field=id_field)
+
+    def get_list(self, offset: int = 0, limit: int = 20) -> list[DTO]:
+        cursor = collection.find().skip(offset).limit(limit)
+        return [to_dto(dto_type, doc) for doc in cursor]
+    return get_list
+
+
 def _get_all_method(
     dto_type: Type[DTO],
     collection: Collection,

@@ -5,7 +5,6 @@ from typing import Generic
 import pytest
 
 from mongorepo import DTO
-from mongorepo.decorators import substitute
 from tests.common import (
     ComplicatedDTO,
     collection_for_complicated_dto,
@@ -23,10 +22,11 @@ def test_can_substitute_methods_with_decorator():
         def create(self, entity: DTO) -> DTO:
             raise NotImplementedError
 
-    @substitute(BaseRepository)
-    class SubstitudeWithDecorator(BaseRepository[ComplicatedDTO]):
+    @implements(BaseRepository)  # noqa
+    class SubstitudeWithDecorator:
         class Meta:
             dto = ComplicatedDTO
+            # 'get' - mongorepo method, 'get_by_name' - method that must be implemented dynamically
             substitute = {'get': 'get_by_name', 'add': 'create'}
             collection = collection_for_complicated_dto()
 
@@ -34,10 +34,12 @@ def test_can_substitute_methods_with_decorator():
 
     assert hasattr(repo_dec, 'create')
     assert hasattr(repo_dec, 'get_by_name')
+
     entity = ComplicatedDTO(x='test', name='admin', y=True, skills=['python'])
     repo_dec.create(entity=entity)
 
     record: ComplicatedDTO | None = repo_dec.get_by_name(name='admin')  # type: ignore
+
     assert record is not None
     assert record.name == 'admin'
     assert record.y is True
