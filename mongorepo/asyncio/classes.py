@@ -90,6 +90,10 @@ class AsyncBasedMongoRepository(Generic[DTO]):
         result = await self.collection.find_one(filters)
         return self._convert_to_dto(result) if result else None
 
+    async def get_list(self, offset: int = 0, limit: int = 20) -> list[DTO]:
+        cursor = self.collection.find().skip(offset).limit(limit)
+        return [self._convert_to_dto(doc) async for doc in cursor]
+
     async def get_all(self, **filters: Any) -> AsyncGenerator[DTO, None]:
         cursor = self.collection.find(filters)
         async for doc in cursor:

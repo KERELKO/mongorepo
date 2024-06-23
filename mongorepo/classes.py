@@ -108,6 +108,10 @@ class BaseMongoRepository(Generic[DTO]):
         for doc in cursor:
             yield self._convert_to_dto(doc)
 
+    def get_list(self, offset: int = 0, limit: int = 20) -> list[DTO]:
+        cursor = self.collection.find().skip(offset).limit(limit)
+        return [self._convert_to_dto(doc) for doc in cursor]
+
     def update(self, dto: DTO, **filters: Any) -> DTO:
         data: dict[str, dict[str, Any]] = {'$set': {}}
         for field, value in asdict(dto).items():
