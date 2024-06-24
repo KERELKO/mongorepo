@@ -4,7 +4,12 @@ from typing import Any, Generic, Iterable, Protocol
 from pymongo.collection import Collection
 
 from mongorepo._methods import _add_method
-from mongorepo.utils import _get_converter, create_index, _get_dto_from_origin, _get_meta_attributes
+from mongorepo.utils import (
+    _get_converter,
+    create_index,
+    _get_dto_from_origin,
+    _get_meta_attributes,
+)
 from mongorepo import DTO, Index
 from mongorepo import exceptions
 
