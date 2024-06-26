@@ -148,6 +148,12 @@ def _pop_list_method(dto_type: Type[DTO], collection: Collection, field_name: st
     return pop_list
 
 
+def _is_read_method(method: Callable) -> bool:
+    if method.__name__ in ['get', 'get_list', 'get_all']:
+        return True
+    return False
+
+
 METHOD_NAME__CALLABLE: dict[str, Callable] = {
     'get': _get_method,
     'add': _add_method,
@@ -155,8 +161,8 @@ METHOD_NAME__CALLABLE: dict[str, Callable] = {
     'delete': _delete_method,
     'get_list': _get_list_method,
     'get_all': _get_all_method,
+    'pop': _pop_list_method,
     'update_field': _update_field_method,
     'update_list': _update_list_field_method,
-    'pop': _pop_list_method,
     'update_integer': _update_integer_field_method,
 }

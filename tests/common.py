@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from typing import Any
 
 from bson import ObjectId
 import pymongo
@@ -41,6 +42,12 @@ class NestedDTO:
     title: str = 'Nested DTO'
     _id: ObjectId = field(default_factory=ObjectId, kw_only=True)
     dtos: list[SimpleDTO] = field(default_factory=list)
+
+
+@dataclass
+class DTOJSON:
+    oid: str = ''
+    records: dict[str, Any] = field(default_factory=dict)
 
 
 def collection_for_complicated_dto(async_client=False):

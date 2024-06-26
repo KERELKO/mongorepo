@@ -38,7 +38,7 @@ def get_available_repository_methods(only_names: bool = False) -> dict[str, str]
         ),
         'get': 'retrieve a document from a collection, params: **filters: Any',
         'get_all': 'retrive all documents of the same type(dto type), params: **filters: Any',
-        'get_list': 'collects bunch of documents params: offset: int = 0, limit: int = 20',
+        'get_list': 'collects bunch of documents, params: offset: int = 0, limit: int = 20',
         '{field}__append': (
             'Only for decorator with "array_fields" append item to a document'
         ),

@@ -1,5 +1,5 @@
 from dataclasses import is_dataclass
-from typing import Any, Callable, Type, Union, get_args, get_origin
+from typing import Any, Callable, NoReturn, Type, Union, get_args, get_origin
 
 import pymongo
 from pymongo.collection import Collection
@@ -183,3 +183,7 @@ def _get_converter(id_field: Any | None) -> Callable:
     if id_field:
         converter = convert_to_dto_with_id(id_field=id_field)
     return converter
+
+
+def raise_exc(exc: Exception) -> NoReturn:
+    raise exc
