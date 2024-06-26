@@ -1,7 +1,7 @@
 from typing import Callable, Annotated
 
 from mongorepo.base import Access
-from mongorepo.handlers import _handle_cls
+from mongorepo.handlers import _handle_cls, _handle_implements
 
 
 def mongo_repository(
@@ -62,3 +62,9 @@ def mongo_repository(
         return wrapper
 
     return wrapper(cls)
+
+
+def implements(generic_cls: type) -> Callable:
+    def wrapper(cls) -> type:
+        return _handle_implements(generic_cls=generic_cls, cls=cls)
+    return wrapper

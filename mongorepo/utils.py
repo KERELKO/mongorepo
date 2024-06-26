@@ -1,5 +1,6 @@
 from dataclasses import is_dataclass
-from typing import Any, Callable, NoReturn, Type, Union, get_args, get_origin
+import inspect
+from typing import Any, Callable, NoReturn, Type, TypeVar, Union, get_args, get_origin
 
 import pymongo
 from pymongo.collection import Collection
@@ -187,3 +188,27 @@ def _get_converter(id_field: Any | None) -> Callable:
 
 def raise_exc(exc: Exception) -> NoReturn:
     raise exc
+
+
+def has_param(generic_method: Callable, param: Any) -> bool:
+    if param not in generic_method.__annotations__:
+        raise TypeError(
+            f'{generic_method.__name__}() got an unexpected keyword argument \'{param}\''
+        )
+    return True
+
+
+def _validate_method_annotations(method: Callable) -> None:
+    if 'return' not in method.__annotations__:
+        raise exceptions.MongoRepoException(
+            message=f'return type is not specified for "{method}" method',
+        )
+    params = inspect.signature(method).parameters
+    if list(params)[0] != 'self':
+        raise exceptions.MongoRepoException(message=f'"In {method}" self parameter is not found')
+
+
+def replace_typevar(func: Callable, typevar: Any) -> None:
+    for param, anno in func.__annotations__.items():
+        if isinstance(anno, TypeVar):
+            func.__annotations__[param] = typevar

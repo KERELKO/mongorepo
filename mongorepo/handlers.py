@@ -1,3 +1,5 @@
+import inspect
+
 from mongorepo.asyncio.utils import _run_asyncio_create_index
 from mongorepo.base import Access
 from mongorepo.setters import (
@@ -5,7 +7,9 @@ from mongorepo.setters import (
     _set_crud_methods,
     _set_integer_fields_methods,
 )
-from mongorepo.utils import _get_meta_attributes, create_index
+from mongorepo.utils import _get_meta_attributes, raise_exc, create_index
+from mongorepo import exceptions
+from mongorepo._methods import _substitute_method
 
 
 def _handle_cls(
@@ -97,4 +101,31 @@ def _handle_cls_async(
 
     if index is not None:
         _run_asyncio_create_index(index=index, collection=collection)
+    return cls
+
+
+def _handle_implements(generic_cls: type, cls: type) -> type:
+    attrs = _get_meta_attributes(cls)
+    substitute = attrs['substitute'] if attrs['substitute'] is not None else raise_exc(
+        exceptions.MongoRepoException(message='No "substitue" in Meta class')
+    )
+    dto_type = attrs['dto']
+    collection = attrs['collection']
+    id_field = attrs['id_field']
+    for mongorepo_method_name, generic_method_name in substitute.items():
+        generic_method = getattr(generic_cls, generic_method_name, None)
+
+        if generic_method is None or not inspect.isfunction(generic_method):
+            raise exceptions.InvalidMethodNameException(generic_method_name)
+        setattr(
+            cls, generic_method_name,
+            _substitute_method(
+                mongorepo_method_name,
+                generic_method,
+                dto_type,
+                collection,
+                id_field=id_field,
+            ),
+        )
+
     return cls
