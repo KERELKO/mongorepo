@@ -1,4 +1,5 @@
 import inspect
+from typing import Callable
 
 from mongorepo.asyncio.utils import _run_asyncio_create_index
 from mongorepo.base import Access
@@ -9,7 +10,8 @@ from mongorepo.setters import (
 )
 from mongorepo.utils import _get_meta_attributes, raise_exc, create_index
 from mongorepo import exceptions
-from mongorepo._methods import _substitute_method
+from mongorepo._methods import _substitute_method, METHOD_NAME__CALLABLE
+from mongorepo.asyncio._methods import METHOD_NAME__CALLABLE as METHOD_NAME__CALLABLE_ASYNC
 
 
 def _handle_cls(
@@ -104,23 +106,44 @@ def _handle_cls_async(
     return cls
 
 
-def _handle_implements(generic_cls: type, cls: type) -> type:
+def _handle_implements(
+    base_cls: type,
+    cls: type,
+    **substitute: str | Callable,
+) -> type:
     attrs = _get_meta_attributes(cls)
-    substitute = attrs['substitute'] if attrs['substitute'] is not None else raise_exc(
-        exceptions.MongoRepoException(message='No "substitue" in Meta class')
-    )
+    if not substitute:
+        substitute = attrs['substitute'] if attrs['substitute'] is not None else raise_exc(
+            exceptions.MongoRepoException(message='No "substitue" in Meta class')
+        )
     dto_type = attrs['dto']
     collection = attrs['collection']
     id_field = attrs['id_field']
-    for mongorepo_method_name, generic_method_name in substitute.items():
-        generic_method = getattr(generic_cls, generic_method_name, None)
+    for mongorepo_method_name, _generic_method in substitute.items():
+        if inspect.isfunction(_generic_method) or inspect.ismethod(_generic_method):
+            generic_method: Callable = _generic_method  # type: ignore
+        elif isinstance(_generic_method, str):
+            generic_method: Callable | None = getattr(  # type: ignore
+                base_cls, _generic_method, None
+            )
+            if generic_method is None or not inspect.isfunction(generic_method):
+                raise exceptions.InvalidMethodNameException(_generic_method)
 
-        if generic_method is None or not inspect.isfunction(generic_method):
-            raise exceptions.InvalidMethodNameException(generic_method_name)
+        is_async: bool = inspect.isawaitable(generic_method)
+        if mongorepo_method_name not in METHOD_NAME__CALLABLE:
+            raise exceptions.InvalidMethodNameException(mongorepo_method_name)
+        if is_async:
+            mongorepo_method: Callable = METHOD_NAME__CALLABLE_ASYNC[mongorepo_method_name]
+        else:
+            mongorepo_method: Callable = METHOD_NAME__CALLABLE[  # type: ignore
+                mongorepo_method_name
+            ]
+
         setattr(
-            cls, generic_method_name,
+            cls,
+            generic_method.__name__,
             _substitute_method(
-                mongorepo_method_name,
+                mongorepo_method,
                 generic_method,
                 dto_type,
                 collection,

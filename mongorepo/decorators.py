@@ -64,7 +64,12 @@ def mongo_repository(
     return wrapper(cls)
 
 
-def implements(generic_cls: type) -> Callable:
+def implements(base_cls: type, **substitute: str | Callable) -> Callable:
+    """## Not implemented yet"""
     def wrapper(cls) -> type:
-        return _handle_implements(generic_cls=generic_cls, cls=cls)
+        return _handle_implements(
+            base_cls=base_cls,
+            cls=cls,
+            **substitute,
+        )
     return wrapper

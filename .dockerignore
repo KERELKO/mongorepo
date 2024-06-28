@@ -1,3 +1,5 @@
 data/
 .pytest_cache/
 __pycache__/
+docs/
+mkdocs.yml

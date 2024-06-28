@@ -5,7 +5,12 @@ from typing import Any, Callable, Iterable, Type
 from bson import ObjectId
 from pymongo.collection import Collection
 
-from mongorepo.utils import replace_typevar, has_param, _validate_method_annotations, _get_converter
+from mongorepo.utils import (
+    replace_typevars,
+    raise_exc_if_no_param,
+    _validate_method_annotations,
+    _get_converter,
+)
 from mongorepo import DTO, exceptions
 
 
@@ -156,69 +161,68 @@ def _is_read_method(method: Callable) -> bool:
 
 
 def _substitute_method(
-    mongorepo_method_name: str,
+    mongorepo_method: Callable,
     generic_method: Callable,
     dto: Type[DTO],
     collection: Collection,
     id_field: str | None = None,
 ) -> Callable:
-
-    if mongorepo_method_name not in METHOD_NAME__CALLABLE:
-        raise exceptions.InvalidMethodNameException(mongorepo_method_name)
-    mongorepo_method: Callable = METHOD_NAME__CALLABLE[mongorepo_method_name]
     if id_field in mongorepo_method.__annotations__:
         mongorepo_method = mongorepo_method(dto_type=dto, collection=collection, id_field=id_field)
     else:
         mongorepo_method = mongorepo_method(dto_type=dto, collection=collection)
 
-    _validate_method_annotations(generic_method)
-
-    has_kwargs: bool = False
-    has_args: bool = False
-    params_count = 0
-
-    for param in inspect.signature(mongorepo_method).parameters.values():
-        if param.kind == inspect.Parameter.VAR_KEYWORD:
-            has_kwargs = True
-        elif param.kind == inspect.Parameter.VAR_POSITIONAL:
-            has_args = True
-        else:
-            params_count += 1
+    is_async = inspect.isawaitable(generic_method)
 
     def func(self, *args, **kwargs) -> Any:
-        required_params: list[Any] = []
-        if params_count > 1:
-            i = 1
-            while i < params_count:
+        required_params = __manage_params(
+            mongorepo_method, generic_method, *args, **kwargs,
+        )
+        return mongorepo_method(self, **required_params)
 
-                for arg in args:
-                    required_params.append(arg)
-                    i += 1
-                    if i == params_count:
-                        break
+    async def async_func(self, *args, **kwargs) -> Any:
+        required_params = __manage_params(
+            mongorepo_method, generic_method, *args, **kwargs,
+        )
+        return await mongorepo_method(self, **required_params)
 
-                for key, value in kwargs.items():
-                    has_param(generic_method, key)
-                    required_params.append(value)
-                    i += 1
-                    if i == params_count:
-                        break
+    new_method = async_func if is_async else func
 
-        if has_args and has_kwargs:
-            return mongorepo_method(self, *required_params, *args, **kwargs)
-        elif has_args:
-            return mongorepo_method(self, *required_params, *args)
-        elif has_kwargs:
-            return mongorepo_method(self, *required_params, **kwargs)
-        return mongorepo_method(self, *required_params)
-
-    new_method = func
     new_method.__annotations__ = generic_method.__annotations__
     new_method.__name__ = generic_method.__name__
+    new_method.__annotations__['return'] = dto | None
 
-    replace_typevar(new_method, dto)
+    replace_typevars(new_method, dto)
 
     return new_method
+
+
+def __manage_params(
+    mongorepo_method: Callable,
+    generic_method: Callable,
+    *args,
+    **kwargs,
+) -> dict[str, Any]:
+    _validate_method_annotations(generic_method)
+    result: dict[str, Any] = {}
+    generic_method_hm = _get_params_posititions(generic_method, exclude_first=True)
+    mongorepo_method_hm = _get_params_posititions(mongorepo_method, exclude_first=True)
+    return result
+
+
+def _get_params_posititions(
+    func: Callable,
+    exclude_first: bool = False,
+) -> dict[int, str]:
+    params = dict(inspect.signature(func).parameters)
+    result: dict[int, str] = {}
+    if exclude_first:
+        first = list(params)[0]
+        del params[first]
+    i = 1
+    for name in params.keys():
+        result[i] = name
+    return result
 
 
 METHOD_NAME__CALLABLE: dict[str, Callable] = {

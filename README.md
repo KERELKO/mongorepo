@@ -46,11 +46,15 @@ class MongoRepository:
         collection = async_mongo_client().people_db.people
 
 repo = MongoRepository()
-person = Person(id='289083', name='Artorias', skills=['python', 'c++', 'java', 'rust'])
-await repo.add(person)
+
+admin = Person(id='289083', name='admin', skills=['python', 'c++', 'java', 'rust'])
+
+await repo.add(admin)
 await repo.skills__append('c', id='289083')
 await repo.skills__remove('python', id='289083')
-artorias = await repo.get(id='289083')
-print(artorias.skills)
+
+user = await repo.get(id='289083')
+
+print(user.skills)
 ['c++', 'java', 'rust', 'c']
 ```

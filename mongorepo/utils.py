@@ -190,15 +190,16 @@ def raise_exc(exc: Exception) -> NoReturn:
     raise exc
 
 
-def has_param(generic_method: Callable, param: Any) -> bool:
+def raise_exc_if_no_param(generic_method: Callable, param: Any) -> None:
     if param not in generic_method.__annotations__:
         raise TypeError(
             f'{generic_method.__name__}() got an unexpected keyword argument \'{param}\''
         )
-    return True
 
 
 def _validate_method_annotations(method: Callable) -> None:
+    if not method.__annotations__:
+        raise exceptions.MongoRepoException(message=f'No type hints for {method.__name__}()')
     if 'return' not in method.__annotations__:
         raise exceptions.MongoRepoException(
             message=f'return type is not specified for "{method}" method',
@@ -206,9 +207,14 @@ def _validate_method_annotations(method: Callable) -> None:
     params = inspect.signature(method).parameters
     if list(params)[0] != 'self':
         raise exceptions.MongoRepoException(message=f'"In {method}" self parameter is not found')
+    for param, type_hint in params.items():
+        if type_hint == inspect._empty and param != 'self':
+            raise exceptions.MongoRepoException(
+                message=f'Parameter "{param}" does not have type hint',
+            )
 
 
-def replace_typevar(func: Callable, typevar: Any) -> None:
+def replace_typevars(func: Callable, typevar: Any) -> None:
     for param, anno in func.__annotations__.items():
         if isinstance(anno, TypeVar):
             func.__annotations__[param] = typevar
