@@ -7,7 +7,6 @@ from pymongo.collection import Collection
 
 from mongorepo.utils import (
     replace_typevars,
-    raise_exc_if_no_param,
     _validate_method_annotations,
     _get_converter,
 )
@@ -205,8 +204,8 @@ def __manage_params(
 ) -> dict[str, Any]:
     _validate_method_annotations(generic_method)
     result: dict[str, Any] = {}
-    generic_method_hm = _get_params_posititions(generic_method, exclude_first=True)
-    mongorepo_method_hm = _get_params_posititions(mongorepo_method, exclude_first=True)
+    # generic_method_hm = _get_params_posititions(generic_method, exclude_first=True)
+    # mongorepo_method_hm = _get_params_posititions(mongorepo_method, exclude_first=True)
     return result
 
 

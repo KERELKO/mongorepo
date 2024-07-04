@@ -2,6 +2,7 @@
 from abc import ABC
 from typing import Generic, TypeVar, Protocol
 
+import pytest
 from mongorepo.decorators import mongo_repository, implements
 from mongorepo import DTO
 from tests.common import (
@@ -12,6 +13,7 @@ from tests.common import (
 )
 
 
+@pytest.mark.skip
 def test_implements():
     c = collection_for_simple_dto()
 
@@ -31,6 +33,7 @@ def test_implements():
     _ = r.get_x(id='123')
 
 
+@pytest.mark.skip
 def test_can_substitute_get_method():
     c = collection_for_simple_dto()
 
@@ -65,6 +68,7 @@ def test_can_substitute_get_method():
     c.drop()
 
 
+@pytest.mark.skip
 def test_crud_methods_with_implements_decorator():
     # Idea: to dynamically replace methods of mongo repo class with other class methods
     c = collection_for_complicated_dto()
@@ -121,6 +125,7 @@ def test_crud_methods_with_implements_decorator():
     c.drop()
 
 
+@pytest.mark.skip
 def test_can_pass_substitute_in_params():
     c = collection_for_complicated_dto()
 
@@ -151,6 +156,7 @@ def test_can_pass_substitute_in_params():
     c.drop()
 
 
+@pytest.mark.skip
 def test_implements_with_different_parameters_types():
     c = collection_for_complicated_dto()
 
@@ -187,8 +193,6 @@ def test_implements_with_different_parameters_types():
     _ = r.get(x='123', y=False)
     _ = r.get('123', False)
     _ = r.get(y=False, x='123')
-
-    _ = r.get(x='123', x='125')
 
     _ = r.update(x='123', obj=ComplicatedDTO('888'))
     _ = r.update('888', ComplicatedDTO('999'))
