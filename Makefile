@@ -6,6 +6,10 @@ PYTEST = ${EX} app pytest
 bash:
 	${EX} app bash
 
+.PHONY: tests
+tests:
+	${PYTEST} tests/
+
 .PHONY: sync-tests
 sync-tests:
 	${PYTEST} tests/sync_tests

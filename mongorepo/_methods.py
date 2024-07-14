@@ -39,7 +39,7 @@ def _get_list_method(
     collection: Collection,
     id_field: str | None = None,
 ):
-    to_dto = _get_converter(id_field=id_field)
+    to_dto = _get_converter(dto_type, id_field=id_field)
 
     def get_list(self, offset: int = 0, limit: int = 20) -> list[DTO]:
         cursor = collection.find().skip(offset).limit(limit)
@@ -52,7 +52,7 @@ def _get_all_method(
     collection: Collection,
     id_field: str | None = None
 ) -> Callable:
-    to_dto = _get_converter(id_field=id_field)
+    to_dto = _get_converter(dto_type=dto_type, id_field=id_field)
 
     def get_all(self, **filters: Any) -> Iterable[DTO]:
         cursor = collection.find(filters)
@@ -66,7 +66,7 @@ def _update_method(
     collection: Collection,
     id_field: str | None = None,
 ) -> Callable:
-    to_dto = _get_converter(id_field=id_field)
+    to_dto = _get_converter(dto_type, id_field=id_field)
 
     def update(self, dto: DTO, **filters: Any) -> DTO | None:
         data: dict[str, dict[str, Any]] = {'$set': {}}
@@ -96,7 +96,7 @@ def _get_method(
     collection: Collection,
     id_field: str | None = None,
 ) -> Callable:
-    to_dto = _get_converter(id_field=id_field)
+    to_dto = _get_converter(dto_type, id_field=id_field)
 
     def get(self, **filters: Any) -> DTO | None:
         result = collection.find_one(filters)
@@ -109,7 +109,7 @@ def _update_field_method(
     collection: Collection,
     id_field: str | None = None,
 ) -> Callable:
-    to_dto = _get_converter(id_field=id_field)
+    to_dto = _get_converter(dto_type, id_field=id_field)
 
     def update_field(self, field_name: str, value: Any, **filters) -> DTO | None:
         if field_name not in dto_type.__dict__['__annotations__']:

@@ -34,7 +34,7 @@ def _get_list_method_async(
     collection: AsyncIOMotorCollection,
     id_field: str | None = None,
 ):
-    to_dto = _get_converter(id_field=id_field)
+    to_dto = _get_converter(dto_type, id_field=id_field)
 
     async def get_list(self, offset: int = 0, limit: int = 20) -> list[DTO]:
         cursor = collection.find().skip(offset).limit(limit)
@@ -47,7 +47,7 @@ def _get_all_method_async(
     collection: AsyncIOMotorCollection,
     id_field: str | None = None
 ) -> Callable:
-    to_dto = _get_converter(id_field=id_field)
+    to_dto = _get_converter(dto_type, id_field=id_field)
 
     async def get_all(self, **filters: Any) -> AsyncGenerator[DTO, None]:
         cursor = collection.find(filters)
@@ -61,7 +61,7 @@ def _update_method_async(
     collection: AsyncIOMotorCollection,
     id_field: str | None = None
 ) -> Callable:
-    to_dto = _get_converter(id_field=id_field)
+    to_dto = _get_converter(dto_type, id_field=id_field)
 
     async def update(self, dto: DTO, **filters: Any) -> DTO | None:
         data: dict[str, dict[str, Any]] = {'$set': {}}
@@ -91,7 +91,7 @@ def _get_method_async(
     collection: AsyncIOMotorCollection,
     id_field: str | None = None
 ) -> Callable:
-    to_dto = _get_converter(id_field=id_field)
+    to_dto = _get_converter(dto_type, id_field=id_field)
 
     async def get(self, _id: str | None = None, **filters: Any) -> DTO | None:
         result = await collection.find_one(filters)
@@ -104,7 +104,7 @@ def _update_field_method_async(
     collection: AsyncIOMotorCollection,
     id_field: str | None = None
 ) -> Callable:
-    to_dto = _get_converter(id_field=id_field)
+    to_dto = _get_converter(dto_type, id_field=id_field)
 
     async def update_field(self, field_name: str, value: Any, **filters) -> DTO | None:
         if field_name not in dto_type.__dict__['__annotations__']:

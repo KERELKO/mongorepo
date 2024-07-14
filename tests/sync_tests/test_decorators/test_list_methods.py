@@ -95,10 +95,6 @@ def test_list_with_different_type_hints_decorator():
     class A3:
         types: List[float]
 
-    @dataclass
-    class A4:
-        types: list[str] | List[float] = field(default_factory=list)
-
     @mongo_repository(array_fields=['types'])
     class TestA1:
         class Meta:
@@ -117,14 +113,7 @@ def test_list_with_different_type_hints_decorator():
             dto = A3
             collection = cl
 
-    @mongo_repository(array_fields=['types'])
-    class TestA4:
-        class Meta:
-            dto = A4
-            collection = cl
-
     _ = TestA1()
     _ = TestA2()
     _ = TestA3()
-    _ = TestA4()
     assert True

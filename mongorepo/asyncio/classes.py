@@ -35,7 +35,8 @@ class AsyncBasedMongoRepository(Generic[DTO]):
 
     def __new__(cls, *args, **kwargs) -> 'AsyncBasedMongoRepository':
         instance = super().__new__(cls)
-        setattr(instance, 'dto_type',  _get_dto_from_origin(cls))
+        dto_type = _get_dto_from_origin(cls)
+        setattr(instance, 'dto_type',  dto_type)
 
         try:
             meta = _get_meta_attributes(cls, raise_exceptions=False)
@@ -45,7 +46,7 @@ class AsyncBasedMongoRepository(Generic[DTO]):
         index: Index | str | None = meta['index'] if meta else None
         id_field: str | None = meta['id_field'] if meta else None
 
-        setattr(instance, '__convert_to_dto', _get_converter(id_field=id_field))
+        setattr(instance, '__convert_to_dto', _get_converter(dto_type, id_field=id_field))
         setattr(instance, '__id_field', id_field)
 
         if index is not None:

@@ -1,6 +1,7 @@
 from dataclasses import is_dataclass
 import inspect
-from typing import Any, Callable, NoReturn, Type, TypeVar, Union, get_args, get_origin
+from types import UnionType
+from typing import Any, Callable, NoReturn, Optional, Type, TypeVar, get_args, get_origin
 
 import pymongo
 from pymongo.collection import Collection
@@ -71,18 +72,38 @@ def get_meta(cls: type) -> Any:
     return meta
 
 
-def get_dto_type_hints(dto: Type[DTO] | DTO) -> dict[str, Any]:
+def _get_validated_type_hint(hint: Any, get_type: bool = False) -> Any:
+    args = get_args(hint)
+    if len(args) > 2:
+        raise exceptions.TypeHintException(message=f'Too many arguments for type hint: {hint}')
+    if len(args) == 2 and get_origin(hint) is not dict:
+        if type(None) not in args:
+            raise exceptions.TypeHintException(message=f'"|" allowed only with NoneType {hint}')
+    for arg in args:
+        if get_origin(arg) is list:
+            raise exceptions.TypeHintException(
+                message=f'Sequence must be the only one type hint {hint}:{arg}'
+            )
+        if type(arg) is UnionType or type(hint) is Optional:
+            raise exceptions.TypeHintException(message=f'Invalid type hint {hint}:{arg}')
+        elif is_dataclass(hint):
+            get_dto_type_hints(hint)
+    if get_type:
+        if get_origin(hint) is list:
+            return get_origin(hint)
+        if args:
+            for arg in args:
+                if type(arg) is not None:
+                    return get_origin(arg)
+    return hint
+
+
+def get_dto_type_hints(dto: Type[DTO] | DTO, get_types: bool = True) -> dict[str, Any]:
     """Returns dictionary of fields' type hints for a dataclass or dataclass instance"""
     default_values = {}
     for field_name, value in dto.__annotations__.items():
-        origin = get_origin(value)
-        if isinstance(value, type):
-            default_values[field_name] = value
-        elif origin is list:
-            default_values[field_name] = origin
-        elif origin is Union:
-            args = get_args(value)
-            default_values[field_name] = get_origin(args[0])
+        hint = _get_validated_type_hint(value, get_type=get_types)
+        default_values[field_name] = hint if get_types else value
     return default_values
 
 
@@ -163,27 +184,71 @@ def convert_to_dto(dto_type: Type[DTO], dct: dict[str, Any]) -> DTO:
 
 
 def convert_to_dto_with_id(
-    id_field: str | None = None,
+    id_field: str,
 ) -> Callable:
     """
     Converts document to dto,
     icludes mongodb `_id` allows to set specific field where to store `_id`
     """
     def wrapper(dto_type: Type[DTO], dct: dict[str, Any]) -> DTO:
-        if not id_field:
-            return dto_type(**dct)
-        dct[id_field] = str(dct['_id'])
-        dct.pop('_id')
+        dct[id_field] = str(dct.pop('_id'))
         return dto_type(**dct)
     return wrapper
 
 
-def _get_converter(id_field: Any | None) -> Callable:
+def recursive_convert_to_dto(dto_type: Type[DTO], id_field: str | None = None) -> Callable:
+    def deco(dto_type: Type[DTO], dct: dict[str, Any]) -> DTO:
+        def wrapper(
+            dto_type: Type[DTO], dct: dict[str, Any], to_dto: bool = False,
+        ) -> dict[str, Any] | DTO:
+            type_hints = get_dto_type_hints(dto_type, get_types=False)
+            data = {}
+            for key, value in dct.items():
+                if is_dataclass(type_hints[key]):
+                    data[key] = wrapper(type_hints[key], value, to_dto=True)
+                elif get_origin(type_hints[key]) is list and isinstance(value, list):
+                    args = get_args(type_hints[key])
+                    if is_dataclass(args[0]):
+                        data[key] = [
+                            wrapper(args[0], v, to_dto=True) for v in value  # type: ignore
+                        ]
+                    else:
+                        data[key] = value
+                else:
+                    data[key] = value
+            return dto_type(**data) if to_dto else data
+        data = {}
+        if id_field is not None:
+            data[id_field] = str(dct.pop('_id'))
+        else:
+            dct.pop('_id') if dct.get('_id', None) else ...
+        data.update(wrapper(dto_type, dct))  # type: ignore
+        print(data)
+        return dto_type(**data)
+    return deco
+
+
+def _get_converter(dto_type: Type[DTO], id_field: str | None = None) -> Callable:
     """Returns `convert_to_dto` or `convert_to_dto_with_id`"""
     converter = convert_to_dto
-    if id_field:
+    r = _has_dto_inside(dto_type=dto_type)
+    if r:
+        converter = recursive_convert_to_dto(dto_type, id_field)
+    if id_field is not None:
         converter = convert_to_dto_with_id(id_field=id_field)
     return converter
+
+
+def _has_dto_inside(dto_type: Type[DTO]) -> bool:
+    type_hints = get_dto_type_hints(dto_type, get_types=False)
+    for value in type_hints.values():
+        if is_dataclass(value):
+            return True
+        elif get_origin(value) is list:
+            args = get_args(value)
+            if is_dataclass(args[0]):
+                return True
+    return False
 
 
 def raise_exc(exc: Exception) -> NoReturn:
