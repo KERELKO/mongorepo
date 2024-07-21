@@ -2,6 +2,8 @@
 from dataclasses import dataclass, field
 from typing import List
 
+import pytest
+
 from mongorepo.decorators import mongo_repository
 from mongorepo import Access
 
@@ -95,6 +97,10 @@ def test_list_with_different_type_hints_decorator():
     class A3:
         types: List[float]
 
+    @dataclass
+    class A4:
+        types: list[int | None]
+
     @mongo_repository(array_fields=['types'])
     class TestA1:
         class Meta:
@@ -113,7 +119,15 @@ def test_list_with_different_type_hints_decorator():
             dto = A3
             collection = cl
 
+    @mongo_repository(array_fields=['types'])
+    class TestA4:
+        class Meta:
+            dto = A4
+            collection = cl
+
     _ = TestA1()
     _ = TestA2()
     _ = TestA3()
+    with pytest.raises(Exception):
+        _ = TestA4
     assert True

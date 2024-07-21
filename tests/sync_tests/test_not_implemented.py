@@ -70,7 +70,7 @@ def test_can_substitute_get_method():
 
 @pytest.mark.skip
 def test_crud_methods_with_implements_decorator():
-    # Idea: to dynamically replace methods of mongo repo class with other class methods
+    # Idea: to dynamically replace methods of mongorepo class with other class methods
     c = collection_for_complicated_dto()
 
     class BaseRepository(Generic[DTO], ABC):

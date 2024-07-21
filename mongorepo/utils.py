@@ -197,7 +197,7 @@ def convert_to_dto_with_id(
 
 
 def recursive_convert_to_dto(dto_type: Type[DTO], id_field: str | None = None) -> Callable:
-    def deco(dto_type: Type[DTO], dct: dict[str, Any]) -> DTO:
+    def decorator(dto_type: Type[DTO], dct: dict[str, Any]) -> DTO:
         def wrapper(
             dto_type: Type[DTO], dct: dict[str, Any], to_dto: bool = False,
         ) -> dict[str, Any] | DTO:
@@ -223,9 +223,8 @@ def recursive_convert_to_dto(dto_type: Type[DTO], id_field: str | None = None) -
         else:
             dct.pop('_id') if dct.get('_id', None) else ...
         data.update(wrapper(dto_type, dct))  # type: ignore
-        print(data)
         return dto_type(**data)
-    return deco
+    return decorator
 
 
 def _get_converter(dto_type: Type[DTO], id_field: str | None = None) -> Callable:
@@ -253,13 +252,6 @@ def _has_dto_inside(dto_type: Type[DTO]) -> bool:
 
 def raise_exc(exc: Exception) -> NoReturn:
     raise exc
-
-
-def raise_exc_if_no_param(generic_method: Callable, param: Any) -> None:
-    if param not in generic_method.__annotations__:
-        raise TypeError(
-            f'{generic_method.__name__}() got an unexpected keyword argument \'{param}\''
-        )
 
 
 def _validate_method_annotations(method: Callable) -> None:
