@@ -230,15 +230,15 @@ def recursive_convert_to_dto(dto_type: Type[DTO], id_field: str | None = None) -
 def _get_converter(dto_type: Type[DTO], id_field: str | None = None) -> Callable:
     """Returns `convert_to_dto` or `convert_to_dto_with_id`"""
     converter = convert_to_dto
-    r = _has_dto_inside(dto_type=dto_type)
+    r = _has_dataclass_fields(dto_type=dto_type)
     if r:
         converter = recursive_convert_to_dto(dto_type, id_field)
-    if id_field is not None:
+    elif id_field is not None:
         converter = convert_to_dto_with_id(id_field=id_field)
     return converter
 
 
-def _has_dto_inside(dto_type: Type[DTO]) -> bool:
+def _has_dataclass_fields(dto_type: Type[DTO]) -> bool:
     type_hints = get_dto_type_hints(dto_type, get_types=False)
     for value in type_hints.values():
         if is_dataclass(value):
