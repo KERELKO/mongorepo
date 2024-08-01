@@ -1,9 +1,10 @@
 import inspect
+from dataclasses import is_dataclass
 from inspect import Parameter
-from typing import Any, Callable, Type
+from typing import Any, Callable, Type, TypeVar
 
-from pymongo.collection import Collection
 from motor.motor_asyncio import AsyncIOMotorCollection
+from pymongo.collection import Collection
 
 from mongorepo.base import DTO
 from mongorepo.utils import _validate_method_annotations, replace_typevars
@@ -25,13 +26,13 @@ def _substitute_method(
     _validate_method_annotations(generic_method)
 
     def func(self, *args, **kwargs) -> Any:
-        required_params = __manage_params(
+        required_params = _manage_params(
             mongorepo_method, generic_method, *args, **kwargs,
         )
         return mongorepo_method(self, **required_params)
 
     async def async_func(self, *args, **kwargs) -> Any:
-        required_params = __manage_params(
+        required_params = _manage_params(
             mongorepo_method, generic_method, *args, **kwargs,
         )
         return await mongorepo_method(self, **required_params)
@@ -47,7 +48,7 @@ def _substitute_method(
     return new_method
 
 
-def __manage_params(
+def _manage_params(
     mongorepo_method: Callable,
     generic_method: Callable,
     *args,
@@ -69,8 +70,6 @@ def __manage_params(
         except IndexError:
             break
 
-    print('After args: ', _kwargs)
-
     for param in gen_params.values():
         if param.name not in _kwargs and param.name not in kwargs:
             raise TypeError(
@@ -85,22 +84,26 @@ def __manage_params(
             continue
         _kwargs[param.name] = kwargs[param.name]
 
-    print(f'After kwargs: {_kwargs}')
-
     result = {}
     extra: bool = False
-    for mongo_param, kwarg in zip(mongo_params.values(), _kwargs.items()):
+    for mongo_param in mongo_params.values():
         if mongo_param.kind is Parameter.VAR_KEYWORD:
             extra = True
             break
-        print(kwarg)
-        result[mongo_param.name] = kwarg[1]
-        _kwargs[kwarg[0]] = None
-
+        if isinstance(mongo_param.annotation, TypeVar) or is_dataclass(mongo_param.annotation):
+            for key, value in _kwargs.items():
+                if is_dataclass(value):
+                    result[mongo_param.name] = value
+                    _kwargs[key] = None
+                    break
+        else:
+            for key, value in _kwargs.items():
+                if isinstance(value, mongo_param.annotation):
+                    result[mongo_param.name] = value
+                    _kwargs[key] = None
+                    break
     if extra:
         for key, value in _kwargs.items():
             if value is not None:
                 result[key] = value
-
-    print(f'Result: {result}\n')
     return result

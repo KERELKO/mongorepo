@@ -27,7 +27,7 @@ new_user = UserDTO(username='admin', password='1234')
 repo.add(new_user)
 
 user = repo.get(username='admin')
-print(user)  # UserDTO(username='admin', password='1234')
+user)  # UserDTO(username='admin', password='1234')
 ```
 
 ## Example with decorator
@@ -64,5 +64,5 @@ await repo.skills__append('c', id='289083')
 await repo.skills__remove('python', id='289083')
 
 user = await repo.get(id='289083')
-print(user.skills)  # ['c++', 'java', 'rust', 'c']
+user.skills)  # ['c++', 'java', 'rust', 'c']
 ```
