@@ -18,8 +18,8 @@ sync-tests:
 async-tests:
 	${PYTEST} tests/async_tests
 
-.PHONY: test-notimpl
-test-notimpl:
+.PHONY: test-not-impl
+test-not-impl:
 	${PYTEST} tests/sync_tests/test_not_implemented.py
 
 .PHONY: test-utils

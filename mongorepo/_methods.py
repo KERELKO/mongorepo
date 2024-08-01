@@ -1,15 +1,9 @@
 from dataclasses import asdict
-import inspect
 from typing import Any, Callable, Iterable, Type
 
 from bson import ObjectId
 from pymongo.collection import Collection
-
-from mongorepo.utils import (
-    replace_typevars,
-    _validate_method_annotations,
-    _get_converter,
-)
+from mongorepo.utils import _get_converter
 from mongorepo import DTO, exceptions
 
 
@@ -151,77 +145,6 @@ def _pop_list_method(dto_type: Type[DTO], collection: Collection, field_name: st
         )
         return document[field_name][-1] if document else None
     return pop_list
-
-
-def _is_read_method(method: Callable) -> bool:
-    if method.__name__ in ['get', 'get_list', 'get_all']:
-        return True
-    return False
-
-
-def _substitute_method(
-    mongorepo_method: Callable,
-    generic_method: Callable,
-    dto: Type[DTO],
-    collection: Collection,
-    id_field: str | None = None,
-) -> Callable:
-    if id_field in mongorepo_method.__annotations__:
-        mongorepo_method = mongorepo_method(dto_type=dto, collection=collection, id_field=id_field)
-    else:
-        mongorepo_method = mongorepo_method(dto_type=dto, collection=collection)
-
-    is_async = inspect.isawaitable(generic_method)
-
-    def func(self, *args, **kwargs) -> Any:
-        required_params = __manage_params(
-            mongorepo_method, generic_method, *args, **kwargs,
-        )
-        return mongorepo_method(self, **required_params)
-
-    async def async_func(self, *args, **kwargs) -> Any:
-        required_params = __manage_params(
-            mongorepo_method, generic_method, *args, **kwargs,
-        )
-        return await mongorepo_method(self, **required_params)
-
-    new_method = async_func if is_async else func
-
-    new_method.__annotations__ = generic_method.__annotations__
-    new_method.__name__ = generic_method.__name__
-    new_method.__annotations__['return'] = dto | None
-
-    replace_typevars(new_method, dto)
-
-    return new_method
-
-
-def __manage_params(
-    mongorepo_method: Callable,
-    generic_method: Callable,
-    *args,
-    **kwargs,
-) -> dict[str, Any]:
-    _validate_method_annotations(generic_method)
-    result: dict[str, Any] = {}
-    # generic_method_hm = _get_params_posititions(generic_method, exclude_first=True)
-    # mongorepo_method_hm = _get_params_posititions(mongorepo_method, exclude_first=True)
-    return result
-
-
-def _get_params_posititions(
-    func: Callable,
-    exclude_first: bool = False,
-) -> dict[int, str]:
-    params = dict(inspect.signature(func).parameters)
-    result: dict[int, str] = {}
-    if exclude_first:
-        first = list(params)[0]
-        del params[first]
-    i = 1
-    for name in params.keys():
-        result[i] = name
-    return result
 
 
 METHOD_NAME__CALLABLE: dict[str, Callable] = {

@@ -10,7 +10,8 @@ from mongorepo.setters import (
 )
 from mongorepo.utils import _get_meta_attributes, raise_exc, create_index
 from mongorepo import exceptions
-from mongorepo._methods import _substitute_method, METHOD_NAME__CALLABLE
+from mongorepo._methods import METHOD_NAME__CALLABLE
+from mongorepo._substitute import _substitute_method
 from mongorepo.asyncio._methods import METHOD_NAME__CALLABLE as METHOD_NAME__CALLABLE_ASYNC
 
 

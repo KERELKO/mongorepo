@@ -9,7 +9,7 @@ class MongoRepoException(Exception):
 @dataclass(repr=False, eq=False)
 class NoMetaException(MongoRepoException):
 
-    def __repr__(self) -> str:
+    def __str__(self) -> str:
         if self.message:
             return self.message
         return 'Class does not have "Meta" class inside'
@@ -19,7 +19,7 @@ class NoMetaException(MongoRepoException):
 class NoDTOTypeException(MongoRepoException):
     with_meta: bool = True
 
-    def __repr__(self) -> str:
+    def __str__(self) -> str:
         if self.message:
             return self.message
         return 'DTO type was not provided' + ' in "Meta" class' if self.with_meta else ''
@@ -29,14 +29,14 @@ class NoDTOTypeException(MongoRepoException):
 class NoCollectionException(MongoRepoException):
     with_meta: bool = True
 
-    def __repr__(self) -> str:
+    def __str__(self) -> str:
         if self.message:
             return self.message
         return 'Collection was not provided' + ' in "Meta" class' if self.with_meta else ''
 
 
 class NotDataClass(MongoRepoException):
-    def __repr__(self) -> str:
+    def __str__(self) -> str:
         if self.message:
             return self.message
         return 'Provided dto type does not implement dataclass interface'
@@ -47,7 +47,7 @@ class InvalidMethodNameException(MongoRepoException):
     method_name: str
     available_methods: tuple[str, ...] | None = None
 
-    def __repr__(self) -> str:
+    def __str__(self) -> str:
         if self.message:
             return self.message
         message = f'Method "{self.method_name}" does not appear in mongorepo available methods'
@@ -58,7 +58,7 @@ class InvalidMethodNameException(MongoRepoException):
 
 @dataclass(repr=False, eq=False)
 class TypeHintException(MongoRepoException):
-    def __repr__(self) -> str:
+    def __str__(self) -> str:
         if self.message:
             return self.message
         message = 'Invalid type hint'

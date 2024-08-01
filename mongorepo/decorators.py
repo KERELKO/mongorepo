@@ -1,4 +1,4 @@
-from typing import Callable, Annotated
+from typing import Annotated, Callable
 
 from mongorepo.base import Access
 from mongorepo.handlers import _handle_cls, _handle_implements
@@ -64,12 +64,12 @@ def mongo_repository(
     return wrapper(cls)
 
 
-def implements(base_cls: type, **substitute: str | Callable) -> Callable:
+def implements(base_cls: type, **methods: str | Callable) -> Callable:
     """## Not implemented yet"""
     def wrapper(cls) -> type:
         return _handle_implements(
             base_cls=base_cls,
             cls=cls,
-            **substitute,
+            **methods,
         )
     return wrapper

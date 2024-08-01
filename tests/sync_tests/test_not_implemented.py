@@ -13,7 +13,6 @@ from tests.common import (
 )
 
 
-@pytest.mark.skip
 def test_implements():
     c = collection_for_simple_dto()
 
@@ -29,11 +28,10 @@ def test_implements():
 
     r = B()
     _ = r.get_x(id='123')
-    _ = r.get_x(id='123')
+    _ = r.get_x('123')
     _ = r.get_x(id='123')
 
 
-@pytest.mark.skip
 def test_can_substitute_get_method():
     c = collection_for_simple_dto()
 
@@ -68,7 +66,6 @@ def test_can_substitute_get_method():
     c.drop()
 
 
-@pytest.mark.skip
 def test_crud_methods_with_implements_decorator():
     # Idea: to dynamically replace methods of mongorepo class with other class methods
     c = collection_for_complicated_dto()
@@ -83,7 +80,7 @@ def test_crud_methods_with_implements_decorator():
         def update_entity(self, entity: DTO, x: str) -> None:
             raise NotImplementedError
 
-        def delete_by_name(self, entity_name: str) -> None:
+        def delete_by_name(self, name: str) -> None:
             raise NotImplementedError
 
     @implements(BaseRepository)
@@ -115,7 +112,10 @@ def test_crud_methods_with_implements_decorator():
     assert record.y is True
     assert record.skills == ['python']
 
-    updated_entity = repo.update_entity(entity=ComplicatedDTO(x='1', y=False), x='test')
+    updated_entity = repo.update_entity(
+        entity=ComplicatedDTO(x='1', y=False, name='admin'),
+        x='test',
+    )
     assert updated_entity is not None
     assert updated_entity.y is False
 
@@ -125,7 +125,6 @@ def test_crud_methods_with_implements_decorator():
     c.drop()
 
 
-@pytest.mark.skip
 def test_can_pass_substitute_in_params():
     c = collection_for_complicated_dto()
 
@@ -156,7 +155,6 @@ def test_can_pass_substitute_in_params():
     c.drop()
 
 
-@pytest.mark.skip
 def test_implements_with_different_parameters_types():
     c = collection_for_complicated_dto()
 

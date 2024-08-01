@@ -1,5 +1,5 @@
-from dataclasses import is_dataclass
 import inspect
+from dataclasses import is_dataclass
 from types import UnionType
 from typing import Any, Callable, NoReturn, Optional, Type, TypeVar, get_args, get_origin
 
@@ -263,9 +263,15 @@ def _validate_method_annotations(method: Callable) -> None:
         )
     params = inspect.signature(method).parameters
     if list(params)[0] != 'self':
-        raise exceptions.MongoRepoException(message=f'"In {method}" self parameter is not found')
+        raise exceptions.MongoRepoException(
+            message=f'First parameter must be self: "{method}" method',
+        )
     for param, type_hint in params.items():
-        if type_hint == inspect._empty and param != 'self':
+        if param == 'self':
+            continue
+        if type_hint == inspect._empty and type_hint.kind not in [
+            inspect.Parameter.VAR_KEYWORD, inspect.Parameter.VAR_POSITIONAL
+        ]:
             raise exceptions.MongoRepoException(
                 message=f'Parameter "{param}" does not have type hint',
             )
