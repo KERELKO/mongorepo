@@ -7,3 +7,4 @@ todo.md
 docs/
 mkdocs.yml
 raw_tests.py
+.vscode/

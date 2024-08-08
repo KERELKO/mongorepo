@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "mongorepo"
-version = "0.1.5"
+version = "0.1.7"
 description = "Simple lib that dynamically creates repositories for MongoDB"
 authors = ["artorias <kerelkobarabash@gmail.com>"]
 readme = "README.md"
@@ -12,7 +12,6 @@ motor = "^3.4.0"
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.2.1"
 pytest-asyncio = "^0.23.7"
-
 
 [tool.poetry.group.docs.dependencies]
 mkdocs-material = "^9.5.26"
