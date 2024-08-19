@@ -14,7 +14,7 @@ from mongorepo import DTO, Index
 from mongorepo import exceptions
 
 
-class IMongoRepository(Protocol[DTO]):
+class _IMongoRepository(Protocol[DTO]):
     def get(self, **filters: Any) -> DTO | None:
         raise NotImplementedError
 
@@ -35,6 +35,7 @@ class BaseMongoRepository(Generic[DTO]):
     """
     ## Base MongoDB repository class
     #### Extends child classes with various methods:
+
     ```
     add(self, dto: DTO) -> DTO
     get(self, **filters) -> DTO | None
@@ -42,11 +43,14 @@ class BaseMongoRepository(Generic[DTO]):
     update(self, dto: DTO, **filters) -> DTO
     delete(self, **filters) -> bool
     ```
+
     #### Provide DTO type in type hints, example:
+
     ```
     class DummyMongoRepository(BaseMongoRepository[UserDTO]):
         ...
     ```
+
     * If you want to create an index use `mongorepo.Index`
       or just a name of the field to put index on
     """

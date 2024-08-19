@@ -12,6 +12,7 @@ DTO = TypeVar('DTO', bound=DataclassInstance)
 
 @dataclass(repr=False, slots=True, eq=False)
 class Index:
+    """Allows to specify extra information about mongodb index"""
     field: str
     name: str | None = None
     desc: bool = True
@@ -19,6 +20,9 @@ class Index:
 
 
 class Access(int, Enum):
+    """
+    Use to indicate method access in a repository, see also `mongorepo.utils.get_prefix` function
+    """
     PUBLIC = 0
     PROTECTED = 1
     PRIVATE = 2

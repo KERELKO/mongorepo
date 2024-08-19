@@ -32,6 +32,7 @@ def mongo_repository(
     private, protected or public (use `mongorepo.Access`)
 
     ### usage example:
+
     ```
     @mongo_repository(delete=False)
     class MongoRepository:
@@ -41,6 +42,7 @@ def mongo_repository(
             index = mongorepo.Index(field="name")
             method_access = mongorepo.Access.PROTECTED
     ```
+
     """
 
     def wrapper(cls) -> type:
@@ -67,17 +69,9 @@ def mongo_repository(
 def implements(base_cls: type, **methods: str | Callable) -> Callable:
     """
     Decorator that allows to implement methods of `base_cls`
-    you can specify them in `Meta` class of decorated class or in `**methods`
+    you can specify them in `**methods`
 
-    Example:
-
-    ```
-    class Repo:
-        class Meta:
-            subsitude = {'get': 'get_my_entity'}
-    ```
-
-    #### Decorator usage example:
+    ### Decorator usage example:
 
     ```
     class A:
@@ -91,6 +85,7 @@ def implements(base_cls: type, **methods: str | Callable) -> Callable:
             collection = random_collection()
 
     my_entity = MongoRepo().get_my_entity(id="10")
+
     ```
 
     """

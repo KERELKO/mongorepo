@@ -42,7 +42,10 @@ def _set_array_fields_methods(
 ) -> None:
     """
     Set base methods for array fields
-    allow `method_access`, `async_method=True` to make this methods async
+    allows `method_access`
+
+    `async_method=True` to make this methods async
+
     """
     attributes = _get_meta_attributes(cls)
     dto, collection = attributes['dto'], attributes['collection']
@@ -91,7 +94,10 @@ def _set_integer_fields_methods(
 ) -> None:
     """
     Set base methods for integer fields,
-    allow `method_access`, `async_method=True` to make this methods async
+    allows `method_access`
+
+    `async_method=True` to make this methods async
+
     """
     attributes = _get_meta_attributes(cls)
     dto, collection = attributes['dto'], attributes['collection']
@@ -139,8 +145,11 @@ def _set_crud_methods(
     method_access: Access | None = None,
 ) -> None:
     """
-    Set CRUD operations to the class
-    allow `method_access`, `async_method=True` to make added methods async
+    Set CRUD operations to the class,
+    allows `method_access`
+
+    `async_method=True` to make added methods async
+
     """
     attributes = _get_meta_attributes(cls, raise_exceptions=False)
     collection = attributes['collection']

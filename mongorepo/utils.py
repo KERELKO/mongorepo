@@ -11,7 +11,7 @@ from mongorepo import exceptions
 
 
 def _get_collection_and_dto(cls: type, raise_exceptions: bool = True) -> dict[str, Any]:
-    """Collect "dto" and "collection" attributes from `Meta` class"""
+    """Collect `dto` and `collection` attributes from `Meta` class"""
     attributes: dict[str, Any] = {}
     meta = get_meta(cls)
     try:
@@ -37,7 +37,7 @@ def _get_collection_and_dto(cls: type, raise_exceptions: bool = True) -> dict[st
 def _get_meta_attributes(cls, raise_exceptions: bool = True) -> dict[str, Any]:
     """
     Collect all available attributes from `Meta` class
-    * use `mongorepo.get_available_meta_attributes` to get all available `Meta` attributes
+    * use `mongorepo.docs.get_available_meta_attributes` to get all available `Meta` attributes
     """
     attributes: dict[str, Any] = _get_collection_and_dto(
         cls=cls, raise_exceptions=raise_exceptions,
@@ -145,7 +145,9 @@ def get_prefix(access: Access | None, cls: type | None = None) -> str:
 
 def _get_dto_from_origin(cls: type) -> Any:
     """
-    Tries to get "dto" from origin of the class or raises an exception
+
+    Tries to get `dto` from origin of the class or raises an exception
+
     ```
     class A[UserDTO]: ...
     _get_dto_from_origin(A)
@@ -164,15 +166,6 @@ def _get_dto_from_origin(cls: type) -> Any:
         raise exceptions.NotDataClass
 
     return dto
-
-
-def is_immutable(obj: Any) -> bool:
-    """Check if object is immutable"""
-    try:
-        hash(obj)
-    except TypeError:
-        return False
-    return True
 
 
 def convert_to_dto(dto_type: Type[DTO], dct: dict[str, Any]) -> DTO:
@@ -228,7 +221,9 @@ def recursive_convert_to_dto(dto_type: Type[DTO], id_field: str | None = None) -
 
 
 def _get_converter(dto_type: Type[DTO], id_field: str | None = None) -> Callable:
-    """Returns `convert_to_dto` or `convert_to_dto_with_id`"""
+    """
+    Returns proper converter based on type hints of the dto
+    """
     converter = convert_to_dto
     r = _has_dataclass_fields(dto_type=dto_type)
     if r:
@@ -251,6 +246,7 @@ def _has_dataclass_fields(dto_type: Type[DTO]) -> bool:
 
 
 def raise_exc(exc: Exception) -> NoReturn:
+    """Allows to write one-lined exceptions"""
     raise exc
 
 

@@ -22,7 +22,7 @@ def _substitute_method(
     else:
         mongorepo_method = mongorepo_method(dto_type=dto, collection=collection)
 
-    is_async = inspect.isawaitable(generic_method)
+    is_async = inspect.iscoroutinefunction(generic_method)
     _validate_method_annotations(generic_method)
 
     def func(self, *args, **kwargs) -> Any:

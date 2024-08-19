@@ -32,6 +32,7 @@ def async_mongo_repository(
     private, protected or public (use `mongorepo.Access`)
 
     ### usage example:
+
     ```
     @async_mongo_repository(method_access=mongorepo.Access.PROTECTED)
     class MongoRepository:
@@ -40,6 +41,7 @@ def async_mongo_repository(
             collection: AsyncIOMotorCollection = db["users"]
             index = mongorepo.Index(field="name")
     ```
+
     """
 
     def wrapper(cls) -> type:

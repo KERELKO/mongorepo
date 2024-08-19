@@ -115,7 +115,7 @@ def _handle_implements(
     attrs = _get_meta_attributes(cls)
     if not substitute:
         substitute = attrs['substitute'] if attrs['substitute'] is not None else raise_exc(
-            exceptions.MongoRepoException(message='No "substitue" in Meta class')
+            exceptions.MongoRepoException(message='No "substitute" in Meta class')
         )
     dto_type = attrs['dto']
     collection = attrs['collection']
@@ -130,7 +130,8 @@ def _handle_implements(
             if generic_method is None or not inspect.isfunction(generic_method):
                 raise exceptions.InvalidMethodNameException(_generic_method)
 
-        is_async: bool = inspect.isawaitable(generic_method)
+        is_async: bool = inspect.iscoroutinefunction(generic_method)
+
         if mongorepo_method_name not in METHOD_NAME__CALLABLE:
             raise exceptions.InvalidMethodNameException(mongorepo_method_name)
         if is_async:
