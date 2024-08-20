@@ -24,4 +24,4 @@ test-not-impl:
 
 .PHONY: test-utils
 test-utils:
-	${PYTEST} tests/test_utils
+	pytest tests/test_utils

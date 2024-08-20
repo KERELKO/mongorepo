@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "mongorepo"
-version = "0.1.8"
+version = "0.1.9"
 description = "Simple lib that dynamically creates repositories for MongoDB"
 authors = ["artorias <kerelkobarabash@gmail.com>"]
 readme = "README.md"

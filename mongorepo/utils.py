@@ -197,10 +197,10 @@ def recursive_convert_to_dto(dto_type: Type[DTO], id_field: str | None = None) -
             type_hints = get_dto_type_hints(dto_type, get_types=False)
             data = {}
             for key, value in dct.items():
-                if is_dataclass(type_hints[key]):
-                    data[key] = wrapper(type_hints[key], value, to_dto=True)
-                elif get_origin(type_hints[key]) is list and isinstance(value, list):
-                    args = get_args(type_hints[key])
+                if is_dataclass(type_hints.get(key, None)):
+                    data[key] = wrapper(type_hints.get(key, None), value, to_dto=True)
+                elif get_origin(type_hints.get(key, None)) is list and isinstance(value, list):
+                    args = get_args(type_hints.get(key, None))
                     if is_dataclass(args[0]):
                         data[key] = [
                             wrapper(args[0], v, to_dto=True) for v in value  # type: ignore

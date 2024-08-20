@@ -13,7 +13,7 @@ from mongorepo.classes import BaseMongoRepository
 def test_methods_with_nested_dto() -> None:
     class Repo(BaseMongoRepository[NestedDTO]):
         class Meta:
-            collection = custom_collection(dto_name=NestedDTO.__name__)
+            collection = custom_collection(NestedDTO)
 
     new_dto = NestedDTO(title='ho ho ho', simple=SimpleDTO(x='x', y=1))
 
@@ -31,7 +31,7 @@ def test_methods_with_nested_dto() -> None:
 def test_methods_with_nested_list_dto() -> None:
     class Repo(BaseMongoRepository[NestedListDTO]):
         class Meta:
-            collection = custom_collection(dto_name=NestedListDTO.__name__)
+            collection = custom_collection(NestedListDTO)
 
     new_dto = NestedListDTO(title='NestedListDTO', dtos=[SimpleDTO(x='x', y=1)])
 
@@ -50,7 +50,7 @@ def test_methods_with_nested_list_dto() -> None:
 def test_methods_with_dict_dto() -> None:
     class Repo(BaseMongoRepository[DictDTO]):
         class Meta:
-            collection = custom_collection(dto_name=DictDTO.__name__)
+            collection = custom_collection(DictDTO)
 
     new_dto = DictDTO(
         oid='834yc948yh',
