@@ -11,9 +11,11 @@ from mongorepo.classes import BaseMongoRepository
 
 
 def test_methods_with_nested_dto() -> None:
+    c = custom_collection(NestedListDTO)
+
     class Repo(BaseMongoRepository[NestedDTO]):
         class Meta:
-            collection = custom_collection(NestedDTO)
+            collection = c
 
     new_dto = NestedDTO(title='ho ho ho', simple=SimpleDTO(x='x', y=1))
 
@@ -26,13 +28,16 @@ def test_methods_with_nested_dto() -> None:
 
     assert dto.simple.x == 'x'
 
+    c.drop()
+
 
 @pytest.mark.skip
 def test_methods_with_nested_list_dto() -> None:
+    c = custom_collection(NestedListDTO)
+
     class Repo(BaseMongoRepository[NestedListDTO]):
         class Meta:
-            collection = custom_collection(NestedListDTO)
-
+            collection = c
     new_dto = NestedListDTO(title='NestedListDTO', dtos=[SimpleDTO(x='x', y=1)])
 
     repo = Repo()
@@ -46,11 +51,15 @@ def test_methods_with_nested_list_dto() -> None:
 
     assert dto.dtos[0].x == 'x' and dto.dtos[0].y == 1
 
+    c.drop()
+
 
 def test_methods_with_dict_dto() -> None:
+    c = custom_collection(DictDTO)
+
     class Repo(BaseMongoRepository[DictDTO]):
         class Meta:
-            collection = custom_collection(DictDTO)
+            collection = c
 
     new_dto = DictDTO(
         oid='834yc948yh',
@@ -66,3 +75,5 @@ def test_methods_with_dict_dto() -> None:
     assert isinstance(dto.records, dict)
 
     assert dto.records['2024-08-28'] == 'Read "Berserk again"'
+
+    c.drop()

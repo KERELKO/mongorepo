@@ -1,15 +1,16 @@
-from dataclasses import asdict
-from typing import Any, Callable, Type, AsyncGenerator
+from dataclasses import asdict, is_dataclass
+from typing import Any, Callable, AsyncGenerator
 
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorCollection
 
-from mongorepo.utils import _get_converter
+from mongorepo.utils import _get_converter, get_dataclass_fields
 from mongorepo import DTO, exceptions
+from mongorepo.base import _DTOField
 
 
 def _add_method_async(
-    dto_type: Type[DTO],
+    dto_type: type[DTO],
     collection: AsyncIOMotorCollection,
     id_field: str | None = None,
 ) -> Callable:
@@ -30,7 +31,7 @@ def _add_method_async(
 
 
 def _get_list_method_async(
-    dto_type: Type[DTO],
+    dto_type: type[DTO],
     collection: AsyncIOMotorCollection,
     id_field: str | None = None,
 ):
@@ -43,7 +44,7 @@ def _get_list_method_async(
 
 
 def _get_all_method_async(
-    dto_type: Type[DTO],
+    dto_type: type[DTO],
     collection: AsyncIOMotorCollection,
     id_field: str | None = None
 ) -> Callable:
@@ -57,7 +58,7 @@ def _get_all_method_async(
 
 
 def _update_method_async(
-    dto_type: Type[DTO],
+    dto_type: type[DTO],
     collection: AsyncIOMotorCollection,
     id_field: str | None = None
 ) -> Callable:
@@ -79,7 +80,7 @@ def _update_method_async(
     return update
 
 
-def _delete_method_async(dto_type: Type[DTO], collection: AsyncIOMotorCollection) -> Callable:
+def _delete_method_async(dto_type: type[DTO], collection: AsyncIOMotorCollection) -> Callable:
     async def delete(self, **filters: Any) -> bool:
         deleted = await collection.find_one_and_delete(filters)
         return True if deleted else False
@@ -87,7 +88,7 @@ def _delete_method_async(dto_type: Type[DTO], collection: AsyncIOMotorCollection
 
 
 def _get_method_async(
-    dto_type: Type[DTO],
+    dto_type: type[DTO],
     collection: AsyncIOMotorCollection,
     id_field: str | None = None
 ) -> Callable:
@@ -100,7 +101,7 @@ def _get_method_async(
 
 
 def _update_field_method_async(
-    dto_type: Type[DTO],
+    dto_type: type[DTO],
     collection: AsyncIOMotorCollection,
     id_field: str | None = None
 ) -> Callable:
@@ -119,7 +120,7 @@ def _update_field_method_async(
 
 
 def _update_integer_field_method_async(
-    dto_type: Type[DTO],
+    dto_type: type[DTO],
     collection: AsyncIOMotorCollection,
     field_name: str, _weight: int = 1,
 ) -> Callable:
@@ -131,8 +132,34 @@ def _update_integer_field_method_async(
     return update_interger_field
 
 
+def _get_list_of_field_values_method_async(
+    dto_type: type[DTO], collection: AsyncIOMotorCollection, field_name: str,
+) -> Callable:
+    dataclass_fields = get_dataclass_fields(dto_type=dto_type, only_dto_types=True)
+    field_type = dataclass_fields.get(field_name, None)
+
+    async def get_list_dto(
+        self, offset: int, limit: int, **filters,
+    ) -> list[_DTOField]:  # type: ignore
+        document = await collection.find_one(
+            filters, {field_name: {'$slice': [offset, limit]}},
+        )
+        return [to_dto(field_type, d) for d in document[field_name]] if document else []
+
+    async def get_list(self, offset: int, limit: int, **filters) -> list[Any]:
+        document = await collection.find_one(
+            filters, {field_name: {'$slice': [offset, limit]}},
+        )
+        return document[field_name] if document else []
+
+    if is_dataclass(field_type):
+        to_dto = _get_converter(field_type)
+        return get_list_dto
+    return get_list
+
+
 def _update_list_field_method_async(
-    dto_type: Type[DTO],
+    dto_type: type[DTO],
     collection: AsyncIOMotorCollection,
     field_name: str,
     command: str = '$push',
@@ -145,7 +172,7 @@ def _update_list_field_method_async(
 
 
 def _pop_list_method_async(
-    dto_type: Type[DTO],
+    dto_type: type[DTO],
     collection: AsyncIOMotorCollection,
     field_name: str,
 ) -> Callable:

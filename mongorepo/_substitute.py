@@ -1,7 +1,7 @@
 import inspect
 from dataclasses import is_dataclass
 from inspect import Parameter
-from typing import Any, Callable, Type, TypeVar
+from typing import Any, Callable, TypeVar
 
 from motor.motor_asyncio import AsyncIOMotorCollection
 from pymongo.collection import Collection
@@ -13,7 +13,7 @@ from mongorepo.utils import _validate_method_annotations, replace_typevars
 def _substitute_method(
     mongorepo_method: Callable,
     generic_method: Callable,
-    dto: Type[DTO],
+    dto: type[DTO],
     collection: Collection | AsyncIOMotorCollection,
     id_field: str | None = None,
 ) -> Callable:

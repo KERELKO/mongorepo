@@ -8,6 +8,7 @@ from mongorepo.decorators import mongo_repository
 from mongorepo import Access
 from mongorepo import exceptions
 
+from tests.common import NestedListDTO, custom_collection, SimpleDTO
 from tests.common import ComplicatedDTO, collection_for_complicated_dto
 
 
@@ -134,3 +135,43 @@ def test_list_with_different_type_hints_decorator():
         _ = TestA4
 
     assert True
+
+
+def test_can_get_list_of_dto_field_values() -> None:
+    c = custom_collection(dto=NestedListDTO)
+
+    @mongo_repository(array_fields=['dtos'])
+    class MongoRepository:
+        class Meta:
+            dto = NestedListDTO
+            collection = c
+
+    repo = MongoRepository()
+
+    repo.add(
+        NestedListDTO(
+            title='Test',
+            dtos=[
+                SimpleDTO(x='1', y=1),
+                SimpleDTO(x='2', y=2),
+                SimpleDTO(x='3', y=3),
+                SimpleDTO(x='4', y=4),
+                SimpleDTO(x='5', y=5),
+            ]
+        )
+    )
+
+    dtos = repo.get_dtos_list(title='Test', offset=0, limit=10)
+    assert dtos
+
+    assert len(dtos) == 5
+
+    assert dtos[0].x == '1'
+
+    dto_slice = repo.get_dtos_list(title='Test', offset=2, limit=4)
+
+    assert dto_slice
+
+    assert dto_slice[0].x == '3'
+
+    c.drop()

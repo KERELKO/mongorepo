@@ -55,7 +55,7 @@ class AsyncBasedMongoRepository(Generic[DTO]):
             collection: AsyncIOMotorCollection | None = meta['collection'] if meta else None
             if collection is None:
                 raise exceptions.NoCollectionException(
-                    message='Cannot access collection from Meta, to create index'
+                    message='Cannot access collection from Meta to create index'
                 )
             _run_asyncio_create_index(index, collection=collection)
         return instance
@@ -63,13 +63,12 @@ class AsyncBasedMongoRepository(Generic[DTO]):
     def __init__(self, collection: AsyncIOMotorCollection | None = None) -> None:
         self.collection = self.__get_collection(collection)
         self.__convert_to_dto_func = self.__dict__['__convert_to_dto']
+        self.dto_type = self.__dict__.get('dto_type', None) or _get_dto_from_origin(self.__class__)
         self._add_func = _add_method_async(
-            dto_type=self.dto_type,  # type: ignore
+            dto_type=self.dto_type,
             collection=self.collection,
             id_field=self.__dict__['__id_field']
         )
-        if 'dto_type' not in self.__dict__:
-            self.dto_type = _get_dto_from_origin(self.__class__)
 
     @classmethod
     def __get_collection(cls, collection: AsyncIOMotorCollection | None) -> AsyncIOMotorCollection:
@@ -120,4 +119,4 @@ class AsyncBasedMongoRepository(Generic[DTO]):
         return True if deleted else False
 
     async def add(self, dto: DTO) -> DTO:
-        return await self._add_func(self, dto)  # type: ignore
+        return await self._add_func(self, dto)

@@ -1,14 +1,15 @@
-from dataclasses import asdict
-from typing import Any, Callable, Iterable, Type
+from dataclasses import asdict, is_dataclass
+from typing import Any, Callable, Iterable
 
 from bson import ObjectId
 from pymongo.collection import Collection
-from mongorepo.utils import _get_converter
+from mongorepo.utils import _get_converter, get_dataclass_fields
 from mongorepo import DTO, exceptions
+from mongorepo.base import _DTOField
 
 
 def _add_method(
-    dto_type: Type[DTO],
+    dto_type: type[DTO],
     collection: Collection,
     id_field: str | None = None,
 ) -> Callable:
@@ -29,7 +30,7 @@ def _add_method(
 
 
 def _get_list_method(
-    dto_type: Type[DTO],
+    dto_type: type[DTO],
     collection: Collection,
     id_field: str | None = None,
 ):
@@ -42,7 +43,7 @@ def _get_list_method(
 
 
 def _get_all_method(
-    dto_type: Type[DTO],
+    dto_type: type[DTO],
     collection: Collection,
     id_field: str | None = None
 ) -> Callable:
@@ -56,7 +57,7 @@ def _get_all_method(
 
 
 def _update_method(
-    dto_type: Type[DTO],
+    dto_type: type[DTO],
     collection: Collection,
     id_field: str | None = None,
 ) -> Callable:
@@ -78,7 +79,7 @@ def _update_method(
     return update
 
 
-def _delete_method(dto_type: Type[DTO], collection: Collection) -> Callable:
+def _delete_method(dto_type: type[DTO], collection: Collection) -> Callable:
     def delete(self, **filters: Any) -> bool:
         deleted = collection.find_one_and_delete(filters)
         return True if deleted else False
@@ -86,7 +87,7 @@ def _delete_method(dto_type: Type[DTO], collection: Collection) -> Callable:
 
 
 def _get_method(
-    dto_type: Type[DTO],
+    dto_type: type[DTO],
     collection: Collection,
     id_field: str | None = None,
 ) -> Callable:
@@ -99,7 +100,7 @@ def _get_method(
 
 
 def _update_field_method(
-    dto_type: Type[DTO],
+    dto_type: type[DTO],
     collection: Collection,
     id_field: str | None = None,
 ) -> Callable:
@@ -118,7 +119,7 @@ def _update_field_method(
 
 
 def _update_integer_field_method(
-    dto_type: Type[DTO], collection: Collection, field_name: str, _weight: int = 1,
+    dto_type: type[DTO], collection: Collection, field_name: str, _weight: int = 1,
 ) -> Callable:
     def update_interger_field(self, weight: int | None = None, **filters) -> None:
         w = weight if weight is not None else _weight
@@ -129,7 +130,7 @@ def _update_integer_field_method(
 
 
 def _update_list_field_method(
-    dto_type: Type[DTO], collection: Collection, field_name: str, command: str = '$push',
+    dto_type: type[DTO], collection: Collection, field_name: str, command: str = '$push',
 ) -> Callable:
     def update_list(self, value: Any, **filters) -> None:
         collection.update_one(
@@ -138,7 +139,35 @@ def _update_list_field_method(
     return update_list
 
 
-def _pop_list_method(dto_type: Type[DTO], collection: Collection, field_name: str) -> Callable:
+def _get_list_of_field_values_method(
+    dto_type: type[DTO], collection: Collection, field_name: str,
+) -> Callable:
+    dataclass_fields = get_dataclass_fields(dto_type=dto_type, only_dto_types=True)
+    field_type = dataclass_fields.get(field_name, None)
+
+    def get_list_dto(
+        self, offset: int, limit: int, **filters
+    ) -> list[_DTOField]:  # type: ignore
+        document = collection.find_one(
+            filters, {field_name: {'$slice': [offset, limit]}},
+        )
+        return [to_dto(field_type, d) for d in document[field_name]] if document else []
+
+    def get_list(
+        self, offset: int, limit: int, **filters
+    ) -> list[Any]:
+        document = collection.find_one(
+            filters, {field_name: {'$slice': [offset, limit]}},
+        )
+        return document[field_name] if document else []
+
+    if is_dataclass(field_type):
+        to_dto = _get_converter(dataclass_fields[field_name])
+        return get_list_dto
+    return get_list
+
+
+def _pop_list_method(dto_type: type[DTO], collection: Collection, field_name: str) -> Callable:
     def pop_list(self, **filters) -> Any | None:
         document = collection.find_one_and_update(
             filter=filters, update={'$pop': {field_name: 1}},

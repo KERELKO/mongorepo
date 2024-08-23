@@ -8,6 +8,7 @@ class DataclassInstance(Protocol):
 
 
 DTO = TypeVar('DTO', bound=DataclassInstance)
+_DTOField = TypeVar('_DTOField', bound=DataclassInstance)
 
 
 @dataclass(repr=False, slots=True, eq=False)

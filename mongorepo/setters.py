@@ -19,6 +19,7 @@ from mongorepo._methods import (
     _update_field_method,
     _pop_list_method,
     _get_list_method,
+    _get_list_of_field_values_method,
 )
 from mongorepo.asyncio._methods import (
     _update_field_method_async,
@@ -31,6 +32,7 @@ from mongorepo.asyncio._methods import (
     _update_method_async,
     _pop_list_method_async,
     _get_list_method_async,
+    _get_list_of_field_values_method_async,
 )
 
 
@@ -68,6 +70,9 @@ def _set_array_fields_methods(
             pop_method = _pop_list_method_async(
                 dto_type=dto, collection=collection, field_name=field,
             )
+            get_field_list_values = _get_list_of_field_values_method_async(
+                dto_type=dto, collection=collection, field_name=field,
+            )
         else:
             append_method = _update_list_field_method(
                 dto_type=dto, collection=collection, field_name=field, command='$push'
@@ -75,15 +80,22 @@ def _set_array_fields_methods(
             remove_method = _update_list_field_method(
                 dto_type=dto, collection=collection, field_name=field, command='$pull',
             )
-            pop_method = _pop_list_method(dto_type=dto, collection=collection, field_name=field)
+            pop_method = _pop_list_method(
+                dto_type=dto, collection=collection, field_name=field,
+            )
+            get_field_list_values = _get_list_of_field_values_method(
+                dto_type=dto, collection=collection, field_name=field,
+            )
 
         pop_method.__name__ = f'{prefix}{field}__pop'
         append_method.__name__ = f'{prefix}{field}__append'
         remove_method.__name__ = f'{prefix}{field}__remove'
+        get_field_list_values.__name__ = f'{prefix}get_{field}_list'
 
         setattr(cls, pop_method.__name__, pop_method)
         setattr(cls, append_method.__name__, append_method)
         setattr(cls, remove_method.__name__, remove_method)
+        setattr(cls, get_field_list_values.__name__, get_field_list_values)
 
 
 def _set_integer_fields_methods(

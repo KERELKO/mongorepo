@@ -1,7 +1,7 @@
 import inspect
 from dataclasses import is_dataclass
 from types import UnionType
-from typing import Any, Callable, NoReturn, Optional, Type, TypeVar, get_args, get_origin
+from typing import Any, Callable, NoReturn, Optional, TypeVar, get_args, get_origin
 
 import pymongo
 from pymongo.collection import Collection
@@ -14,22 +14,16 @@ def _get_collection_and_dto(cls: type, raise_exceptions: bool = True) -> dict[st
     """Collect `dto` and `collection` attributes from `Meta` class"""
     attributes: dict[str, Any] = {}
     meta = get_meta(cls)
-    try:
-        dto = meta.dto
-        attributes['dto'] = dto
-    except AttributeError as e:
-        if raise_exceptions:
-            raise exceptions.NoDTOTypeException from e
-        else:
-            attributes['dto'] = None
-    try:
-        collection = meta.collection
-        attributes['collection'] = collection
-    except AttributeError as e:
-        if raise_exceptions:
-            raise exceptions.NoCollectionException from e
-        else:
-            attributes['collection'] = None
+
+    dto = meta.__dict__.get('dto', None)
+    if not dto and raise_exceptions:
+        raise exceptions.NoDTOTypeException
+    attributes['dto'] = dto
+
+    collection = meta.__dict__.get('collection', None)
+    if collection is None and raise_exceptions:
+        raise exceptions.NoCollectionException
+    attributes['collection'] = collection
 
     return attributes
 
@@ -63,10 +57,9 @@ def get_meta(cls: type) -> Any:
     """
     Tries to get `Meta` class for the class or raises an exception
     """
-    try:
-        meta = cls.__dict__['Meta']
-    except (AttributeError, KeyError) as e:
-        raise exceptions.NoMetaException from e
+    meta = cls.__dict__.get('Meta', None)
+    if not meta:
+        raise exceptions.NoMetaException
     if not isinstance(meta, type):
         raise exceptions.NoMetaException
     return meta
@@ -82,7 +75,7 @@ def _get_validated_type_hint(hint: Any, get_type: bool = False) -> Any:
     for arg in args:
         if get_origin(arg) is list:
             raise exceptions.TypeHintException(
-                message=f'Sequence must be the only one type hint {hint}:{arg}'
+                message=f'List must have only one argument as type hint {hint}:{arg}'
             )
         if type(arg) is UnionType or type(hint) is Optional:
             raise exceptions.TypeHintException(message=f'Invalid type hint {hint}:{arg}')
@@ -98,7 +91,7 @@ def _get_validated_type_hint(hint: Any, get_type: bool = False) -> Any:
     return hint
 
 
-def get_dto_type_hints(dto: Type[DTO] | DTO, get_types: bool = True) -> dict[str, Any]:
+def get_dto_type_hints(dto: type[DTO] | DTO, get_types: bool = True) -> dict[str, Any]:
     """Returns dictionary of fields' type hints for a dataclass or dataclass instance"""
     default_values = {}
     for field_name, value in dto.__annotations__.items():
@@ -168,11 +161,11 @@ def _get_dto_from_origin(cls: type) -> Any:
     return dto
 
 
-def convert_to_dto(dto_type: Type[DTO], dct: dict[str, Any]) -> DTO:
+def convert_to_dto(dto_type: type[DTO], dct: dict[str, Any]) -> DTO:
     """
     Converts document to dto, does not include mongodb `_id`
     """
-    dct.pop('_id')
+    dct.pop('_id') if dct.get('_id', None) else ...
     return dto_type(**dct)
 
 
@@ -183,16 +176,16 @@ def convert_to_dto_with_id(
     Converts document to dto,
     icludes mongodb `_id` allows to set specific field where to store `_id`
     """
-    def wrapper(dto_type: Type[DTO], dct: dict[str, Any]) -> DTO:
+    def wrapper(dto_type: type[DTO], dct: dict[str, Any]) -> DTO:
         dct[id_field] = str(dct.pop('_id'))
         return dto_type(**dct)
     return wrapper
 
 
-def recursive_convert_to_dto(dto_type: Type[DTO], id_field: str | None = None) -> Callable:
-    def decorator(dto_type: Type[DTO], dct: dict[str, Any]) -> DTO:
+def recursive_convert_to_dto(dto_type: type[DTO], id_field: str | None = None) -> Callable:
+    def decorator(dto_type: type[DTO], dct: dict[str, Any]) -> DTO:
         def wrapper(
-            dto_type: Type[DTO], dct: dict[str, Any], to_dto: bool = False,
+            dto_type: type[DTO], dct: dict[str, Any], to_dto: bool = False,
         ) -> dict[str, Any] | DTO:
             type_hints = get_dto_type_hints(dto_type, get_types=False)
             data = {}
@@ -220,7 +213,7 @@ def recursive_convert_to_dto(dto_type: Type[DTO], id_field: str | None = None) -
     return decorator
 
 
-def _get_converter(dto_type: Type[DTO], id_field: str | None = None) -> Callable:
+def _get_converter(dto_type: type[DTO], id_field: str | None = None) -> Callable:
     """
     Returns proper converter based on type hints of the dto
     """
@@ -233,7 +226,7 @@ def _get_converter(dto_type: Type[DTO], id_field: str | None = None) -> Callable
     return converter
 
 
-def _has_dataclass_fields(dto_type: Type[DTO]) -> bool:
+def _has_dataclass_fields(dto_type: type[DTO]) -> bool:
     type_hints = get_dto_type_hints(dto_type, get_types=False)
     for value in type_hints.values():
         if is_dataclass(value):
@@ -243,6 +236,28 @@ def _has_dataclass_fields(dto_type: Type[DTO]) -> bool:
             if is_dataclass(args[0]):
                 return True
     return False
+
+
+def get_dataclass_fields(
+    dto_type: type[DTO],
+    only_dto_types: bool = False,
+) -> dict[str, type[DTO]]:
+    """
+    Returns dictionary of fields which has dataclasses as type hints or as arguments
+
+    `only_types=True` to get only dto types,
+    instead of `{"example": list[ExampleDTO]}` get `{"example": ExampleDTO}`
+    """
+    dataclass_fields = {}
+    type_hints = get_dto_type_hints(dto_type, get_types=False)
+    for key, value in type_hints.items():
+        if is_dataclass(value):
+            dataclass_fields[key] = value
+        elif get_origin(value) is list:
+            args = get_args(value)
+            if is_dataclass(args[0]):
+                dataclass_fields[key] = args[0] if only_dto_types else value
+    return dataclass_fields
 
 
 def raise_exc(exc: Exception) -> NoReturn:
