@@ -1,11 +1,10 @@
-from dataclasses import asdict, is_dataclass
+from dataclasses import asdict
 from typing import Any, Callable, Iterable
 
 from bson import ObjectId
 from pymongo.collection import Collection
-from mongorepo.utils import _get_converter, get_dataclass_fields
+from mongorepo.utils import _get_converter, raise_exc
 from mongorepo import DTO, exceptions
-from mongorepo.base import _DTOField
 
 
 def _add_method(
@@ -111,80 +110,9 @@ def _update_field_method(
             raise exceptions.MongoRepoException(
                 message=f'{dto_type} does not have field "{field_name}"'
             )
-        result = collection.find_one_and_update(
+        document = collection.find_one_and_update(
             filter=filters, update={'$set': {field_name: value}}, return_document=True,
         )
-        return to_dto(dto_type, result) if result else None
+        raise_exc(exceptions.NotFoundException(**filters)) if not document else ...
+        return to_dto(dto_type, document)
     return update_field
-
-
-def _update_integer_field_method(
-    dto_type: type[DTO], collection: Collection, field_name: str, _weight: int = 1,
-) -> Callable:
-    def update_interger_field(self, weight: int | None = None, **filters) -> None:
-        w = weight if weight is not None else _weight
-        collection.update_one(
-            filter=filters, update={'$inc': {field_name: w}}
-        )
-    return update_interger_field
-
-
-def _update_list_field_method(
-    dto_type: type[DTO], collection: Collection, field_name: str, command: str = '$push',
-) -> Callable:
-    def update_list(self, value: Any, **filters) -> None:
-        collection.update_one(
-            filter=filters, update={command: {field_name: value}}
-        )
-    return update_list
-
-
-def _get_list_of_field_values_method(
-    dto_type: type[DTO], collection: Collection, field_name: str,
-) -> Callable:
-    dataclass_fields = get_dataclass_fields(dto_type=dto_type, only_dto_types=True)
-    field_type = dataclass_fields.get(field_name, None)
-
-    def get_list_dto(
-        self, offset: int, limit: int, **filters
-    ) -> list[_DTOField]:  # type: ignore
-        document = collection.find_one(
-            filters, {field_name: {'$slice': [offset, limit]}},
-        )
-        return [to_dto(field_type, d) for d in document[field_name]] if document else []
-
-    def get_list(
-        self, offset: int, limit: int, **filters
-    ) -> list[Any]:
-        document = collection.find_one(
-            filters, {field_name: {'$slice': [offset, limit]}},
-        )
-        return document[field_name] if document else []
-
-    if is_dataclass(field_type):
-        to_dto = _get_converter(dataclass_fields[field_name])
-        return get_list_dto
-    return get_list
-
-
-def _pop_list_method(dto_type: type[DTO], collection: Collection, field_name: str) -> Callable:
-    def pop_list(self, **filters) -> Any | None:
-        document = collection.find_one_and_update(
-            filter=filters, update={'$pop': {field_name: 1}},
-        )
-        return document[field_name][-1] if document else None
-    return pop_list
-
-
-METHOD_NAME__CALLABLE: dict[str, Callable] = {
-    'get': _get_method,
-    'add': _add_method,
-    'update': _update_method,
-    'delete': _delete_method,
-    'get_list': _get_list_method,
-    'get_all': _get_all_method,
-    'pop': _pop_list_method,
-    'update_field': _update_field_method,
-    'update_list': _update_list_field_method,
-    'update_integer': _update_integer_field_method,
-}

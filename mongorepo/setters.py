@@ -19,8 +19,8 @@ from mongorepo._methods import (
     _update_field_method,
     _pop_list_method,
     _get_list_method,
-    _get_list_of_field_values_method,
 )
+from mongorepo._methods.arrays import _get_list_of_field_values_method
 from mongorepo.asyncio._methods import (
     _update_field_method_async,
     _update_integer_field_method_async,
@@ -32,8 +32,8 @@ from mongorepo.asyncio._methods import (
     _update_method_async,
     _pop_list_method_async,
     _get_list_method_async,
-    _get_list_of_field_values_method_async,
 )
+from mongorepo.asyncio._methods.arrays import _get_list_of_field_values_method_async
 
 
 def _set_array_fields_methods(

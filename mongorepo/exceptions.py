@@ -63,3 +63,11 @@ class TypeHintException(MongoRepoException):
             return self.message
         message = 'Invalid type hint'
         return message
+
+
+class NotFoundException(MongoRepoException):
+    def __init__(self, **filters) -> None:
+        self.filters = filters
+
+    def __str__(self) -> str:
+        return f'Document not found, filters: {self.filters}'

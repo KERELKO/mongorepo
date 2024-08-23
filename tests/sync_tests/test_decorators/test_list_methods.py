@@ -174,4 +174,8 @@ def test_can_get_list_of_dto_field_values() -> None:
 
     assert dto_slice[0].x == '3'
 
+    last: SimpleDTO | None = repo.dtos__pop(title='Test')
+    assert last
+    assert last.y == 5
+
     c.drop()
