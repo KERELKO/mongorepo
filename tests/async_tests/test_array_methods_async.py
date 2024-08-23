@@ -3,7 +3,7 @@ from mongorepo.asyncio.decorators import async_mongo_repository
 from tests.common import NestedListDTO, custom_collection, SimpleDTO
 
 
-async def test_can_get_list_of_dto_field_values() -> None:
+async def test_can_use_array_methods_with_dto_fields() -> None:
     c = custom_collection(dto=NestedListDTO, async_client=True)
 
     @async_mongo_repository(array_fields=['dtos'])
@@ -43,5 +43,18 @@ async def test_can_get_list_of_dto_field_values() -> None:
     last: SimpleDTO | None = await repo.dtos__pop(title='Test')
     assert last
     assert last.y == 5
+
+    await repo.dtos__append(title='Test', value=SimpleDTO(x='10', y=10))
+
+    the_latest_dto = await repo.dtos__pop(title='Test')
+    assert the_latest_dto is not None
+
+    assert the_latest_dto.x == '10' and the_latest_dto.y == 10
+    await repo.dtos__remove(title='Test', value=SimpleDTO(x='4', y=4))
+
+    dto: NestedListDTO | None = await repo.get(title='Test')
+    assert dto
+    for simple_dto in dto.dtos:
+        assert simple_dto.x != '4' and simple_dto.y != 4
 
     c.drop()

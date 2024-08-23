@@ -54,7 +54,7 @@ def _manage_params(
     *args,
     **kwargs,
 ) -> dict[str, Any]:
-    """Return required params for `mongoprepo` method, do not pass `self` in *args or **kwargs"""
+    """Return required params for `mongorepo` method, do not pass `self` in *args or **kwargs"""
     _kwargs = {}
     gen_params = dict(inspect.signature(generic_method).parameters)
     gen_params.pop('self')

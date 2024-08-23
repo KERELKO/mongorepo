@@ -1,7 +1,7 @@
 from typing import Callable
 
 from mongorepo.base import Access
-from mongorepo.handlers import _handle_cls_async
+from mongorepo.handlers import _handle_async_mongo_repository
 
 
 def async_mongo_repository(
@@ -37,15 +37,15 @@ def async_mongo_repository(
     @async_mongo_repository(method_access=mongorepo.Access.PROTECTED)
     class MongoRepository:
         class Meta:
-            dto = UserDTO
-            collection: AsyncIOMotorCollection = db["users"]
-            index = mongorepo.Index(field="name")
+            dto = ExampleDTO
+            collection: AsyncIOMotorCollection = db["example"]
+            index = mongorepo.Index(field="id_field")
     ```
 
     """
 
     def wrapper(cls) -> type:
-        return _handle_cls_async(
+        return _handle_async_mongo_repository(
             cls=cls,
             add=add,
             update=update,

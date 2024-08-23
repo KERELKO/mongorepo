@@ -15,7 +15,7 @@ from mongorepo._substitute import _substitute_method
 from mongorepo.asyncio._methods import METHOD_NAME__CALLABLE as METHOD_NAME__CALLABLE_ASYNC
 
 
-def _handle_cls(
+def _handle_mongo_repository(
     cls,
     add: bool,
     get: bool,
@@ -59,7 +59,7 @@ def _handle_cls(
     return cls
 
 
-def _handle_cls_async(
+def _handle_async_mongo_repository(
     cls,
     add: bool,
     get: bool,

@@ -1,5 +1,5 @@
 from dataclasses import asdict
-from typing import Any, Generic, Iterable, Protocol
+from typing import Any, Generic, Iterable
 
 from pymongo.collection import Collection
 
@@ -12,23 +12,6 @@ from mongorepo.utils import (
 )
 from mongorepo import DTO, Index
 from mongorepo import exceptions
-
-
-class _IMongoRepository(Protocol[DTO]):
-    def get(self, **filters: Any) -> DTO | None:
-        raise NotImplementedError
-
-    def get_all(self, **filters: Any) -> Iterable[DTO]:
-        raise NotImplementedError
-
-    def update(self, dto: DTO, **filters: Any) -> DTO:
-        raise NotImplementedError
-
-    def delete(self, **filters: Any) -> bool:
-        raise NotImplementedError
-
-    def add(self, dto: DTO) -> DTO:
-        raise NotImplementedError
 
 
 class BaseMongoRepository(Generic[DTO]):

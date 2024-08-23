@@ -31,7 +31,6 @@ def _get_collection_and_dto(cls: type, raise_exceptions: bool = True) -> dict[st
 def _get_meta_attributes(cls, raise_exceptions: bool = True) -> dict[str, Any]:
     """
     Collect all available attributes from `Meta` class
-    * use `mongorepo.docs.get_available_meta_attributes` to get all available `Meta` attributes
     """
     attributes: dict[str, Any] = _get_collection_and_dto(
         cls=cls, raise_exceptions=raise_exceptions,
@@ -104,7 +103,7 @@ def create_index(index: Index | str, collection: Collection) -> None:
     """
     ### Creates an index for the collection
     * index parameter can be string or `mongorepo.Index`
-    * If index is string, create standard mongodb index
+    * If index is string, creates standard mongodb index
     * If it's `mongorepo.Index` creates index with user's settings
     """
     if isinstance(index, str):
@@ -138,13 +137,13 @@ def get_prefix(access: Access | None, cls: type | None = None) -> str:
 
 def _get_dto_from_origin(cls: type) -> Any:
     """
-
     Tries to get `dto` from origin of the class or raises an exception
 
     ```
     class A[UserDTO]: ...
-    _get_dto_from_origin(A)
-    UserDTO
+
+    _get_dto_from_origin(A)  # UserDTO
+
     ```
     """
     try:
@@ -174,7 +173,7 @@ def convert_to_dto_with_id(
 ) -> Callable:
     """
     Converts document to dto,
-    icludes mongodb `_id` allows to set specific field where to store `_id`
+    includes mongodb `_id` allows to set specific field where to store `_id`
     """
     def wrapper(dto_type: type[DTO], dct: dict[str, Any]) -> DTO:
         dct[id_field] = str(dct.pop('_id'))

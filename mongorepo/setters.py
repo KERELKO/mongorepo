@@ -175,22 +175,22 @@ def _set_crud_methods(
 
     if add:
         f = _add_method_async if async_methods else _add_method
-        setattr(cls, f'{prefix}add', f(dto, collection=collection, id_field=id_field))  # type: ignore # noqa
+        setattr(cls, f'{prefix}add', f(dto, collection=collection, id_field=id_field))
     if update:
         f = _update_method_async if async_methods else _update_method
-        setattr(cls, f'{prefix}update', f(dto, collection=collection))  # type: ignore
+        setattr(cls, f'{prefix}update', f(dto, collection=collection))
     if get:
         f = _get_method_async if async_methods else _get_method
-        setattr(cls, f'{prefix}get', f(dto, collection=collection, id_field=id_field))  # type: ignore # noqa
+        setattr(cls, f'{prefix}get', f(dto, collection=collection, id_field=id_field))
     if get_all:
         f = _get_all_method_async if async_methods else _get_all_method
-        setattr(cls, f'{prefix}get_all', f(dto, collection=collection, id_field=id_field))  # type: ignore # noqa
+        setattr(cls, f'{prefix}get_all', f(dto, collection=collection, id_field=id_field))
     if get_list:
         f = _get_list_method_async if async_methods else _get_list_method
-        setattr(cls, f'{prefix}get_list', f(dto, collection=collection, id_field=id_field))  # type: ignore # noqa
+        setattr(cls, f'{prefix}get_list', f(dto, collection=collection, id_field=id_field))
     if delete:
         f = _delete_method_async if async_methods else _delete_method
-        setattr(cls, f'{prefix}delete', f(dto, collection=collection))  # type: ignore
+        setattr(cls, f'{prefix}delete', f(dto, collection=collection))
     if update_field:
         f = _update_field_method_async if async_methods else _update_field_method
-        setattr(cls, f'{prefix}update_field', f(dto, collection=collection, id_field=id_field))  # type: ignore # noqa
+        setattr(cls, f'{prefix}update_field', f(dto, collection=collection, id_field=id_field))
