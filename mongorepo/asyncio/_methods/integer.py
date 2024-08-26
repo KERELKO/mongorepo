@@ -15,7 +15,7 @@ def _update_integer_field_method_async(
     async def update_integer_field(self, weight: int | None = None, **filters) -> None:
         w = weight if weight is not None else _weight
         document = await collection.find_one_and_update(
-            filter=filters, update={'$inc': {field_name: w}},
+            filter=filters, update={'$inc': {field_name: w}}, return_document=True,
         )
         raise_exc(exceptions.NotFoundException(**filters)) if not document else ...
     return update_integer_field

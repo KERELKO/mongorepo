@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+import random
 from typing import Any
 
 import pymongo
@@ -77,3 +78,8 @@ def custom_collection(dto: str | type, async_client: bool = False, ):
     if async_client:
         return async_mongo_client()[f'{dto_name}_db'][dto_name]
     return mongo_client()[f'{dto_name}_db'][dto_name]
+
+
+def r() -> int:
+    """Returns random integer"""
+    return random.randint(1, 123456)

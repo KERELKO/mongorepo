@@ -11,6 +11,7 @@ from tests.common import (
     collection_for_complicated_dto,
     collection_for_dto_with_id,
     collection_for_simple_dto,
+    r,
 )
 
 from mongorepo.exceptions import NoDTOTypeException
@@ -118,9 +119,12 @@ def test_can_search_with_id():
             collection = cl
 
     repo = TestMongoRepository()
-    dto_id = repo.add(DTOWithID(x='ID', y=10))._id
+    _dto = repo.add(DTOWithID(x='ID', y=10))
+    assert _dto
+    assert _dto._id is not None
 
-    dto: DTOWithID = repo.get(_id=dto_id)
+    dto: DTOWithID = repo.get(_id=_dto._id)
+    assert dto is not None
     assert dto.x == 'ID'
 
     cl.drop()
@@ -192,6 +196,7 @@ def test_cannot_access_dto_type_in_type_hints_decorator():
                 ...
 
 
+@pytest.mark.skip(reason='method deleted')
 def test_can_update_field():
     cl = collection_for_simple_dto()
 
@@ -203,11 +208,11 @@ def test_can_update_field():
 
     r = TestMongoRepository()
     r.add(SimpleDTO(x='123', y=123))
-    r.update_field(field_name='x', value='100', x='123')
 
     cl.drop()
 
 
+@pytest.mark.skip(reason='method deleted')
 def test_cannot_update_field():
     cl = collection_for_simple_dto()
 
@@ -250,5 +255,28 @@ def test_get_list_method():
 
     assert len(dtos) == 1
     assert dtos[0].x == '123'
+
+    cl.drop()
+
+
+def test_get_list_with_add_batch_methods_with_decorator():
+    cl = collection_for_simple_dto()
+
+    @mongo_repository(add_batch=True, get_list=True)
+    class TestMongoRepository:
+        class Meta:
+            dto = SimpleDTO
+            collection = cl
+
+    repo = TestMongoRepository()
+
+    repo.add_batch(
+        [SimpleDTO(x='hey', y=r()), SimpleDTO(x='second hey!', y=r())]
+    )
+
+    dto_list = repo.get_list(offset=0, limit=10)
+    for dto in dto_list:
+        assert dto
+        assert isinstance(dto, SimpleDTO)
 
     cl.drop()

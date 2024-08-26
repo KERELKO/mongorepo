@@ -18,7 +18,7 @@ def _add_method_async(
         await collection.insert_one(asdict(dto))
         return dto
 
-    async def add_return_with_id(self, dto: DTO) -> DTO:
+    async def add_and_return_with_id(self, dto: DTO) -> DTO:
         object_id = ObjectId()
         dto.__dict__[id_field] = str(object_id)  # type: ignore
         await collection.insert_one({**asdict(dto), '_id': object_id})
@@ -26,7 +26,29 @@ def _add_method_async(
 
     if not id_field:
         return add
-    return add_return_with_id
+    return add_and_return_with_id
+
+
+def _add_batch_method_async(
+    dto_type: type[DTO],
+    collection: AsyncIOMotorCollection,
+    id_field: str | None = None,
+) -> Callable:
+
+    async def add(self, dto_list: list[DTO]) -> None:
+        await collection.insert_many(asdict(d) for d in dto_list)
+
+    async def add_and_return_with_id(self, dto_list: list[DTO]) -> None:
+        batch: list[dict[str, Any]] = []
+        for dto in dto_list:
+            object_id = ObjectId()
+            dto.__dict__[id_field] = str(object_id)  # type: ignore  checked on 49-51 lines
+            batch.append({**asdict(dto), '_id': object_id})
+        await collection.insert_many(batch)
+
+    if id_field is not None:
+        return add
+    return add_and_return_with_id
 
 
 def _get_list_method_async(

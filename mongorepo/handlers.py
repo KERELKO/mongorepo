@@ -19,11 +19,11 @@ def _handle_mongo_repository(
     cls,
     add: bool,
     get: bool,
+    add_batch: bool,
     get_all: bool,
     update: bool,
     delete: bool,
     get_list: bool,
-    update_field: bool,
     integer_fields: list[str] | None,
     array_fields: list[str] | None,
     method_access: Access | None,
@@ -43,7 +43,7 @@ def _handle_mongo_repository(
         get_list=get_list,
         update=update,
         delete=delete,
-        update_field=update_field,
+        add_batch=add_batch,
         method_access=method_access,
     )
 
@@ -62,12 +62,12 @@ def _handle_mongo_repository(
 def _handle_async_mongo_repository(
     cls,
     add: bool,
+    add_batch: bool,
     get: bool,
     get_all: bool,
     get_list: bool,
     update: bool,
     delete: bool,
-    update_field: bool,
     integer_fields: list[str] | None,
     array_fields: list[str] | None,
     method_access: Access | None,
@@ -86,7 +86,7 @@ def _handle_async_mongo_repository(
         get_all=get_all,
         update=update,
         delete=delete,
-        update_field=update_field,
+        add_batch=add_batch,
         method_access=method_access,
         get_list=get_list,
         async_methods=True,
@@ -124,7 +124,7 @@ def _handle_implements(
         if inspect.isfunction(_generic_method) or inspect.ismethod(_generic_method):
             generic_method: Callable = _generic_method  # type: ignore
         elif isinstance(_generic_method, str):
-            generic_method: Callable | None = getattr(  # type: ignore
+            generic_method: Callable | None = getattr(
                 base_cls, _generic_method, None
             )
             if generic_method is None or not inspect.isfunction(generic_method):
@@ -137,7 +137,7 @@ def _handle_implements(
         if is_async:
             mongorepo_method: Callable = METHOD_NAME__CALLABLE_ASYNC[mongorepo_method_name]
         else:
-            mongorepo_method: Callable = METHOD_NAME__CALLABLE[  # type: ignore
+            mongorepo_method: Callable = METHOD_NAME__CALLABLE[
                 mongorepo_method_name
             ]
 

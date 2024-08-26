@@ -7,7 +7,7 @@ import pytest
 from mongorepo.asyncio.decorators import async_mongo_repository
 from mongorepo import exceptions, Index
 
-from tests.common import SimpleDTO, collection_for_simple_dto
+from tests.common import SimpleDTO, collection_for_simple_dto, r
 
 
 async def test_all_methods_with_async_decorator():
@@ -82,3 +82,26 @@ async def test_can_create_index():
     assert 'async_index_for_x' in await cl.index_information()
 
     await cl.drop()
+
+
+async def test_get_list_with_add_batch_methods_with_decorator():
+    cl = collection_for_simple_dto(async_client=True)
+
+    @async_mongo_repository(add_batch=True, get_list=True)
+    class TestMongoRepository:
+        class Meta:
+            dto = SimpleDTO
+            collection = cl
+
+    repo = TestMongoRepository()
+
+    await repo.add_batch(
+        [SimpleDTO(x='hey', y=r()), SimpleDTO(x='second hey!', y=r())]
+    )
+
+    dto_list = await repo.get_list(offset=0, limit=10)
+    for dto in dto_list:
+        assert dto
+        assert isinstance(dto, SimpleDTO)
+
+    cl.drop()

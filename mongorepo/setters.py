@@ -16,13 +16,13 @@ from mongorepo._methods import (
     _delete_method,
     _add_method,
     _update_method,
-    _update_field_method,
+    _add_batch_method,
     _pop_list_method,
     _get_list_method,
 )
 from mongorepo._methods.arrays import _get_list_of_field_values_method
 from mongorepo.asyncio._methods import (
-    _update_field_method_async,
+    _add_batch_method_async,
     _update_integer_field_method_async,
     _update_list_field_method_async,
     _add_method_async,
@@ -152,7 +152,7 @@ def _set_crud_methods(
     update: bool = True,
     get_list: bool = True,
     get_all: bool = True,
-    update_field: bool = False,
+    add_batch: bool = True,
     async_methods: bool = False,
     method_access: Access | None = None,
 ) -> None:
@@ -191,6 +191,6 @@ def _set_crud_methods(
     if delete:
         f = _delete_method_async if async_methods else _delete_method
         setattr(cls, f'{prefix}delete', f(dto, collection=collection))
-    if update_field:
-        f = _update_field_method_async if async_methods else _update_field_method
-        setattr(cls, f'{prefix}update_field', f(dto, collection=collection, id_field=id_field))
+    if add_batch:
+        f = _add_batch_method_async if async_methods else _add_batch_method
+        setattr(cls, f'{prefix}add_batch', f(dto, collection=collection, id_field=id_field))
