@@ -31,7 +31,17 @@ def mongo_repository(
     * You can use `method_access` to make all methods
     private, protected or public (use `mongorepo.Access`)
 
-    ### usage example:
+    * Add `array_fields` to params to extend repository with methods
+    that related to list fields in your dto type
+
+    {field}__pop, {field}__list, {field}__remove, {field__append}
+
+    * Add `integer_fields` to params to extend repository with methods
+    that related to integer fields in your dto type
+
+    increment_{field}, decrement_{field}
+
+    ## Example
 
     ```
     @mongo_repository(delete=False)
@@ -41,6 +51,13 @@ def mongo_repository(
             collection: Collection = db["users"]
             index = mongorepo.Index(field="name")
             method_access = mongorepo.Access.PROTECTED
+
+    r = MongoRepository()
+
+    r.add(UserDTO(username="admin"))
+
+    admin = r.get(username="admin")  # UserDTO(username="admin")
+
     ```
 
     """

@@ -44,19 +44,22 @@ def get_available_repository_methods(only_names: bool = False) -> dict[str, str]
         'get_all': 'retrive all documents of the same type(dto type), params: **filters: Any',
         'get_list': 'collects bunch of documents, params: offset: int = 0, limit: int = 20',
         '{field}__append': (
-            'Only for decorator with "array_fields" append item to a document'
+            'Only for decorator with "array_fields", append item to a document'
         ),
         '{field}__remove': (
-            'Only for decorator with "array_fields" remove item from a document'
+            'Only for decorator with "array_fields", remove item from a document'
         ),
         '{field}__pop': (
-            'Only for decorator with "array_fields" pop last item from a document'
+            'Only for decorator with "array_fields", pop last item from a document'
         ),
-        'increment_{field}': (
-            'Only for decorator with "integer_fields" increment integer field by 1 in a document'
+        '{field}__list': (
+            'Only for decorator with "array_fields", return list of values of field'
+        ),
+        'incr__{field}': (
+            'Only for decorator with "integer_fields", increment integer field by 1 in a document'
             ),
-        'decrement_{field}': (
-            'Only for decorator with "integer_fields" decrement integer fied by 1 in a document'
+        'decr__{field}': (
+            'Only for decorator with "integer_fields", decrement integer fied by 1 in a document'
         ),
     }
     if only_names:

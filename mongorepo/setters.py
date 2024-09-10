@@ -90,7 +90,7 @@ def _set_array_fields_methods(
         pop_method.__name__ = f'{prefix}{field}__pop'
         append_method.__name__ = f'{prefix}{field}__append'
         remove_method.__name__ = f'{prefix}{field}__remove'
-        get_field_list_values.__name__ = f'{prefix}get_{field}_list'
+        get_field_list_values.__name__ = f'{prefix}{field}__list'
 
         setattr(cls, pop_method.__name__, pop_method)
         setattr(cls, append_method.__name__, append_method)
@@ -137,8 +137,8 @@ def _set_integer_fields_methods(
                 dto_type=dto, collection=collection, field_name=field, _weight=-1
             )
 
-        incr_method.__name__ = f'{prefix}increment_{field}'
-        decr_method.__name__ = f'{prefix}decrement_{field}'
+        incr_method.__name__ = f'{prefix}incr__{field}'
+        decr_method.__name__ = f'{prefix}decr__{field}'
 
         setattr(cls, incr_method.__name__, incr_method)
         setattr(cls, decr_method.__name__, decr_method)

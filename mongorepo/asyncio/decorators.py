@@ -31,7 +31,17 @@ def async_mongo_repository(
     * You can use `method_access` to make all methods
     private, protected or public (use `mongorepo.Access`)
 
-    ### usage example:
+    * Add `array_fields` to params to extend repository with methods
+    that related to list fields in your dto type
+
+    {field}__pop, {field}__list, {field}__remove, {field__append}
+
+    * Add `integer_fields` to params to extend repository with methods
+    that related to integer fields in your dto type
+
+    increment_{field}, decrement_{field}
+
+    ## Example
 
     ```
     @async_mongo_repository(method_access=mongorepo.Access.PROTECTED)
@@ -40,6 +50,13 @@ def async_mongo_repository(
             dto = ExampleDTO
             collection: AsyncIOMotorCollection = db["example"]
             index = mongorepo.Index(field="id_field")
+
+    r = MongoRepository()
+
+    await r.add(ExampleDTO(key="value"))
+
+    example = await repo.get(key="value")  # ExampleDTO(key="value")
+
     ```
 
     """

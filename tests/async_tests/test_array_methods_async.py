@@ -27,14 +27,14 @@ async def test_can_use_array_methods_with_dto_fields() -> None:
         )
     )
 
-    dtos = await repo.get_dtos_list(title='Test', offset=0, limit=10)
+    dtos = await repo.dtos__list(title='Test', offset=0, limit=10)
     assert dtos
 
     assert len(dtos) == 5
 
     assert dtos[0].x == '1'
 
-    dto_slice = await repo.get_dtos_list(title='Test', offset=2, limit=4)
+    dto_slice = await repo.dtos__list(title='Test', offset=2, limit=4)
 
     assert dto_slice
 

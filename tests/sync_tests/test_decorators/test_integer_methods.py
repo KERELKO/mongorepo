@@ -19,12 +19,12 @@ def test_can_increment_and_decrement_field_with_decorator():
 
     repo.add(SimpleDTO(x='admin', y=10))
 
-    repo.increment_y(x='admin')
-    repo.increment_y(x='admin')
-    repo.increment_y(x='admin')
-    repo.increment_y(x='admin')
+    repo.incr__y(x='admin')
+    repo.incr__y(x='admin')
+    repo.incr__y(x='admin')
+    repo.incr__y(x='admin')
 
-    repo.decrement_y(x='admin')
+    repo.decr__y(x='admin')
 
     dto = repo.get(x='admin')
     assert dto.y == 13

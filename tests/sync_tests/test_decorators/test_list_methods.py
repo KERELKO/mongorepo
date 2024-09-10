@@ -161,14 +161,14 @@ def test_can_get_list_of_dto_field_values() -> None:
         )
     )
 
-    dtos = repo.get_dtos_list(title='Test', offset=0, limit=10)
+    dtos = repo.dtos__list(title='Test', offset=0, limit=10)
     assert dtos
 
     assert len(dtos) == 5
 
     assert dtos[0].x == '1'
 
-    dto_slice = repo.get_dtos_list(title='Test', offset=2, limit=4)
+    dto_slice = repo.dtos__list(title='Test', offset=2, limit=4)
 
     assert dto_slice
 
