@@ -4,8 +4,12 @@ from mongorepo.decorators import implements
 from tests.common import NestedListDTO, SimpleDTO, custom_collection
 
 
+# IDEA: to make substitute work with aray and integer fields methods
+
+
 @pytest.mark.skip(reason='Not implemented yet')
 def test_can_substitute_array_fields_methods():
+
     c = custom_collection(NestedListDTO)
 
     class IRepo:
@@ -87,7 +91,7 @@ def test_can_substitute_integer_fields_methods():
         get=IRepo.get,
         add=IRepo.add,
         incr__y=IRepo.incr,
-        derc__y=IRepo.decr,
+        decr__y=IRepo.decr,
     )
     class MongoRepo:
         class Meta:

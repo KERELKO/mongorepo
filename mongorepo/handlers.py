@@ -12,7 +12,7 @@ from mongorepo.utils import _get_meta_attributes, raise_exc, create_index
 from mongorepo import exceptions
 from mongorepo._methods import METHOD_NAME__CALLABLE
 from mongorepo._substitute import _substitute_method
-from mongorepo.asyncio._methods import METHOD_NAME__CALLABLE as METHOD_NAME__CALLABLE_ASYNC
+from mongorepo.asyncio._methods import METHOD_NAME__CALLABLE_ASYNC
 
 
 def _handle_mongo_repository(
@@ -122,7 +122,7 @@ def _handle_implements(
     id_field = attrs['id_field']
     for mongorepo_method_name, _generic_method in substitute.items():
         if inspect.isfunction(_generic_method) or inspect.ismethod(_generic_method):
-            generic_method: Callable = _generic_method  # type: ignore
+            generic_method: Callable = _generic_method  # type: ignore[reportRedeclaration]
         elif isinstance(_generic_method, str):
             generic_method: Callable | None = getattr(
                 base_cls, _generic_method, None
