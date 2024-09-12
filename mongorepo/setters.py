@@ -1,12 +1,11 @@
 from typing import Iterable
 
-from mongorepo import exceptions
 from mongorepo.base import Access
 from mongorepo.utils import (
     _get_dto_from_origin,
     _get_meta_attributes,
-    get_dto_type_hints,
     get_prefix,
+    _check_valid_field_type
 )
 from mongorepo._methods import (
     _update_integer_field_method,
@@ -54,12 +53,8 @@ def _set_array_fields_methods(
     prefix = get_prefix(
         access=attributes['method_access'] if not method_access else method_access, cls=cls
     )
-    dto_fields = get_dto_type_hints(dto)
     for field in array_fields:
-        if field not in dto_fields:
-            raise exceptions.MongoRepoException(message=f'{dto} does not have "{field}" attribute')
-        if dto_fields[field] is not list:
-            raise exceptions.MongoRepoException(message=f'"{field}" is not of type "list"')
+        _check_valid_field_type(field, dto, list)
         if async_methods:
             append_method = _update_list_field_method_async(
                 dto_type=dto, collection=collection, field_name=field, command='$push'
@@ -116,12 +111,8 @@ def _set_integer_fields_methods(
     prefix = get_prefix(
         access=attributes['method_access'] if not method_access else method_access, cls=cls
     )
-    dto_fields = get_dto_type_hints(dto)
     for field in integer_fields:
-        if field not in dto_fields:
-            raise exceptions.MongoRepoException(message=f'{dto} does not have "{field}" attribute')
-        if dto_fields[field] is not int:
-            raise exceptions.MongoRepoException(message=f'"{field}" is not integer field')
+        _check_valid_field_type(field, dto, int)
         if async_methods:
             incr_method = _update_integer_field_method_async(
                 dto_type=dto, collection=collection, field_name=field, _weight=1

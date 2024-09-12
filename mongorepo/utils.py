@@ -285,9 +285,25 @@ def _validate_method_annotations(method: Callable) -> None:
             raise exceptions.MongoRepoException(
                 message=f'Parameter "{param}" does not have type hint',
             )
+        if type_hint is Any:
+            raise exceptions.MongoRepoException(
+                message=f'Parameter "{param}" cannot be typing.Any, use specific type',
+            )
 
 
 def replace_typevars(func: Callable, typevar: Any) -> None:
     for param, anno in func.__annotations__.items():
         if isinstance(anno, TypeVar):
             func.__annotations__[param] = typevar
+
+
+def _check_valid_field_type(field_name: str, dto_type: type[DTO], data_type: type) -> None:
+    dto_fields = get_dto_type_hints(dto_type)
+    if field_name not in dto_fields:
+        raise exceptions.MongoRepoException(
+            message=f'{dto_type} does not have field "{field_name}"',
+        )
+    if dto_fields[field_name] is not data_type:
+        raise exceptions.MongoRepoException(
+            message=f'Invalid type of the field "{field_name}", expected: {data_type}',
+        )

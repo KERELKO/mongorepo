@@ -17,8 +17,22 @@ from mongorepo._methods.crud import (
 from mongorepo._methods.integer import _update_integer_field_method
 
 
-METHOD_NAME__CALLABLE: dict[str, Callable] = {
-    # Standard methods
+# List methods, all starts with `__`
+LIST_METHODS: dict[str, Callable] = {
+    '__list': _get_list_of_field_values_method,
+    '__pop': _pop_list_method,
+    '__append': _update_list_field_method,
+    '__remove': _update_list_field_method,
+}
+
+# Integer methods, all ends with `__`
+INTEGER_METHODS: dict[str, Callable] = {
+    'incr__': _update_integer_field_method,
+    'decr__': _update_integer_field_method,
+}
+
+# CRUD methods
+CRUD_METHODS: dict[str, Callable] = {
     'get': _get_method,
     'add': _add_method,
     'update': _update_method,
@@ -26,16 +40,6 @@ METHOD_NAME__CALLABLE: dict[str, Callable] = {
     'get_list': _get_list_method,
     'get_all': _get_all_method,
     'add_batch': _add_batch_method,
-
-    # List methods
-    '__list': _get_list_of_field_values_method,
-    '__pop': _pop_list_method,
-    '__append': _update_list_field_method,
-    '__remove': _update_list_field_method,
-
-    # Integer methods
-    'incr__': _update_integer_field_method,
-    'decr__': _update_integer_field_method,
 }
 
-__all__ = ['METHOD_NAME__CALLABLE']
+__all__ = ['LIST_METHODS', 'CRUD_METHODS', 'INTEGER_METHODS']

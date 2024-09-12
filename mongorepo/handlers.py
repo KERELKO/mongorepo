@@ -10,9 +10,7 @@ from mongorepo.setters import (
 )
 from mongorepo.utils import _get_meta_attributes, raise_exc, create_index
 from mongorepo import exceptions
-from mongorepo._methods import METHOD_NAME__CALLABLE
 from mongorepo._substitute import _substitute_method
-from mongorepo.asyncio._methods import METHOD_NAME__CALLABLE_ASYNC
 
 
 def _handle_mongo_repository(
@@ -130,22 +128,11 @@ def _handle_implements(
             if generic_method is None or not inspect.isfunction(generic_method):
                 raise exceptions.InvalidMethodNameException(_generic_method)
 
-        is_async: bool = inspect.iscoroutinefunction(generic_method)
-
-        if mongorepo_method_name not in METHOD_NAME__CALLABLE:
-            raise exceptions.InvalidMethodNameException(mongorepo_method_name)
-        if is_async:
-            mongorepo_method: Callable = METHOD_NAME__CALLABLE_ASYNC[mongorepo_method_name]
-        else:
-            mongorepo_method: Callable = METHOD_NAME__CALLABLE[
-                mongorepo_method_name
-            ]
-
         setattr(
             cls,
             generic_method.__name__,
             _substitute_method(
-                mongorepo_method,
+                mongorepo_method_name,
                 generic_method,
                 dto_type,
                 collection,
