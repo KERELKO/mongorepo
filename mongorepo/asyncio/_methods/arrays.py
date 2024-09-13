@@ -46,6 +46,7 @@ def _update_list_field_method_async(
     field_type = dataclass_fields.get(field_name, None)
 
     async def update_list(self, value: Any, **filters) -> None:
+        print(value, field_type)
         value = value if not is_dataclass(field_type) else asdict(value)
         document = await collection.update_one(
             filter=filters, update={command: {field_name: value}},
