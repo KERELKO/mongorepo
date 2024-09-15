@@ -1,7 +1,7 @@
 from typing import Callable
 
-from mongorepo.base import Access
-from mongorepo.handlers import _handle_async_mongo_repository
+from mongorepo._base import Access
+from mongorepo._handlers import _handle_async_mongo_repository
 
 
 def async_mongo_repository(

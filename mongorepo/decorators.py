@@ -1,7 +1,7 @@
 from typing import Annotated, Callable
 
-from mongorepo.base import Access
-from mongorepo.handlers import _handle_mongo_repository, _handle_implements
+from mongorepo import Access
+from mongorepo._handlers import _handle_mongo_repository, _handle_implements
 
 
 def mongo_repository(
@@ -88,7 +88,7 @@ def implements(base_cls: type, **methods: str | Callable) -> Callable:
     Decorator that allows to implement methods of `base_cls`
     you can specify them in `**methods`
 
-    ### Decorator usage example:
+    ## Example:
 
     ```
     class A:

@@ -3,15 +3,15 @@ from typing import Any, Callable
 
 from motor.motor_asyncio import AsyncIOMotorCollection
 
-from mongorepo.utils import _get_converter, get_dataclass_fields, raise_exc
+from mongorepo.utils import _get_converter, _get_dataclass_fields, raise_exc
 from mongorepo import DTO, exceptions
-from mongorepo.base import _DTOField
+from mongorepo._base import _DTOField
 
 
 def _get_list_of_field_values_method_async(
     dto_type: type[DTO], collection: AsyncIOMotorCollection, field_name: str,
 ) -> Callable:
-    dataclass_fields = get_dataclass_fields(dto_type=dto_type, only_dto_types=True)
+    dataclass_fields = _get_dataclass_fields(dto_type=dto_type, only_dto_types=True)
     field_type = dataclass_fields.get(field_name, None)
 
     async def get_list_dto(
@@ -42,12 +42,11 @@ def _update_list_field_method_async(
     field_name: str,
     command: str = '$push',
 ) -> Callable:
-    dataclass_fields = get_dataclass_fields(dto_type=dto_type, only_dto_types=True)
+    dataclass_fields = _get_dataclass_fields(dto_type=dto_type, only_dto_types=True)
     field_type = dataclass_fields.get(field_name, None)
 
     async def update_list(self, value: Any, **filters) -> None:
-        print(value, field_type)
-        value = value if not is_dataclass(field_type) else asdict(value)
+        value = asdict(value) if is_dataclass(field_type) else value
         document = await collection.update_one(
             filter=filters, update={command: {field_name: value}},
         )
@@ -60,7 +59,7 @@ def _pop_list_method_async(
     collection: AsyncIOMotorCollection,
     field_name: str,
 ) -> Callable:
-    dataclass_fields = get_dataclass_fields(dto_type=dto_type, only_dto_types=True)
+    dataclass_fields = _get_dataclass_fields(dto_type=dto_type, only_dto_types=True)
     field_type = dataclass_fields.get(field_name, None)
 
     async def pop_list(self, **filters) -> Any | None:

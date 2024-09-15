@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 
-from mongorepo.utils import recursive_convert_to_dto
+from mongorepo.utils import _recursive_convert_to_dto
 
 
 def test_recursive_converts_to_dto() -> None:
@@ -24,14 +24,14 @@ def test_recursive_converts_to_dto() -> None:
         dtos: list[NestedListDTO]
 
     s = SimpleDTO(x='123', y=5)
-    assert recursive_convert_to_dto(SimpleDTO)(SimpleDTO, {'x': '123', 'y': 5}) == s
+    assert _recursive_convert_to_dto(SimpleDTO)(SimpleDTO, {'x': '123', 'y': 5}) == s
 
     n = NestedDTO(title='.', simple=s)
-    assert recursive_convert_to_dto(NestedDTO)(
+    assert _recursive_convert_to_dto(NestedDTO)(
         NestedDTO, {'title': '.', 'simple': {'x': '123', 'y': 5}}
     ) == n
     nl = NestedListDTO(title='...', dtos=[s, s, s])
-    conv = recursive_convert_to_dto(NestedListDTO)(
+    conv = _recursive_convert_to_dto(NestedListDTO)(
         NestedListDTO,
         dct={
             'title': '...', 'dtos': [
@@ -44,7 +44,7 @@ def test_recursive_converts_to_dto() -> None:
     rnl = RecursiveDTO(
         dtos=[nl, nl]
     )
-    final_conv = recursive_convert_to_dto(RecursiveDTO)(
+    final_conv = _recursive_convert_to_dto(RecursiveDTO)(
         RecursiveDTO,
         dct={
             'dtos': [

@@ -8,8 +8,8 @@ from motor.motor_asyncio import AsyncIOMotorCollection
 from pymongo.collection import Collection
 
 from mongorepo import exceptions
-from mongorepo.base import DTO
-from mongorepo.utils import _validate_method_annotations, replace_typevars, _check_valid_field_type
+from mongorepo._base import DTO
+from mongorepo.utils import _validate_method_annotations, _replace_typevars, _check_valid_field_type
 
 from mongorepo._methods import CRUD_METHODS, INTEGER_METHODS, LIST_METHODS
 from mongorepo.asyncio._methods import CRUD_METHODS_ASYNC, INTEGER_METHODS_ASYNC, LIST_METHODS_ASYNC
@@ -160,7 +160,7 @@ def _substitute_method(
     new_method.__name__ = generic_method.__name__
     new_method.__annotations__['return'] = dto | None
 
-    replace_typevars(new_method, dto)
+    _replace_typevars(new_method, dto)
 
     return new_method
 

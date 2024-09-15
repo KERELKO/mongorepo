@@ -1,5 +1,3 @@
-import pytest
-
 from tests.common import (  # noqa
     NestedDTO,
     NestedListDTO,
@@ -33,7 +31,6 @@ def test_methods_with_nested_dto() -> None:
     c.drop()
 
 
-@pytest.mark.skip
 def test_methods_with_nested_list_dto() -> None:
     c = custom_collection(NestedListDTO)
 

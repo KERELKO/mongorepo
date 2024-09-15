@@ -6,7 +6,7 @@ from pymongo.collection import Collection
 from mongorepo._methods import _add_method
 from mongorepo.utils import (
     _get_converter,
-    create_index,
+    _create_index,
     _get_dto_from_origin,
     _get_meta_attributes,
 )
@@ -60,7 +60,7 @@ class BaseMongoRepository(Generic[DTO]):
                 raise exceptions.NoCollectionException(
                     message='Cannot access collection from Meta to create index'
                 )
-            create_index(index, collection=collection)
+            _create_index(index, collection=collection)
         return instance
 
     def __init__(self, collection: Collection | None = None) -> None:

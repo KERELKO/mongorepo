@@ -2,13 +2,13 @@ import inspect
 from typing import Callable
 
 from mongorepo.asyncio.utils import _run_asyncio_create_index
-from mongorepo.base import Access
-from mongorepo.setters import (
+from mongorepo._base import Access
+from mongorepo._setters import (
     _set_array_fields_methods,
     _set_crud_methods,
     _set_integer_fields_methods,
 )
-from mongorepo.utils import _get_meta_attributes, raise_exc, create_index
+from mongorepo.utils import _get_meta_attributes, raise_exc, _create_index
 from mongorepo import exceptions
 from mongorepo._substitute import _substitute_method
 
@@ -46,7 +46,7 @@ def _handle_mongo_repository(
     )
 
     if index is not None:
-        create_index(index=index, collection=collection)
+        _create_index(index=index, collection=collection)
 
     if integer_fields is not None:
         _set_integer_fields_methods(cls, integer_fields=integer_fields, method_access=method_access)

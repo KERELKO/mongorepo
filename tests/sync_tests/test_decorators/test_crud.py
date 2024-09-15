@@ -3,7 +3,7 @@ import random
 
 import pytest
 
-from mongorepo import Access, exceptions
+from mongorepo import Access
 from tests.common import (
     SimpleDTO,
     DTOWithID,
@@ -194,40 +194,6 @@ def test_cannot_access_dto_type_in_type_hints_decorator():
         class TestMongoRepository:
             class Meta:
                 ...
-
-
-@pytest.mark.skip(reason='method deleted')
-def test_can_update_field():
-    cl = collection_for_simple_dto()
-
-    @mongo_repository(update_field=True)
-    class TestMongoRepository:
-        class Meta:
-            dto = SimpleDTO
-            collection = cl
-
-    r = TestMongoRepository()
-    r.add(SimpleDTO(x='123', y=123))
-
-    cl.drop()
-
-
-@pytest.mark.skip(reason='method deleted')
-def test_cannot_update_field():
-    cl = collection_for_simple_dto()
-
-    @mongo_repository(update_field=True)
-    class TestMongoRepository:
-        class Meta:
-            dto = SimpleDTO
-            collection = cl
-
-    r = TestMongoRepository()
-    r.add(SimpleDTO(x='123', y=123))
-    with pytest.raises(exceptions.MongoRepoException):
-        r.update_field(field_name='c', value=9000, x='123')
-
-    cl.drop()
 
 
 def test_get_list_method():

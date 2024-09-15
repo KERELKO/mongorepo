@@ -88,12 +88,7 @@ def _update_method_async(
     async def update(self, dto: DTO, **filters: Any) -> DTO | None:
         data: dict[str, dict[str, Any]] = {'$set': {}}
         for field, value in asdict(dto).items():
-            if isinstance(value, (int, bool, float)):
-                data['$set'][field] = value
-            elif not field:
-                continue
-            else:
-                data['$set'][field] = value
+            data['$set'][field] = value
         doc: dict | None = await collection.find_one_and_update(
             filter=filters, update=data, return_document=True,
         )

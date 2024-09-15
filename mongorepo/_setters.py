@@ -1,6 +1,6 @@
 from typing import Iterable
 
-from mongorepo.base import Access
+from mongorepo._base import Access
 from mongorepo.utils import (
     _get_dto_from_origin,
     _get_meta_attributes,

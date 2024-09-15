@@ -2,15 +2,15 @@ from dataclasses import asdict, is_dataclass
 from typing import Any, Callable
 
 from pymongo.collection import Collection
-from mongorepo.utils import _get_converter, get_dataclass_fields, raise_exc
+from mongorepo.utils import _get_converter, _get_dataclass_fields, raise_exc
 from mongorepo import DTO, exceptions
-from mongorepo.base import _DTOField
+from mongorepo._base import _DTOField
 
 
 def _update_list_field_method(
     dto_type: type[DTO], collection: Collection, field_name: str, command: str = '$push',
 ) -> Callable:
-    dataclass_fields = get_dataclass_fields(dto_type=dto_type, only_dto_types=True)
+    dataclass_fields = _get_dataclass_fields(dto_type=dto_type, only_dto_types=True)
     field_type = dataclass_fields.get(field_name, None)
 
     def update_list(self, value: Any, **filters) -> None:
@@ -25,7 +25,7 @@ def _update_list_field_method(
 def _get_list_of_field_values_method(
     dto_type: type[DTO], collection: Collection, field_name: str,
 ) -> Callable:
-    dataclass_fields = get_dataclass_fields(dto_type=dto_type, only_dto_types=True)
+    dataclass_fields = _get_dataclass_fields(dto_type=dto_type, only_dto_types=True)
     field_type = dataclass_fields.get(field_name, None)
 
     def get_list_dto(
@@ -53,7 +53,7 @@ def _get_list_of_field_values_method(
 
 
 def _pop_list_method(dto_type: type[DTO], collection: Collection, field_name: str) -> Callable:
-    dataclass_fields = get_dataclass_fields(dto_type=dto_type, only_dto_types=True)
+    dataclass_fields = _get_dataclass_fields(dto_type=dto_type, only_dto_types=True)
     field_type = dataclass_fields.get(field_name, None)
 
     def pop_list(self, **filters) -> Any:
