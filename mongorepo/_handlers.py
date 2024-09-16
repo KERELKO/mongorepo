@@ -1,16 +1,13 @@
 import inspect
 from typing import Callable
 
-from mongorepo.asyncio.utils import _run_asyncio_create_index
-from mongorepo._base import Access
-from mongorepo._setters import (
-    _set_array_fields_methods,
-    _set_crud_methods,
-    _set_integer_fields_methods,
-)
-from mongorepo.utils import _get_meta_attributes, raise_exc, _create_index
 from mongorepo import exceptions
+from mongorepo._base import Access
+from mongorepo._setters import (_set_array_fields_methods, _set_crud_methods,
+                                _set_integer_fields_methods)
 from mongorepo._substitute import _substitute_method
+from mongorepo.asyncio.utils import _run_asyncio_create_index
+from mongorepo.utils import _create_index, _get_meta_attributes, raise_exc
 
 
 def _handle_mongo_repository(
@@ -26,9 +23,8 @@ def _handle_mongo_repository(
     array_fields: list[str] | None,
     method_access: Access | None,
 ) -> type:
-    """
-    Calls for functions that set different methods and attributes to the class
-    """
+    """Calls for functions that set different methods and attributes to the
+    class."""
     attributes = _get_meta_attributes(cls, raise_exceptions=False)
     collection = attributes['collection']
     index = attributes['index']
@@ -70,9 +66,8 @@ def _handle_async_mongo_repository(
     array_fields: list[str] | None,
     method_access: Access | None,
 ) -> type:
-    """
-    Calls for functions that set different async methods and attributes to the class
-    """
+    """Calls for functions that set different async methods and attributes to
+    the class."""
     attributes = _get_meta_attributes(cls, raise_exceptions=False)
     collection = attributes['collection']
     index = attributes['index']
@@ -113,7 +108,7 @@ def _handle_implements(
     attrs = _get_meta_attributes(cls)
     if not substitute:
         substitute = attrs['substitute'] if attrs['substitute'] is not None else raise_exc(
-            exceptions.MongoRepoException(message='No "substitute" in Meta class')
+            exceptions.MongoRepoException(message='No "substitute" in Meta class'),
         )
     dto_type = attrs['dto']
     collection = attrs['collection']
@@ -123,7 +118,7 @@ def _handle_implements(
             generic_method: Callable = _generic_method  # type: ignore[reportRedeclaration]
         elif isinstance(_generic_method, str):
             generic_method: Callable | None = getattr(
-                base_cls, _generic_method, None
+                base_cls, _generic_method, None,
             )
             if generic_method is None or not inspect.isfunction(generic_method):
                 raise exceptions.InvalidMethodNameException(_generic_method)

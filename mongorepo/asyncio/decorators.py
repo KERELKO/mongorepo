@@ -17,8 +17,7 @@ def async_mongo_repository(
     array_fields: list[str] | None = None,
     method_access: Access | None = None,
 ) -> type | Callable:
-    """
-    ## Async MongoDB repository decorator
+    """## Async MongoDB repository decorator
 
     * decorated class must provide `Meta` class inside
     with variables "dto"(dataclass interface) and

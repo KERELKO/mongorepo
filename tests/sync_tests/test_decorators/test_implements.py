@@ -1,15 +1,12 @@
 # type: ignore
 from abc import ABC
-from typing import Generic, TypeVar, Protocol
+from typing import Generic, Protocol, TypeVar
 
-from mongorepo.decorators import mongo_repository, implements
 from mongorepo import DTO
-from tests.common import (
-    ComplicatedDTO,
-    SimpleDTO,
-    collection_for_complicated_dto,
-    collection_for_simple_dto
-)
+from mongorepo.decorators import implements, mongo_repository
+from tests.common import (ComplicatedDTO, SimpleDTO,
+                          collection_for_complicated_dto,
+                          collection_for_simple_dto)
 
 
 def test_implements():

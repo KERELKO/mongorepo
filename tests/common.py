@@ -1,5 +1,5 @@
-from dataclasses import dataclass, field
 import random
+from dataclasses import dataclass, field
 from typing import Any
 
 import pymongo
@@ -73,7 +73,7 @@ def collection_for_dto_with_id(async_client: bool = False):
     return mongo_client()['dto_with_id_db']['dto']
 
 
-def custom_collection(dto: str | type, async_client: bool = False, ):
+def custom_collection(dto: str | type, async_client: bool = False):
     dto_name = dto if isinstance(dto, str) else dto.__name__
     if async_client:
         return async_mongo_client()[f'{dto_name}_db'][dto_name]
@@ -81,5 +81,5 @@ def custom_collection(dto: str | type, async_client: bool = False, ):
 
 
 def r() -> int:
-    """Returns random integer"""
+    """Returns random integer."""
     return random.randint(1, 123456)

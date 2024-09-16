@@ -1,21 +1,13 @@
 from typing import Callable
 
-from mongorepo._methods.arrays import (
-    _pop_list_method,
-    _update_list_field_method,
-    _get_list_of_field_values_method,
-)
-from mongorepo._methods.crud import (
-    _add_method,
-    _delete_method,
-    _get_all_method,
-    _get_list_method,
-    _get_method,
-    _add_batch_method,
-    _update_method,
-)
+from mongorepo._methods.arrays import (_get_list_of_field_values_method,
+                                       _pop_list_method,
+                                       _update_list_field_method)
+from mongorepo._methods.crud import (_add_batch_method, _add_method,
+                                     _delete_method, _get_all_method,
+                                     _get_list_method, _get_method,
+                                     _update_method)
 from mongorepo._methods.integer import _update_integer_field_method
-
 
 # List methods, all starts with `__`
 LIST_METHODS: dict[str, Callable] = {

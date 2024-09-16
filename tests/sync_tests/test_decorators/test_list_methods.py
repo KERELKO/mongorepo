@@ -4,12 +4,10 @@ from typing import List
 
 import pytest
 
+from mongorepo import Access, exceptions
 from mongorepo.decorators import mongo_repository
-from mongorepo import Access
-from mongorepo import exceptions
-
-from tests.common import NestedListDTO, custom_collection, SimpleDTO
-from tests.common import ComplicatedDTO, collection_for_complicated_dto
+from tests.common import (ComplicatedDTO, NestedListDTO, SimpleDTO,
+                          collection_for_complicated_dto, custom_collection)
 
 
 def test_can_push_and_pull_elements_from_list_with_decorator():
@@ -157,8 +155,8 @@ def test_can_get_list_of_dto_field_values() -> None:
                 SimpleDTO(x='3', y=3),
                 SimpleDTO(x='4', y=4),
                 SimpleDTO(x='5', y=5),
-            ]
-        )
+            ],
+        ),
     )
 
     dtos = repo.dtos__list(title='Test', offset=0, limit=10)

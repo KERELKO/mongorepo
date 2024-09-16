@@ -1,11 +1,12 @@
 from dataclasses import asdict
-from typing import Any, Callable, AsyncGenerator
+from typing import Any, AsyncGenerator, Callable
 
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorCollection
 
+from mongorepo import exceptions
+from mongorepo._base import DTO
 from mongorepo.utils import _get_converter, raise_exc
-from mongorepo import DTO, exceptions
 
 
 def _add_method_async(
@@ -67,7 +68,7 @@ def _get_list_method_async(
 def _get_all_method_async(
     dto_type: type[DTO],
     collection: AsyncIOMotorCollection,
-    id_field: str | None = None
+    id_field: str | None = None,
 ) -> Callable:
     to_dto = _get_converter(dto_type, id_field=id_field)
 
@@ -81,7 +82,7 @@ def _get_all_method_async(
 def _update_method_async(
     dto_type: type[DTO],
     collection: AsyncIOMotorCollection,
-    id_field: str | None = None
+    id_field: str | None = None,
 ) -> Callable:
     to_dto = _get_converter(dto_type, id_field=id_field)
 
@@ -106,7 +107,7 @@ def _delete_method_async(dto_type: type[DTO], collection: AsyncIOMotorCollection
 def _get_method_async(
     dto_type: type[DTO],
     collection: AsyncIOMotorCollection,
-    id_field: str | None = None
+    id_field: str | None = None,
 ) -> Callable:
     to_dto = _get_converter(dto_type, id_field=id_field)
 
@@ -119,14 +120,14 @@ def _get_method_async(
 def _update_field_method_async(
     dto_type: type[DTO],
     collection: AsyncIOMotorCollection,
-    id_field: str | None = None
+    id_field: str | None = None,
 ) -> Callable:
     to_dto = _get_converter(dto_type, id_field=id_field)
 
     async def update_field(self, field_name: str, value: Any, **filters) -> DTO | None:
         if field_name not in dto_type.__dict__['__annotations__']:
             raise exceptions.MongoRepoException(
-                message=f'{dto_type} does not have field "{field_name}"'
+                message=f'{dto_type} does not have field "{field_name}"',
             )
         document = await collection.find_one_and_update(
             filter=filters, update={'$set': {field_name: value}}, return_document=True,

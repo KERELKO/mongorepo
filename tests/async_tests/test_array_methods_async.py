@@ -1,6 +1,6 @@
 # type: ignore
 from mongorepo.asyncio.decorators import async_mongo_repository
-from tests.common import NestedListDTO, custom_collection, SimpleDTO
+from tests.common import NestedListDTO, SimpleDTO, custom_collection
 
 
 async def test_can_use_array_methods_with_dto_fields() -> None:
@@ -23,8 +23,8 @@ async def test_can_use_array_methods_with_dto_fields() -> None:
                 SimpleDTO(x='3', y=3),
                 SimpleDTO(x='4', y=4),
                 SimpleDTO(x='5', y=5),
-            ]
-        )
+            ],
+        ),
     )
 
     dtos = await repo.dtos__list(title='Test', offset=0, limit=10)

@@ -4,18 +4,13 @@ from typing import Generic
 
 import pytest
 
-from mongorepo import Index, DTO
-from mongorepo.exceptions import NoDTOTypeException
+from mongorepo import DTO, Index
 from mongorepo.classes import BaseMongoRepository
-
-from tests.common import (
-    SimpleDTO,
-    DTOWithID,
-    ComplicatedDTO,
-    collection_for_complicated_dto,
-    collection_for_dto_with_id,
-    collection_for_simple_dto,
-)
+from mongorepo.exceptions import NoDTOTypeException
+from tests.common import (ComplicatedDTO, DTOWithID, SimpleDTO,
+                          collection_for_complicated_dto,
+                          collection_for_dto_with_id,
+                          collection_for_simple_dto)
 
 
 def test_all_methods_with_inherited_repo():

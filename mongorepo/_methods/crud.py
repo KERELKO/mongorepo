@@ -3,8 +3,9 @@ from typing import Any, Callable, Iterable
 
 from bson import ObjectId
 from pymongo.collection import Collection
+
+from mongorepo._base import DTO
 from mongorepo.utils import _get_converter
-from mongorepo import DTO
 
 
 def _add_method(
@@ -66,7 +67,7 @@ def _get_list_method(
 def _get_all_method(
     dto_type: type[DTO],
     collection: Collection,
-    id_field: str | None = None
+    id_field: str | None = None,
 ) -> Callable:
     to_dto = _get_converter(dto_type=dto_type, id_field=id_field)
 

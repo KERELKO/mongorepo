@@ -1,17 +1,18 @@
 import inspect
 from dataclasses import is_dataclass
 from types import UnionType
-from typing import Any, Callable, NoReturn, Optional, TypeVar, get_args, get_origin
+from typing import (Any, Callable, NoReturn, Optional, TypeVar, get_args,
+                    get_origin)
 
 import pymongo
 from pymongo.collection import Collection
 
-from mongorepo import DTO, Access, Index
 from mongorepo import exceptions
+from mongorepo._base import DTO, Access, Index
 
 
 def raise_exc(exc: Exception) -> NoReturn:
-    """Allows to write one-lined exceptions"""
+    """Allows to write one-lined exceptions."""
     raise exc
 
 
@@ -31,7 +32,7 @@ def get_prefix(access: Access | None, cls: type | None = None) -> str:
 
 
 def _get_collection_and_dto(cls: type, raise_exceptions: bool = True) -> dict[str, Any]:
-    """Collect `dto` and `collection` attributes from `Meta` class"""
+    """Collect `dto` and `collection` attributes from `Meta` class."""
     attributes: dict[str, Any] = {}
     meta = _get_meta(cls)
 
@@ -49,9 +50,7 @@ def _get_collection_and_dto(cls: type, raise_exceptions: bool = True) -> dict[st
 
 
 def _get_meta_attributes(cls, raise_exceptions: bool = True) -> dict[str, Any]:
-    """
-    Collect all available attributes from `Meta` class
-    """
+    """Collect all available attributes from `Meta` class."""
     attributes: dict[str, Any] = _get_collection_and_dto(
         cls=cls, raise_exceptions=raise_exceptions,
     )
@@ -73,9 +72,7 @@ def _get_meta_attributes(cls, raise_exceptions: bool = True) -> dict[str, Any]:
 
 
 def _get_meta(cls: type) -> Any:
-    """
-    Tries to get `Meta` class for the class or raises an exception
-    """
+    """Tries to get `Meta` class for the class or raises an exception."""
     meta = cls.__dict__.get('Meta', None)
     if not meta:
         raise exceptions.NoMetaException
@@ -94,7 +91,7 @@ def _get_validated_type_hint(hint: Any, get_type: bool = False) -> Any:
     for arg in args:
         if get_origin(arg) is list:
             raise exceptions.TypeHintException(
-                message=f'List must have only one argument as type hint {hint}:{arg}'
+                message=f'List must have only one argument as type hint {hint}:{arg}',
             )
         if type(arg) is UnionType or type(hint) is Optional:
             raise exceptions.TypeHintException(message=f'Invalid type hint {hint}:{arg}')
@@ -111,7 +108,8 @@ def _get_validated_type_hint(hint: Any, get_type: bool = False) -> Any:
 
 
 def _get_dto_type_hints(dto: type[DTO] | DTO, get_types: bool = True) -> dict[str, Any]:
-    """Returns dictionary of fields' type hints for a dataclass or dataclass instance"""
+    """Returns dictionary of fields' type hints for a dataclass or dataclass
+    instance."""
     default_values = {}
     for field_name, value in dto.__annotations__.items():
         hint = _get_validated_type_hint(value, get_type=get_types)
@@ -120,11 +118,12 @@ def _get_dto_type_hints(dto: type[DTO] | DTO, get_types: bool = True) -> dict[st
 
 
 def _create_index(index: Index | str, collection: Collection) -> None:
-    """
-    ### Creates an index for the collection
+    """### Creates an index for the collection
+
     * index parameter can be string or `mongorepo.Index`
     * If index is string, creates standard mongodb index
     * If it's `mongorepo.Index` creates index with user's settings
+
     """
     if isinstance(index, str):
         collection.create_index(index)
@@ -166,9 +165,7 @@ def _get_dto_from_origin(cls: type) -> Any:
 
 
 def _convert_to_dto(dto_type: type[DTO], dct: dict[str, Any]) -> DTO:
-    """
-    Converts document to dto, does not include mongodb `_id`
-    """
+    """Converts document to dto, does not include mongodb `_id`"""
     dct.pop('_id') if dct.get('_id', None) else ...
     return dto_type(**dct)
 
@@ -176,10 +173,8 @@ def _convert_to_dto(dto_type: type[DTO], dct: dict[str, Any]) -> DTO:
 def _convert_to_dto_with_id(
     id_field: str,
 ) -> Callable:
-    """
-    Converts document to dto,
-    includes mongodb `_id` allows to set specific field where to store `_id`
-    """
+    """Converts document to dto, includes mongodb `_id` allows to set specific
+    field where to store `_id`"""
     def wrapper(dto_type: type[DTO], dct: dict[str, Any]) -> DTO:
         dct[id_field] = str(dct.pop('_id'))
         return dto_type(**dct)
@@ -218,9 +213,7 @@ def _recursive_convert_to_dto(dto_type: type[DTO], id_field: str | None = None) 
 
 
 def _get_converter(dto_type: type[DTO], id_field: str | None = None) -> Callable:
-    """
-    Returns proper converter based on type hints of the dto
-    """
+    """Returns proper converter based on type hints of the dto."""
     converter = _convert_to_dto
     r = _has_dataclass_fields(dto_type=dto_type)
     if r:
@@ -246,11 +239,12 @@ def _get_dataclass_fields(
     dto_type: type[DTO],
     only_dto_types: bool = False,
 ) -> dict[str, type[DTO]]:
-    """
-    Returns dictionary of fields which has dataclasses as type hints or as arguments
+    """Returns dictionary of fields which has dataclasses as type hints or as
+    arguments.
 
-    `only_types=True` to get only dto types,
-    instead of `{"example": list[ExampleDTO]}` get `{"example": ExampleDTO}`
+    `only_types=True` to get only dto types, instead of `{"example":
+    list[ExampleDTO]}` get `{"example": ExampleDTO}`
+
     """
     dataclass_fields = {}
     type_hints = _get_dto_type_hints(dto_type, get_types=False)
@@ -280,7 +274,7 @@ def _validate_method_annotations(method: Callable) -> None:
         if param == 'self':
             continue
         if type_hint == inspect._empty and type_hint.kind not in [
-            inspect.Parameter.VAR_KEYWORD, inspect.Parameter.VAR_POSITIONAL
+            inspect.Parameter.VAR_KEYWORD, inspect.Parameter.VAR_POSITIONAL,
         ]:
             raise exceptions.MongoRepoException(
                 message=f'Parameter "{param}" does not have type hint',

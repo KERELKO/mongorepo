@@ -1,9 +1,9 @@
 def get_available_meta_attributes(only_names: bool = False) -> dict[str, str] | tuple[str, ...]:
-    """
-    Returns dictionary of available Meta attributes, Meta is a class that contains meta data for
-    `mongorepo` decorators and classes
+    """Returns dictionary of available Meta attributes, Meta is a class that
+    contains meta data for `mongorepo` decorators and classes.
 
     Use `only_names=True` to get names of this attributes
+
     """
     attrs = {
         'index': 'creates index for a collection',
@@ -20,7 +20,7 @@ def get_available_meta_attributes(only_names: bool = False) -> dict[str, str] | 
         'substitute': (
             'dict[str, str], use for mongorepo.decorators.implements decorator '
             'can be replaced with **methods params in the @implements'
-        )
+        ),
     }
     if only_names:
         return tuple(attrs.keys())
@@ -28,10 +28,11 @@ def get_available_meta_attributes(only_names: bool = False) -> dict[str, str] | 
 
 
 def get_available_repository_methods(only_names: bool = False) -> dict[str, str] | tuple[str, ...]:
-    """
-    Returns dictionary of available methods for `mongorepo` decorators or classes
+    """Returns dictionary of available methods for `mongorepo` decorators or
+    classes.
 
     Use `only_names=True` to get names of this methods
+
     """
     methods = {
         'add': 'add document to a collection, collection stores it in dto format, params: dto: DTO',
@@ -57,7 +58,7 @@ def get_available_repository_methods(only_names: bool = False) -> dict[str, str]
         ),
         'incr__{field}': (
             'Only for decorator with "integer_fields", increment integer field by 1 in a document'
-            ),
+        ),
         'decr__{field}': (
             'Only for decorator with "integer_fields", decrement integer fied by 1 in a document'
         ),

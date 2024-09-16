@@ -1,5 +1,4 @@
 from mongorepo.decorators import implements
-
 from tests.common import SimpleDTO, custom_collection
 
 

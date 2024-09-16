@@ -2,9 +2,10 @@ from dataclasses import asdict, is_dataclass
 from typing import Any, Callable
 
 from pymongo.collection import Collection
+
+from mongorepo import exceptions
+from mongorepo._base import DTO, _DTOField
 from mongorepo.utils import _get_converter, _get_dataclass_fields, raise_exc
-from mongorepo import DTO, exceptions
-from mongorepo._base import _DTOField
 
 
 def _update_list_field_method(
@@ -16,7 +17,7 @@ def _update_list_field_method(
     def update_list(self, value: Any, **filters) -> None:
         value = value if not is_dataclass(field_type) else asdict(value)
         doc = collection.update_one(
-            filter=filters, update={command: {field_name: value}}
+            filter=filters, update={command: {field_name: value}},
         )
         raise_exc(exceptions.NotFoundException(**filters)) if not doc else ...
     return update_list
@@ -29,7 +30,7 @@ def _get_list_of_field_values_method(
     field_type = dataclass_fields.get(field_name, None)
 
     def get_list_dto(
-        self, offset: int, limit: int, **filters
+        self, offset: int, limit: int, **filters,
     ) -> list[_DTOField]:  # type: ignore
         document = collection.find_one(
             filters, {field_name: {'$slice': [offset, limit]}},
@@ -38,7 +39,7 @@ def _get_list_of_field_values_method(
         return [to_dto(field_type, d) for d in document[field_name]]
 
     def get_list(
-        self, offset: int, limit: int, **filters
+        self, offset: int, limit: int, **filters,
     ) -> list[Any]:
         document = collection.find_one(
             filters, {field_name: {'$slice': [offset, limit]}},

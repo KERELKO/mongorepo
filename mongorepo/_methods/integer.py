@@ -1,8 +1,10 @@
 from typing import Callable
 
 from pymongo.collection import Collection
+
+from mongorepo import exceptions
+from mongorepo._base import DTO
 from mongorepo.utils import raise_exc
-from mongorepo import DTO, exceptions
 
 
 def _update_integer_field_method(

@@ -1,9 +1,6 @@
 # type: ignore
 from mongorepo.decorators import mongo_repository
-from tests.common import (
-    SimpleDTO,
-    collection_for_simple_dto,
-)
+from tests.common import SimpleDTO, collection_for_simple_dto
 
 
 def test_can_increment_and_decrement_field_with_decorator():

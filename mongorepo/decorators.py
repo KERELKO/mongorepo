@@ -1,7 +1,7 @@
 from typing import Annotated, Callable
 
-from mongorepo import Access
-from mongorepo._handlers import _handle_mongo_repository, _handle_implements
+from mongorepo._base import Access
+from mongorepo._handlers import _handle_implements, _handle_mongo_repository
 
 
 def mongo_repository(
@@ -17,8 +17,7 @@ def mongo_repository(
     array_fields: list[Annotated[str, 'field names']] | None = None,
     method_access: Access | None = None,
 ) -> type | Callable:
-    """
-    ## Decorator for MongoDB repositories
+    """## Decorator for MongoDB repositories
 
     * decorated class must provide `Meta` class inside
     with variables "dto"(represent simple dataclass) and
@@ -84,9 +83,8 @@ def mongo_repository(
 
 
 def implements(base_cls: type, **methods: str | Callable) -> Callable:
-    """
-    Decorator that allows to implement methods of `base_cls`
-    you can specify them in `**methods`
+    """Decorator that allows to implement methods of `base_cls` you can specify
+    them in `**methods`
 
     ## Example:
 

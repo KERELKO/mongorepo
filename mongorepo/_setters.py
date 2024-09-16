@@ -1,38 +1,25 @@
 from typing import Iterable
 
 from mongorepo._base import Access
-from mongorepo.utils import (
-    _get_dto_from_origin,
-    _get_meta_attributes,
-    get_prefix,
-    _check_valid_field_type
-)
-from mongorepo._methods import (
-    _update_integer_field_method,
-    _update_list_field_method,
-    _get_all_method,
-    _get_method,
-    _delete_method,
-    _add_method,
-    _update_method,
-    _add_batch_method,
-    _pop_list_method,
-    _get_list_method,
-)
+from mongorepo._methods import (_add_batch_method, _add_method, _delete_method,
+                                _get_all_method, _get_list_method, _get_method,
+                                _pop_list_method, _update_integer_field_method,
+                                _update_list_field_method, _update_method)
 from mongorepo._methods.arrays import _get_list_of_field_values_method
-from mongorepo.asyncio._methods import (
-    _add_batch_method_async,
-    _update_integer_field_method_async,
-    _update_list_field_method_async,
-    _add_method_async,
-    _delete_method_async,
-    _get_all_method_async,
-    _get_method_async,
-    _update_method_async,
-    _pop_list_method_async,
-    _get_list_method_async,
-)
-from mongorepo.asyncio._methods.arrays import _get_list_of_field_values_method_async
+from mongorepo.asyncio._methods import (_add_batch_method_async,
+                                        _add_method_async,
+                                        _delete_method_async,
+                                        _get_all_method_async,
+                                        _get_list_method_async,
+                                        _get_method_async,
+                                        _pop_list_method_async,
+                                        _update_integer_field_method_async,
+                                        _update_list_field_method_async,
+                                        _update_method_async)
+from mongorepo.asyncio._methods.arrays import \
+    _get_list_of_field_values_method_async
+from mongorepo.utils import (_check_valid_field_type, _get_dto_from_origin,
+                             _get_meta_attributes, get_prefix)
 
 
 def _set_array_fields_methods(
@@ -41,9 +28,7 @@ def _set_array_fields_methods(
     async_methods: bool = False,
     method_access: Access | None = None,
 ) -> None:
-    """
-    Set base methods for array fields
-    allows `method_access`
+    """Set base methods for array fields allows `method_access`
 
     `async_method=True` to make this methods async
 
@@ -51,13 +36,13 @@ def _set_array_fields_methods(
     attributes = _get_meta_attributes(cls)
     dto, collection = attributes['dto'], attributes['collection']
     prefix = get_prefix(
-        access=attributes['method_access'] if not method_access else method_access, cls=cls
+        access=attributes['method_access'] if not method_access else method_access, cls=cls,
     )
     for field in array_fields:
         _check_valid_field_type(field, dto, list)
         if async_methods:
             append_method = _update_list_field_method_async(
-                dto_type=dto, collection=collection, field_name=field, command='$push'
+                dto_type=dto, collection=collection, field_name=field, command='$push',
             )
             remove_method = _update_list_field_method_async(
                 dto_type=dto, collection=collection, field_name=field, command='$pull',
@@ -70,7 +55,7 @@ def _set_array_fields_methods(
             )
         else:
             append_method = _update_list_field_method(
-                dto_type=dto, collection=collection, field_name=field, command='$push'
+                dto_type=dto, collection=collection, field_name=field, command='$push',
             )
             remove_method = _update_list_field_method(
                 dto_type=dto, collection=collection, field_name=field, command='$pull',
@@ -99,9 +84,7 @@ def _set_integer_fields_methods(
     async_methods: bool = False,
     method_access: Access | None = None,
 ) -> None:
-    """
-    Set base methods for integer fields,
-    allows `method_access`
+    """Set base methods for integer fields, allows `method_access`
 
     `async_method=True` to make this methods async
 
@@ -109,23 +92,23 @@ def _set_integer_fields_methods(
     attributes = _get_meta_attributes(cls)
     dto, collection = attributes['dto'], attributes['collection']
     prefix = get_prefix(
-        access=attributes['method_access'] if not method_access else method_access, cls=cls
+        access=attributes['method_access'] if not method_access else method_access, cls=cls,
     )
     for field in integer_fields:
         _check_valid_field_type(field, dto, int)
         if async_methods:
             incr_method = _update_integer_field_method_async(
-                dto_type=dto, collection=collection, field_name=field, _weight=1
+                dto_type=dto, collection=collection, field_name=field, _weight=1,
             )
             decr_method = _update_integer_field_method_async(
-                dto_type=dto, collection=collection, field_name=field, _weight=-1
+                dto_type=dto, collection=collection, field_name=field, _weight=-1,
             )
         else:
             incr_method = _update_integer_field_method(
-                dto_type=dto, collection=collection, field_name=field, _weight=1
+                dto_type=dto, collection=collection, field_name=field, _weight=1,
             )
             decr_method = _update_integer_field_method(
-                dto_type=dto, collection=collection, field_name=field, _weight=-1
+                dto_type=dto, collection=collection, field_name=field, _weight=-1,
             )
 
         incr_method.__name__ = f'{prefix}incr__{field}'
@@ -147,9 +130,7 @@ def _set_crud_methods(
     async_methods: bool = False,
     method_access: Access | None = None,
 ) -> None:
-    """
-    Set CRUD operations to the class,
-    allows `method_access`
+    """Set CRUD operations to the class, allows `method_access`
 
     `async_method=True` to make added methods async
 
@@ -157,7 +138,7 @@ def _set_crud_methods(
     attributes = _get_meta_attributes(cls, raise_exceptions=False)
     collection = attributes['collection']
     prefix = get_prefix(
-        access=attributes['method_access'] if not method_access else method_access, cls=cls
+        access=attributes['method_access'] if not method_access else method_access, cls=cls,
     )
     id_field = attributes['id_field']
     dto = attributes['dto']

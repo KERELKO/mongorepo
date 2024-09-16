@@ -3,42 +3,32 @@ from typing import Any, AsyncGenerator, Generic
 
 from motor.motor_asyncio import AsyncIOMotorCollection
 
-from mongorepo.asyncio._methods import _add_method_async
 from mongorepo import exceptions
-from mongorepo import DTO, Index
-from mongorepo.utils import (
-    _get_converter,
-    _get_dto_from_origin,
-    _get_meta_attributes,
-    _get_collection_and_dto,
-)
+from mongorepo._base import DTO, Index
+from mongorepo.asyncio._methods import _add_method_async
 from mongorepo.asyncio.utils import _run_asyncio_create_index
+from mongorepo.utils import (_get_collection_and_dto, _get_converter,
+                             _get_dto_from_origin, _get_meta_attributes)
 
 
 class AsyncBasedMongoRepository(Generic[DTO]):
-    """
-    ### Asynchronous base repository class
-    #### Provide DTO type in type hints, for example:
-    ```
-    class DummyMongoRepository(AsyncBasedMongoRepository[UserDTO]):
-        ...
-    ```
+    """### Asynchronous base repository class #### Provide DTO type in type
+    hints, for example: ``` class
+    DummyMongoRepository(AsyncBasedMongoRepository[UserDTO]): ... ```
 
     #### Extends child classes with various methods:
 
-    ```
-    async create(self, dto: DTO) -> DTO
-    async get(self, **filters) -> DTO | None
-    async get_all(self, **filters) -> Iterable[DTO]
-    async update(self, dto: DTO, **filters) -> DTO
-    async delete(self, **filters) -> bool
-    ```
+    ``` async create(self, dto: DTO) -> DTO async get(self, **filters)
+    -> DTO | None async get_all(self, **filters) -> Iterable[DTO] async
+    update(self, dto: DTO, **filters) -> DTO async delete(self,
+    **filters) -> bool ```
+
     """
 
     def __new__(cls, *args, **kwargs) -> 'AsyncBasedMongoRepository':
         instance = super().__new__(cls)
         dto_type = _get_dto_from_origin(cls)
-        setattr(instance, 'dto_type',  dto_type)
+        setattr(instance, 'dto_type', dto_type)
 
         try:
             meta = _get_meta_attributes(cls, raise_exceptions=False)
@@ -55,7 +45,7 @@ class AsyncBasedMongoRepository(Generic[DTO]):
             collection: AsyncIOMotorCollection | None = meta['collection'] if meta else None
             if collection is None:
                 raise exceptions.NoCollectionException(
-                    message='Cannot access collection from Meta to create index'
+                    message='Cannot access collection from Meta to create index',
                 )
             _run_asyncio_create_index(index, collection=collection)
         return instance
@@ -67,7 +57,7 @@ class AsyncBasedMongoRepository(Generic[DTO]):
         self._add_func = _add_method_async(
             dto_type=self.dto_type,
             collection=self.collection,
-            id_field=self.__dict__['__id_field']
+            id_field=self.__dict__['__id_field'],
         )
 
     @classmethod
@@ -78,7 +68,7 @@ class AsyncBasedMongoRepository(Generic[DTO]):
             attrs = _get_collection_and_dto(cls, raise_exceptions=False)
         except exceptions.NoMetaException:
             raise exceptions.MongoRepoException(
-                message='"Meta" class with "collection" variable was not defined in the class'
+                message='"Meta" class with "collection" variable was not defined in the class',
             )
         if attrs['collection'] is None:
             raise exceptions.NoCollectionException
@@ -104,10 +94,6 @@ class AsyncBasedMongoRepository(Generic[DTO]):
     async def update(self, dto: DTO, **filters: Any) -> DTO | None:
         data: dict[str, dict[str, Any]] = {'$set': {}}
         for field, value in asdict(dto).items():
-            if isinstance(value, (int, bool)):
-                data['$set'][field] = value
-            elif not field:
-                continue
             data['$set'][field] = value
         update_doc = await self.collection.find_one_and_update(
             filter=filters, update=data, return_document=True,

@@ -4,18 +4,12 @@ import random
 import pytest
 
 from mongorepo import Access
-from tests.common import (
-    SimpleDTO,
-    DTOWithID,
-    ComplicatedDTO,
-    collection_for_complicated_dto,
-    collection_for_dto_with_id,
-    collection_for_simple_dto,
-    r,
-)
-
-from mongorepo.exceptions import NoDTOTypeException
 from mongorepo.decorators import mongo_repository
+from mongorepo.exceptions import NoDTOTypeException
+from tests.common import (ComplicatedDTO, DTOWithID, SimpleDTO,
+                          collection_for_complicated_dto,
+                          collection_for_dto_with_id,
+                          collection_for_simple_dto, r)
 
 
 def test_all_methods_with_decorator():
@@ -237,7 +231,7 @@ def test_get_list_with_add_batch_methods_with_decorator():
     repo = TestMongoRepository()
 
     repo.add_batch(
-        [SimpleDTO(x='hey', y=r()), SimpleDTO(x='second hey!', y=r())]
+        [SimpleDTO(x='hey', y=r()), SimpleDTO(x='second hey!', y=r())],
     )
 
     dto_list = repo.get_list(offset=0, limit=10)

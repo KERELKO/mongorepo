@@ -1,6 +1,6 @@
 import inspect
-from enum import Enum
 from dataclasses import is_dataclass
+from enum import Enum
 from inspect import Parameter, _empty
 from typing import Any, Callable, TypeVar
 
@@ -9,10 +9,12 @@ from pymongo.collection import Collection
 
 from mongorepo import exceptions
 from mongorepo._base import DTO
-from mongorepo.utils import _validate_method_annotations, _replace_typevars, _check_valid_field_type
-
 from mongorepo._methods import CRUD_METHODS, INTEGER_METHODS, LIST_METHODS
-from mongorepo.asyncio._methods import CRUD_METHODS_ASYNC, INTEGER_METHODS_ASYNC, LIST_METHODS_ASYNC
+from mongorepo.asyncio._methods import (CRUD_METHODS_ASYNC,
+                                        INTEGER_METHODS_ASYNC,
+                                        LIST_METHODS_ASYNC)
+from mongorepo.utils import (_check_valid_field_type, _replace_typevars,
+                             _validate_method_annotations)
 
 
 class _MethodType(Enum):
@@ -24,20 +26,9 @@ class _MethodType(Enum):
 def _get_method_from_string(
     method_name: str, is_async: bool = False,
 ) -> tuple[Callable, _MethodType]:
-    """
-    Tries to get right `mongorepo` method according to `method_name`
+    """Tries to get right `mongorepo` method according to `method_name`
 
     returns tuple where first element is a method, and the second its type
-
-    * raises `InvalidMethodNameException` if no matches found
-
-    * it looks for exact match for CRUD methods, suffix `__` for integer methods
-    and prefix `__` for list methods
-        f'Mongorepo does not have method with this action: {method_name}\n'
-        f'Use valid prefix or suffix to specify correct method that you want to use\n'
-        f'For example: "records__pop" where "records" is the name of list field and '
-        '"__pop" action to pop the last element in the list'
-    )
 
     ### Example:
 
@@ -109,13 +100,13 @@ def _substitute_method(
         _valid_actions = ('incr', 'decr')
         if action not in _valid_actions:
             raise exceptions.MongoRepoException(
-                message=f'Invalid action for method: {action}\n valid: {_valid_actions}'
+                message=f'Invalid action for method: {action}\n valid: {_valid_actions}',
             )
         mongorepo_method = mongorepo_method(
             dto_type=dto,
             collection=collection,
             field_name=field_name,
-            _weight=1 if action == 'incr' else -1
+            _weight=1 if action == 'incr' else -1,
         )
 
     elif mongorepo_method_type is _MethodType.LIST:
@@ -124,14 +115,14 @@ def _substitute_method(
         _valid_actions = ('pop', 'list', 'append', 'remove')
         if action not in _valid_actions:
             raise exceptions.MongoRepoException(
-                message=f'Invalid action for method: {action}\n valid: {_valid_actions}'
+                message=f'Invalid action for method: {action}\n valid: {_valid_actions}',
             )
         if 'command' in mongorepo_method.__annotations__:
             mongorepo_method = mongorepo_method(
                 dto_type=dto,
                 collection=collection,
                 field_name=field_name,
-                command='$push' if action == 'append' else '$pull'
+                command='$push' if action == 'append' else '$pull',
             )
         else:
             mongorepo_method = mongorepo_method(
@@ -171,7 +162,8 @@ def _manage_params(
     *args,
     **kwargs,
 ) -> dict[str, Any]:
-    """Return required params for `mongorepo` method, do not pass `self` in *args or **kwargs"""
+    """Return required params for `mongorepo` method, do not pass `self` in
+    *args or **kwargs."""
     params: dict[str, Any] = {}
     gen_params = dict(inspect.signature(generic_method).parameters)
     gen_params.pop('self')
@@ -192,7 +184,7 @@ def _manage_params(
     for param in gen_params.values():
         if param.name in kwargs and param.name in params:
             raise TypeError(
-                f'{generic_method.__name__}() keyword arguments repeated: {param.name}'
+                f'{generic_method.__name__}() keyword arguments repeated: {param.name}',
             )
 
         if param.default != _empty and not kwargs.get(param.name, None):
@@ -204,7 +196,7 @@ def _manage_params(
         if param.name not in params and param.name not in kwargs:
             raise TypeError(
                 f'{generic_method.__name__}() '
-                f'missing required keyword argument: \'{param.name}\''
+                f'missing required keyword argument: \'{param.name}\'',
             )
         params[param.name] = kwargs[param.name]
 

@@ -3,15 +3,11 @@ from typing import Any, Generic, Iterable
 
 from pymongo.collection import Collection
 
-from mongorepo._methods import _add_method
-from mongorepo.utils import (
-    _get_converter,
-    _create_index,
-    _get_dto_from_origin,
-    _get_meta_attributes,
-)
-from mongorepo import DTO, Index
 from mongorepo import exceptions
+from mongorepo._base import DTO, Index
+from mongorepo._methods import _add_method
+from mongorepo.utils import (_create_index, _get_converter,
+                             _get_dto_from_origin, _get_meta_attributes)
 
 
 class BaseMongoRepository(Generic[DTO]):
@@ -41,7 +37,7 @@ class BaseMongoRepository(Generic[DTO]):
     def __new__(cls, *args, **kwargs) -> 'BaseMongoRepository':
         instance = super().__new__(cls)
         dto_type = _get_dto_from_origin(cls)
-        setattr(instance, 'dto_type',  dto_type)
+        setattr(instance, 'dto_type', dto_type)
 
         try:
             meta = _get_meta_attributes(cls, raise_exceptions=False)
@@ -58,7 +54,7 @@ class BaseMongoRepository(Generic[DTO]):
             collection: Collection | None = meta['collection'] if meta else None
             if collection is None:
                 raise exceptions.NoCollectionException(
-                    message='Cannot access collection from Meta to create index'
+                    message='Cannot access collection from Meta to create index',
                 )
             _create_index(index, collection=collection)
         return instance
@@ -70,7 +66,7 @@ class BaseMongoRepository(Generic[DTO]):
         self.__add = _add_method(
             dto_type=self.dto_type,
             collection=self.collection,
-            id_field=self.__dict__['__id_field']
+            id_field=self.__dict__['__id_field'],
         )
 
     @classmethod
@@ -81,7 +77,7 @@ class BaseMongoRepository(Generic[DTO]):
             meta = _get_meta_attributes(cls, raise_exceptions=False)
         except exceptions.NoMetaException:
             raise exceptions.MongoRepoException(
-                message='"Meta" class with "collecton" was not defined in the class'
+                message='"Meta" class with "collecton" was not defined in the class',
             )
         if meta['collection'] is None:
             raise exceptions.NoCollectionException
@@ -107,16 +103,12 @@ class BaseMongoRepository(Generic[DTO]):
     def update(self, dto: DTO, **filters: Any) -> DTO:
         data: dict[str, dict[str, Any]] = {'$set': {}}
         for field, value in asdict(dto).items():
-            if isinstance(value, (int, bool, float)):
-                data['$set'][field] = value
-            elif not field:
-                continue
             data['$set'][field] = value
         self.collection.find_one_and_update(filter=filters, update=data)
         return dto
 
     def delete(self, **filters: Any) -> bool:
-        """Returns True if document was deleted else False"""
+        """Returns True if document was deleted else False."""
         deleted = self.collection.find_one_and_delete(filters)
         return True if deleted else False
 

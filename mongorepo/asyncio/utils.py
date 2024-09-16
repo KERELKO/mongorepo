@@ -1,14 +1,14 @@
 import asyncio
 
 import pymongo
-from mongorepo import Index
 from motor.motor_asyncio import AsyncIOMotorCollection
+
+from mongorepo._base import Index
 
 
 def _run_asyncio_create_index(index: Index | str, collection: AsyncIOMotorCollection) -> None:
-    """
-    Tries to create an index for `AsyncIOMotorCollection` in async loop or after
-    """
+    """Tries to create an index for `AsyncIOMotorCollection` in async loop or
+    after."""
     loop = asyncio.get_running_loop()
     if loop.is_running():
         asyncio.create_task(_create_index_async(index=index, collection=collection))
@@ -17,11 +17,12 @@ def _run_asyncio_create_index(index: Index | str, collection: AsyncIOMotorCollec
 
 
 async def _create_index_async(index: Index | str, collection: AsyncIOMotorCollection) -> None:
-    """
-    ### Creates an index for the collection
+    """### Creates an index for the collection
+
     * index parameter can be string or mongorepo.Index
     * If index is string, create standard mongodb index
     * If it's `mongorepo.Index` creates index with user's settings
+
     """
     if isinstance(index, str):
         await collection.create_index(index)

@@ -1,10 +1,9 @@
 # type: ignore
-import random
 import asyncio
+import random
 
 from mongorepo import Index
 from mongorepo.asyncio.classes import AsyncBasedMongoRepository
-
 from tests.common import SimpleDTO, collection_for_simple_dto
 
 

@@ -6,7 +6,7 @@ from tests.common import mongo_client
 
 
 def test_repo_does_not_include_id_in_dto():
-    """Test without `id_field` in Meta class"""
+    """Test without `id_field` in Meta class."""
 
     @dataclass
     class WithoutId:
@@ -28,7 +28,7 @@ def test_repo_does_not_include_id_in_dto():
 
 
 def test_repo_include_id_in_dto():
-    """Test with `id_field` in Meta class"""
+    """Test with `id_field` in Meta class."""
 
     @dataclass
     class WithId:

@@ -63,7 +63,7 @@ def test_can_convert_simple_parent_variables_with_recursion() -> None:
     to_dto = _get_converter(UserDTOWithRecord)
 
     dto: UserDTOWithRecord = to_dto(
-        UserDTOWithRecord, {'id': 100, 'name': 'Artorias', 'record': {'text': 'Hello World'}}
+        UserDTOWithRecord, {'id': 100, 'name': 'Artorias', 'record': {'text': 'Hello World'}},
     )
 
     assert dto.name == 'Artorias'
@@ -74,7 +74,7 @@ def test_can_convert_simple_parent_variables_with_recursion() -> None:
     to_dto_r = _get_converter(UserDTOWithListOfRecords)
 
     dto_r: UserDTOWithListOfRecords = to_dto_r(
-        UserDTOWithListOfRecords, {'id': 101, 'name': 'admin', 'records': [{'text': 'SUCCESS'}]}
+        UserDTOWithListOfRecords, {'id': 101, 'name': 'admin', 'records': [{'text': 'SUCCESS'}]},
     )
 
     assert dto_r.id == 101

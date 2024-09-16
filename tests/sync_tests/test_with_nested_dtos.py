@@ -1,11 +1,6 @@
-from tests.common import (  # noqa
-    NestedDTO,
-    NestedListDTO,
-    SimpleDTO,
-    DictDTO,
-    custom_collection,
-)
 from mongorepo.classes import BaseMongoRepository
+from tests.common import (DictDTO, NestedDTO, NestedListDTO, SimpleDTO,  # noqa
+                          custom_collection)
 
 
 def test_methods_with_nested_dto() -> None:

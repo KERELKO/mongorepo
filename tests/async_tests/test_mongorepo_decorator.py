@@ -1,12 +1,11 @@
 # type: ignore
-import random
 import asyncio
+import random
 
 import pytest
 
+from mongorepo import Index, exceptions
 from mongorepo.asyncio.decorators import async_mongo_repository
-from mongorepo import exceptions, Index
-
 from tests.common import SimpleDTO, collection_for_simple_dto, r
 
 
@@ -96,7 +95,7 @@ async def test_get_list_with_add_batch_methods_with_decorator():
     repo = TestMongoRepository()
 
     await repo.add_batch(
-        [SimpleDTO(x='hey', y=r()), SimpleDTO(x='second hey!', y=r())]
+        [SimpleDTO(x='hey', y=r()), SimpleDTO(x='second hey!', y=r())],
     )
 
     dto_list = await repo.get_list(offset=0, limit=10)

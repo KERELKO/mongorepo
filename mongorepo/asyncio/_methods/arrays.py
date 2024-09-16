@@ -3,9 +3,9 @@ from typing import Any, Callable
 
 from motor.motor_asyncio import AsyncIOMotorCollection
 
+from mongorepo import exceptions
+from mongorepo._base import DTO, _DTOField
 from mongorepo.utils import _get_converter, _get_dataclass_fields, raise_exc
-from mongorepo import DTO, exceptions
-from mongorepo._base import _DTOField
 
 
 def _get_list_of_field_values_method_async(
