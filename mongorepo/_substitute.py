@@ -10,11 +10,16 @@ from pymongo.collection import Collection
 from mongorepo import exceptions
 from mongorepo._base import DTO
 from mongorepo._methods import CRUD_METHODS, INTEGER_METHODS, LIST_METHODS
-from mongorepo.asyncio._methods import (CRUD_METHODS_ASYNC,
-                                        INTEGER_METHODS_ASYNC,
-                                        LIST_METHODS_ASYNC)
-from mongorepo.utils import (_check_valid_field_type, _replace_typevars,
-                             _validate_method_annotations)
+from mongorepo.asyncio._methods import (
+    CRUD_METHODS_ASYNC,
+    INTEGER_METHODS_ASYNC,
+    LIST_METHODS_ASYNC,
+)
+from mongorepo.utils import (
+    _check_valid_field_type,
+    _replace_typevars,
+    _validate_method_annotations,
+)
 
 
 class _MethodType(Enum):

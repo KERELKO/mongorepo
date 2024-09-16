@@ -1,8 +1,15 @@
 import inspect
 from dataclasses import is_dataclass
 from types import UnionType
-from typing import (Any, Callable, NoReturn, Optional, TypeVar, get_args,
-                    get_origin)
+from typing import (
+    Any,
+    Callable,
+    NoReturn,
+    Optional,
+    TypeVar,
+    get_args,
+    get_origin,
+)
 
 import pymongo
 from pymongo.collection import Collection

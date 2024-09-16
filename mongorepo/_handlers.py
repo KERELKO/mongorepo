@@ -3,8 +3,11 @@ from typing import Callable
 
 from mongorepo import exceptions
 from mongorepo._base import Access
-from mongorepo._setters import (_set_array_fields_methods, _set_crud_methods,
-                                _set_integer_fields_methods)
+from mongorepo._setters import (
+    _set_array_fields_methods,
+    _set_crud_methods,
+    _set_integer_fields_methods,
+)
 from mongorepo._substitute import _substitute_method
 from mongorepo.asyncio.utils import _run_asyncio_create_index
 from mongorepo.utils import _create_index, _get_meta_attributes, raise_exc

@@ -4,9 +4,12 @@ from typing import Generic, Protocol, TypeVar
 
 from mongorepo import DTO
 from mongorepo.decorators import implements, mongo_repository
-from tests.common import (ComplicatedDTO, SimpleDTO,
-                          collection_for_complicated_dto,
-                          collection_for_simple_dto)
+from tests.common import (
+    ComplicatedDTO,
+    SimpleDTO,
+    collection_for_complicated_dto,
+    collection_for_simple_dto,
+)
 
 
 def test_implements():

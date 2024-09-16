@@ -7,8 +7,12 @@ from mongorepo import exceptions
 from mongorepo._base import DTO, Index
 from mongorepo.asyncio._methods import _add_method_async
 from mongorepo.asyncio.utils import _run_asyncio_create_index
-from mongorepo.utils import (_get_collection_and_dto, _get_converter,
-                             _get_dto_from_origin, _get_meta_attributes)
+from mongorepo.utils import (
+    _get_collection_and_dto,
+    _get_converter,
+    _get_dto_from_origin,
+    _get_meta_attributes,
+)
 
 
 class AsyncBasedMongoRepository(Generic[DTO]):

@@ -6,8 +6,12 @@ from pymongo.collection import Collection
 from mongorepo import exceptions
 from mongorepo._base import DTO, Index
 from mongorepo._methods import _add_method
-from mongorepo.utils import (_create_index, _get_converter,
-                             _get_dto_from_origin, _get_meta_attributes)
+from mongorepo.utils import (
+    _create_index,
+    _get_converter,
+    _get_dto_from_origin,
+    _get_meta_attributes,
+)
 
 
 class BaseMongoRepository(Generic[DTO]):
