@@ -1,25 +1,40 @@
 from typing import Iterable
 
 from mongorepo._base import Access
-from mongorepo._methods import (_add_batch_method, _add_method, _delete_method,
-                                _get_all_method, _get_list_method, _get_method,
-                                _pop_list_method, _update_integer_field_method,
-                                _update_list_field_method, _update_method)
+from mongorepo._methods import (
+    _add_batch_method,
+    _add_method,
+    _delete_method,
+    _get_all_method,
+    _get_list_method,
+    _get_method,
+    _pop_list_method,
+    _update_integer_field_method,
+    _update_list_field_method,
+    _update_method,
+)
 from mongorepo._methods.arrays import _get_list_of_field_values_method
-from mongorepo.asyncio._methods import (_add_batch_method_async,
-                                        _add_method_async,
-                                        _delete_method_async,
-                                        _get_all_method_async,
-                                        _get_list_method_async,
-                                        _get_method_async,
-                                        _pop_list_method_async,
-                                        _update_integer_field_method_async,
-                                        _update_list_field_method_async,
-                                        _update_method_async)
-from mongorepo.asyncio._methods.arrays import \
-    _get_list_of_field_values_method_async
-from mongorepo.utils import (_check_valid_field_type, _get_dto_from_origin,
-                             _get_meta_attributes, get_prefix)
+from mongorepo.asyncio._methods import (
+    _add_batch_method_async,
+    _add_method_async,
+    _delete_method_async,
+    _get_all_method_async,
+    _get_list_method_async,
+    _get_method_async,
+    _pop_list_method_async,
+    _update_integer_field_method_async,
+    _update_list_field_method_async,
+    _update_method_async,
+)
+from mongorepo.asyncio._methods.arrays import (
+    _get_list_of_field_values_method_async,
+)
+from mongorepo.utils import (
+    _check_valid_field_type,
+    _get_dto_from_origin,
+    _get_meta_attributes,
+    get_prefix,
+)
 
 
 def _set_array_fields_methods(

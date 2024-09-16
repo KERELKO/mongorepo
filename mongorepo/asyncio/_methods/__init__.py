@@ -1,17 +1,22 @@
 from typing import Callable
 
 from mongorepo.asyncio._methods.arrays import (
-    _get_list_of_field_values_method_async, _pop_list_method_async,
-    _update_list_field_method_async)
-from mongorepo.asyncio._methods.crud import (_add_batch_method_async,
-                                             _add_method_async,
-                                             _delete_method_async,
-                                             _get_all_method_async,
-                                             _get_list_method_async,
-                                             _get_method_async,
-                                             _update_method_async)
-from mongorepo.asyncio._methods.integer import \
-    _update_integer_field_method_async
+    _get_list_of_field_values_method_async,
+    _pop_list_method_async,
+    _update_list_field_method_async,
+)
+from mongorepo.asyncio._methods.crud import (
+    _add_batch_method_async,
+    _add_method_async,
+    _delete_method_async,
+    _get_all_method_async,
+    _get_list_method_async,
+    _get_method_async,
+    _update_method_async,
+)
+from mongorepo.asyncio._methods.integer import (
+    _update_integer_field_method_async,
+)
 
 # List methods, all starts with `__`
 LIST_METHODS_ASYNC: dict[str, Callable] = {

@@ -6,8 +6,13 @@ import pytest
 
 from mongorepo import Access, exceptions
 from mongorepo.decorators import mongo_repository
-from tests.common import (ComplicatedDTO, NestedListDTO, SimpleDTO,
-                          collection_for_complicated_dto, custom_collection)
+from tests.common import (
+    ComplicatedDTO,
+    NestedListDTO,
+    SimpleDTO,
+    collection_for_complicated_dto,
+    custom_collection,
+)
 
 
 def test_can_push_and_pull_elements_from_list_with_decorator():

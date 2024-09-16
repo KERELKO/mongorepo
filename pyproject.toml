@@ -21,3 +21,6 @@ pygments = "^2.18.0"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.isort]
+multi_line_output = 1

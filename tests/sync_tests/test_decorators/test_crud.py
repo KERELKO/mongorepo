@@ -6,10 +6,15 @@ import pytest
 from mongorepo import Access
 from mongorepo.decorators import mongo_repository
 from mongorepo.exceptions import NoDTOTypeException
-from tests.common import (ComplicatedDTO, DTOWithID, SimpleDTO,
-                          collection_for_complicated_dto,
-                          collection_for_dto_with_id,
-                          collection_for_simple_dto, r)
+from tests.common import (
+    ComplicatedDTO,
+    DTOWithID,
+    SimpleDTO,
+    collection_for_complicated_dto,
+    collection_for_dto_with_id,
+    collection_for_simple_dto,
+    r,
+)
 
 
 def test_all_methods_with_decorator():
