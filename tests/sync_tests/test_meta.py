@@ -44,12 +44,14 @@ def test_repo_include_id_in_dto():
             collection = mongo_client()['test_id_field_db']['withid']
 
     r_1 = WithIdRepository()
-    inserted_dto = r_1.add(WithId(name='cookie'))
+    inserted_dto: WithId | None = r_1.add(WithId(name='cookie'))
+    assert inserted_dto
     assert len(inserted_dto.oid) >= 24, inserted_dto.oid
-    with_id_dto = r_1.get(name='cookie')
+    with_id_dto: WithId | None = r_1.get(name='cookie')
 
+    assert with_id_dto
     assert with_id_dto.oid, with_id_dto.oid
 
-    dto = r_1.get(oid=inserted_dto.oid)
-    assert dto is not None
+    dto: WithId = r_1.get(oid=inserted_dto.oid)
+    assert dto
     assert dto.name == 'cookie'

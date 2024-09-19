@@ -1,6 +1,15 @@
 EX = docker exec -it
 PYTEST = ${EX} app pytest
+DC = docker compose
+BUILD = docker build -t devcontainer -f .devcontainer/Dockerfile .
 
+.PHONY: build
+build:
+	${BUILD}
+
+.PHONY: up
+up:
+	${DC} -f .devcontainer/compose.yaml up
 
 .PHONY: bash
 bash:

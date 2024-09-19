@@ -38,7 +38,7 @@ def async_mongo_repository(
     * Add `integer_fields` to params to extend repository with methods
     that related to integer fields in your dto type
 
-    increment_{field}, decrement_{field}
+    incr__{field}, decr__{field}
 
     ## Example
 
