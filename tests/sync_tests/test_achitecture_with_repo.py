@@ -95,7 +95,7 @@ def test_base_mongo_class_with_abstract_class():
         def get(self, title: str, price: int) -> Product:
             product: Product | None = super().get(title=title, price=price)
             if not product:
-                raise NoProductAvailable()
+                raise NoProductAvailable
             return product
 
     collection = mongo_client()['product_db']['product']
@@ -142,7 +142,7 @@ def test_decorator_with_protocol_and_dto_with_id():
     repo.add(dto)
 
     # get dto with generated id
-    resolved_dto = repo.get_by_id(id=dto_id)
+    resolved_dto: DTOWithID | None = repo.get_by_id(id=dto_id)
     assert resolved_dto is not None
     assert resolved_dto.y == 10
 
