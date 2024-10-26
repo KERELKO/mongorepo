@@ -36,7 +36,7 @@ def _get_list_of_field_values_method(
             filters, {field_name: {'$slice': [offset, limit]}},
         )
         raise_exc(exceptions.NotFoundException(**filters)) if not document else ...
-        return [to_dto(field_type, d) for d in document[field_name]]
+        return [to_dto(field_type, d) for d in document[field_name]]  # type: ignore
 
     def get_list(
         self, offset: int, limit: int, **filters,
@@ -45,7 +45,7 @@ def _get_list_of_field_values_method(
             filters, {field_name: {'$slice': [offset, limit]}},
         )
         raise_exc(exceptions.NotFoundException(**filters)) if not document else ...
-        return document[field_name]
+        return document[field_name]  # type: ignore
 
     if is_dataclass(field_type):
         to_dto = _get_converter(dataclass_fields[field_name])

@@ -6,9 +6,10 @@ you can use the same classes and decorators located in `mongorepo.asyncio`
 
 """
 from . import asyncio, decorators, docs, exceptions
-from ._base import DTO, Access, Index
+from ._base import DTO, Access, Index, Method
 
 __all__ = [
+    'Method',
     'Access',
     'DTO',
     'Index',

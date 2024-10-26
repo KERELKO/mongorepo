@@ -43,7 +43,7 @@ def _add_batch_method_async(
         batch: list[dict[str, Any]] = []
         for dto in dto_list:
             object_id = ObjectId()
-            dto.__dict__[id_field] = str(object_id)  # type: ignore  checked on 49-51 lines
+            dto.__dict__[id_field] = str(object_id)  # type: ignore
             batch.append({**asdict(dto), '_id': object_id})
         await collection.insert_many(batch)
 

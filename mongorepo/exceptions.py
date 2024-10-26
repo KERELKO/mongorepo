@@ -70,4 +70,5 @@ class NotFoundException(MongoRepoException):
         self.filters = filters
 
     def __str__(self) -> str:
-        return f'Document not found, filters: {self.filters}'
+        filters = ', '.join([f'{key}={value}' for key, value in self.filters.items()])
+        return f'Document not found, filters: {filters}'

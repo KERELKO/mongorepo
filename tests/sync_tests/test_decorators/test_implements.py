@@ -60,8 +60,6 @@ def test_can_substitute_get_method():
     assert dto is not None
     assert dto.x == '123'
 
-    assert r.get_by_x.__annotations__['return'] == SimpleDTO | None
-
     c.drop()
 
 

@@ -2,7 +2,7 @@ import inspect
 from typing import Callable
 
 from mongorepo import exceptions
-from mongorepo._base import Access
+from mongorepo._base import Access, Method
 from mongorepo._setters import (
     _set_array_fields_methods,
     _set_crud_methods,
@@ -106,7 +106,7 @@ def _handle_async_mongo_repository(
 def _handle_implements(
     base_cls: type,
     cls: type,
-    **substitute: str | Callable,
+    **substitute: str | Callable | Method,
 ) -> type:
     attrs = _get_meta_attributes(cls)
     if not substitute:
@@ -117,18 +117,23 @@ def _handle_implements(
     collection = attrs['collection']
     id_field = attrs['id_field']
     for mongorepo_method_name, _generic_method in substitute.items():
-        if inspect.isfunction(_generic_method) or inspect.ismethod(_generic_method):
-            generic_method: Callable = _generic_method  # type: ignore[reportRedeclaration]
-        elif isinstance(_generic_method, str):
-            generic_method: Callable | None = getattr(
-                base_cls, _generic_method, None,
-            )
-            if generic_method is None or not inspect.isfunction(generic_method):
-                raise exceptions.InvalidMethodNameException(_generic_method)
+        if not isinstance(_generic_method, Method):
+            if inspect.isfunction(_generic_method) or inspect.ismethod(_generic_method):
+                generic_method = Method(_generic_method)
+
+            elif isinstance(_generic_method, str):
+                __generic_method: Callable | None = getattr(
+                    base_cls, _generic_method, None,
+                )
+                if __generic_method is None or not inspect.isfunction(__generic_method):
+                    raise exceptions.InvalidMethodNameException(_generic_method)
+                generic_method = Method(__generic_method)  # type: ignore
+        else:
+            generic_method = _generic_method
 
         setattr(
             cls,
-            generic_method.__name__,
+            generic_method.name,
             _substitute_method(
                 mongorepo_method_name,
                 generic_method,

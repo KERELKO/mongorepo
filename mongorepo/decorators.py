@@ -1,6 +1,6 @@
 from typing import Annotated, Callable
 
-from mongorepo._base import Access
+from mongorepo._base import Access, Method
 from mongorepo._handlers import _handle_implements, _handle_mongo_repository
 
 
@@ -82,7 +82,7 @@ def mongo_repository(
     return wrapper(cls)
 
 
-def implements(base_cls: type, **methods: str | Callable) -> Callable:
+def implements(base_cls: type, **methods: str | Callable | Method) -> Callable:
     """Decorator that allows to implement methods of `base_cls` you can specify
     them in `**methods`
 

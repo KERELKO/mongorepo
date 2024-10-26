@@ -12,7 +12,7 @@ def _get_list_of_field_values_method_async(
     dto_type: type[DTO], collection: AsyncIOMotorCollection, field_name: str,
 ) -> Callable:
     dataclass_fields = _get_dataclass_fields(dto_type=dto_type, only_dto_types=True)
-    field_type = dataclass_fields.get(field_name, None)
+    field_type: type[DTO] | None = dataclass_fields.get(field_name, None)
 
     async def get_list_dto(
         self, offset: int, limit: int, **filters,
@@ -21,17 +21,17 @@ def _get_list_of_field_values_method_async(
             filters, {field_name: {'$slice': [offset, limit]}},
         )
         raise_exc(exceptions.NotFoundException(**filters)) if not document else ...
-        return [to_dto(field_type, d) for d in document[field_name]]
+        return [to_dto(field_type, d) for d in document[field_name]]  # type: ignore
 
     async def get_list(self, offset: int, limit: int, **filters) -> list[Any]:
         document = await collection.find_one(
             filters, {field_name: {'$slice': [offset, limit]}},
         )
         raise_exc(exceptions.NotFoundException(**filters)) if not document else ...
-        return document[field_name]
+        return document[field_name]  # type: ignore
 
     if is_dataclass(field_type):
-        to_dto = _get_converter(field_type)
+        to_dto: Callable = _get_converter(field_type)  # type: ignore
         return get_list_dto
     return get_list
 

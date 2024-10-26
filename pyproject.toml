@@ -18,6 +18,17 @@ pre-commit = "^3.8.0"
 mkdocs-material = "^9.5.26"
 pygments = "^2.18.0"
 
+[tool.mypy]
+exclude = ["data/", "tests/", "raw_tests.py"]
+check_untyped_defs = false
+disallow_untyped_calls = false
+
+# For "Cannot call function of unknown type"
+disable_error_code = ["operator"]
+
+[tool.pytest]
+asyncio_mode = "auto"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

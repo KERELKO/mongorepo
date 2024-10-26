@@ -8,7 +8,7 @@ from motor.motor_asyncio import AsyncIOMotorCollection
 from pymongo.collection import Collection
 
 from mongorepo import exceptions
-from mongorepo._base import DTO
+from mongorepo._base import DTO, Method
 from mongorepo._methods import CRUD_METHODS, INTEGER_METHODS, LIST_METHODS
 from mongorepo.asyncio._methods import (
     CRUD_METHODS_ASYNC,
@@ -17,6 +17,7 @@ from mongorepo.asyncio._methods import (
 )
 from mongorepo.utils import (
     _check_valid_field_type,
+    _get_defaults,
     _replace_typevars,
     _validate_method_annotations,
 )
@@ -26,6 +27,172 @@ class _MethodType(Enum):
     CRUD = 1
     LIST = 2
     INTEGER = 3
+
+
+VALID_ACTIONS_FOR_INTERGER_METHODS: tuple[str, ...] = ('incr', 'decr')
+VALID_ACTIONS_FOR_ARRAY_METHODS: tuple[str, ...] = ('pop', 'list', 'append', 'remove')
+
+
+def _substitute_method(
+    mongorepo_method_name: str,
+    generic_method: Method,
+    dto: type[DTO],
+    collection: Collection | AsyncIOMotorCollection,
+    id_field: str | None = None,
+) -> Callable:
+    is_async = inspect.iscoroutinefunction(generic_method)
+
+    mongorepo_method = _get_mongorepo_method_callable(
+        mongorepo_method_name, generic_method, dto, collection, id_field,
+    )
+
+    _validate_method_annotations(generic_method.source)
+
+    def func(self, *args, **kwargs) -> Any:
+        required_params = _manage_params(
+            mongorepo_method, generic_method, *args, **kwargs,
+        )
+        return mongorepo_method(self, **required_params)
+
+    async def async_func(self, *args, **kwargs) -> Any:
+        required_params = _manage_params(
+            mongorepo_method, generic_method, *args, **kwargs,
+        )
+        return await mongorepo_method(self, **required_params)
+
+    new_method = async_func if is_async else func
+
+    new_method.__annotations__ = generic_method.source.__annotations__
+    new_method.__name__ = generic_method.name
+
+    _replace_typevars(new_method, dto)
+
+    return new_method
+
+
+def _manage_custom_params(
+    generic_method: Method,
+    *args,
+    **kwargs,
+) -> dict[str, Any]:
+    result = {}
+    i = 0
+    result['filters'] = {}
+    defaults = _get_defaults(generic_method.source)
+    for param_name, mongo_param_name in generic_method.params.items():
+        try:
+            param_value = args[i]
+            if mongo_param_name == 'filters':
+                result['filters'][param_name] = param_value
+            else:
+                result[param_name] = param_value
+        except IndexError:
+            ...
+
+        if param_name not in kwargs and param_name not in defaults:
+            raise TypeError(
+                f'{generic_method.name}() missing required keyword argument: {param_name}',
+            )
+        elif param_name not in kwargs and param_name in defaults:
+            if mongo_param_name == 'filters':
+                result['filters'][param_name] = defaults[param_name]
+            else:
+                result[param_name] = defaults[param_name]
+            continue
+
+        if mongo_param_name == 'filters':
+            result['filters'][param_name] = kwargs[param_name]
+        else:
+            result[mongo_param_name] = kwargs[param_name]
+
+    if 'filters' in result:
+        _filters: dict[str, Any] = result.pop('filters')
+        print('_filters: ', _filters)
+        result.update(**_filters)
+    print(result)
+    return result
+
+
+def _manage_params(
+    mongorepo_method: Callable,
+    generic_method: Method,
+    *args,
+    **kwargs,
+) -> dict[str, Any]:
+    """Return required params for `mongorepo` method, do not pass `self` in
+    *args or **kwargs."""
+
+    if generic_method.params:
+        return _manage_custom_params(generic_method, *args, **kwargs)
+
+    params: dict[str, Any] = {}
+    result: dict[str, Any] = {}
+
+    # control for **kwargs in source method
+    extra: bool = False
+
+    mongo_params = dict(inspect.signature(mongorepo_method).parameters)
+    mongo_params.pop('self')
+
+    gen_params = dict(generic_method.signature.parameters)
+    gen_params.pop('self')
+
+    i = 0
+    # Looping over *args and unite them with generic method parameters
+    for param in gen_params.values():
+        try:
+            arg = args[i]
+        except IndexError:
+            break
+        i += 1
+        params[param.name] = arg
+
+    # Looping over **kwargs and unite them with generic method parameters
+    for param in gen_params.values():
+        if param.name in kwargs and param.name in params:
+            raise TypeError(
+                f'{generic_method.name}() keyword arguments repeated: {param.name}',
+            )
+
+        if param.default != _empty and not kwargs.get(param.name, None):
+            params[param.name] = param.default
+
+        if param.name in params:
+            continue
+
+        if param.name not in params and param.name not in kwargs:
+            raise TypeError(
+                f'{generic_method.name}() '
+                f'missing required keyword argument: \'{param.name}\'',
+            )
+        params[param.name] = kwargs[param.name]
+
+    # Unite generic method arguments to mongorepo arguments of the method
+    for mongo_param in mongo_params.values():
+        if mongo_param.kind is Parameter.VAR_KEYWORD:
+            extra = True
+            break
+
+        # Try to find DTO type and unite with parameter with DTO annotation
+        if isinstance(mongo_param.annotation, TypeVar) or is_dataclass(mongo_param.annotation):
+            for key, value in params.items():
+                if is_dataclass(value):
+                    result[mongo_param.name] = value
+                    params[key] = None
+                    break
+        else:
+            for key, value in params.items():
+                if mongo_param.annotation == Any or isinstance(value, mongo_param.annotation):
+                    result[mongo_param.name] = value
+                    params[key] = None
+                    break
+
+    # Looping over mongorepo **kwargs if they not absent
+    if extra:
+        for key, value in params.items():
+            if value is not None:
+                result[key] = value
+    return result
 
 
 def _get_method_from_string(
@@ -79,14 +246,14 @@ def _get_method_from_string(
     )
 
 
-def _substitute_method(
+def _get_mongorepo_method_callable(
     mongorepo_method_name: str,
-    generic_method: Callable,
+    generic_method: Method,
     dto: type[DTO],
     collection: Collection | AsyncIOMotorCollection,
     id_field: str | None = None,
 ) -> Callable:
-    is_async = inspect.iscoroutinefunction(generic_method)
+    is_async = inspect.iscoroutinefunction(generic_method.source)
 
     mongorepo_method, mongorepo_method_type = _get_method_from_string(
         mongorepo_method_name, is_async=is_async,
@@ -102,10 +269,10 @@ def _substitute_method(
     elif mongorepo_method_type is _MethodType.INTEGER:
         action, field_name = (d := mongorepo_method_name.split('__'))[0], d[-1]
         _check_valid_field_type(field_name, dto, int)
-        _valid_actions = ('incr', 'decr')
-        if action not in _valid_actions:
+        if action not in VALID_ACTIONS_FOR_INTERGER_METHODS:
             raise exceptions.MongoRepoException(
-                message=f'Invalid action for method: {action}\n valid: {_valid_actions}',
+                message=f'Invalid action for {mongorepo_method_name}(): '
+                f'{action}\n valid: {VALID_ACTIONS_FOR_INTERGER_METHODS}',
             )
         mongorepo_method = mongorepo_method(
             dto_type=dto,
@@ -117,10 +284,10 @@ def _substitute_method(
     elif mongorepo_method_type is _MethodType.LIST:
         action, field_name = (d := mongorepo_method_name.split('__'))[-1], d[0]
         _check_valid_field_type(field_name, dto, list)
-        _valid_actions = ('pop', 'list', 'append', 'remove')
-        if action not in _valid_actions:
+        if action not in VALID_ACTIONS_FOR_ARRAY_METHODS:
             raise exceptions.MongoRepoException(
-                message=f'Invalid action for method: {action}\n valid: {_valid_actions}',
+                message=f'Invalid action for {mongorepo_method_name}(): '
+                f'{action}\n valid: {VALID_ACTIONS_FOR_ARRAY_METHODS}',
             )
         if 'command' in mongorepo_method.__annotations__:
             mongorepo_method = mongorepo_method(
@@ -135,102 +302,4 @@ def _substitute_method(
                 collection=collection,
                 field_name=field_name,
             )
-
-    _validate_method_annotations(generic_method)
-
-    def func(self, *args, **kwargs) -> Any:
-        required_params = _manage_params(
-            mongorepo_method, generic_method, *args, **kwargs,
-        )
-        return mongorepo_method(self, **required_params)
-
-    async def async_func(self, *args, **kwargs) -> Any:
-        required_params = _manage_params(
-            mongorepo_method, generic_method, *args, **kwargs,
-        )
-        return await mongorepo_method(self, **required_params)
-
-    new_method = async_func if is_async else func
-
-    new_method.__annotations__ = generic_method.__annotations__
-    new_method.__name__ = generic_method.__name__
-    new_method.__annotations__['return'] = dto | None
-
-    _replace_typevars(new_method, dto)
-
-    return new_method
-
-
-def _manage_params(
-    mongorepo_method: Callable,
-    generic_method: Callable,
-    *args,
-    **kwargs,
-) -> dict[str, Any]:
-    """Return required params for `mongorepo` method, do not pass `self` in
-    *args or **kwargs."""
-    params: dict[str, Any] = {}
-    gen_params = dict(inspect.signature(generic_method).parameters)
-    gen_params.pop('self')
-    mongo_params = dict(inspect.signature(mongorepo_method).parameters)
-    mongo_params.pop('self')
-
-    i = 0
-    # Looping over *args and unite them with generic method parameters
-    for param in gen_params.values():
-        try:
-            arg = args[i]
-            i += 1
-            params[param.name] = arg
-        except IndexError:
-            break
-
-    # Looping over **kwargs and unite them with generic method parameters
-    for param in gen_params.values():
-        if param.name in kwargs and param.name in params:
-            raise TypeError(
-                f'{generic_method.__name__}() keyword arguments repeated: {param.name}',
-            )
-
-        if param.default != _empty and not kwargs.get(param.name, None):
-            params[param.name] = param.default
-
-        if param.name in params:
-            continue
-
-        if param.name not in params and param.name not in kwargs:
-            raise TypeError(
-                f'{generic_method.__name__}() '
-                f'missing required keyword argument: \'{param.name}\'',
-            )
-        params[param.name] = kwargs[param.name]
-
-    result = {}
-    extra: bool = False
-
-    # Unite generic method arguments to mongorepo arguments of the method
-    for mongo_param in mongo_params.values():
-        if mongo_param.kind is Parameter.VAR_KEYWORD:
-            extra = True
-            break
-
-        # Try to find DTO type and unite with parameter with DTO annotation
-        if isinstance(mongo_param.annotation, TypeVar) or is_dataclass(mongo_param.annotation):
-            for key, value in params.items():
-                if is_dataclass(value):
-                    result[mongo_param.name] = value
-                    params[key] = None
-                    break
-        else:
-            for key, value in params.items():
-                if mongo_param.annotation == Any or isinstance(value, mongo_param.annotation):
-                    result[mongo_param.name] = value
-                    params[key] = None
-                    break
-
-    # Looping over mongorepo **kwargs if they not absent
-    if extra:
-        for key, value in params.items():
-            if value is not None:
-                result[key] = value
-    return result
+    return mongorepo_method

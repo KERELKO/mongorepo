@@ -75,8 +75,7 @@ def test_base_mongo_class_with_abstract_class():
     class NoProductAvailable(Exception):
         ...
 
-    # NOTE: In this example we can use @abstractmethod because
-    # abstract class methods have the same naming as our base repository methods
+    # NOTE: In this example we can use @abstractmethod
     class AbstractRepository(Generic[DTO], ABC):
         @abstractmethod
         def add(self, dto: DTO) -> DTO:

@@ -135,9 +135,7 @@ def _create_index(index: Index | str, collection: Collection) -> None:
     if isinstance(index, str):
         collection.create_index(index)
         return
-    index_name = f'index_{index.field}'
-    if index.name:
-        index_name = index.name
+    index_name = index.name or f'index_{index.field}'
     direction = pymongo.DESCENDING if index.desc else pymongo.ASCENDING
     collection.create_index(
         [(index.field, direction)],
@@ -189,34 +187,36 @@ def _convert_to_dto_with_id(
 
 
 def _recursive_convert_to_dto(dto_type: type[DTO], id_field: str | None = None) -> Callable:
-    def decorator(dto_type: type[DTO], dct: dict[str, Any]) -> DTO:
-        def wrapper(
+    def outer_wrapper(dto_type: type[DTO], dct: dict[str, Any]) -> DTO:
+        def inner_wrapper(
             dto_type: type[DTO], dct: dict[str, Any], to_dto: bool = False,
         ) -> dict[str, Any] | DTO:
-            type_hints = _get_dto_type_hints(dto_type, get_types=False)
             data = {}
+            type_hints = _get_dto_type_hints(dto_type, get_types=False)
             for key, value in dct.items():
                 if is_dataclass(type_hints.get(key, None)):
-                    data[key] = wrapper(type_hints.get(key, None), value, to_dto=True)
+                    data[key] = inner_wrapper(type_hints.get(key, None), value, to_dto=True)
                 elif get_origin(type_hints.get(key, None)) is list and isinstance(value, list):
                     args = get_args(type_hints.get(key, None))
                     if is_dataclass(args[0]):
                         data[key] = [
-                            wrapper(args[0], v, to_dto=True) for v in value  # type: ignore
+                            inner_wrapper(args[0], v, to_dto=True) for v in value  # type: ignore
                         ]
                     else:
-                        data[key] = value
+                        data[key] = value  # TODO: solve this problem
                 else:
                     data[key] = value
             return dto_type(**data) if to_dto else data
+
         data = {}
         if id_field is not None:
             data[id_field] = str(dct.pop('_id'))
         else:
             dct.pop('_id') if dct.get('_id', None) else ...
-        data.update(wrapper(dto_type, dct))  # type: ignore
+        data.update(inner_wrapper(dto_type, dct))  # type: ignore
         return dto_type(**data)
-    return decorator
+
+    return outer_wrapper
 
 
 def _get_converter(dto_type: type[DTO], id_field: str | None = None) -> Callable:
@@ -308,3 +308,12 @@ def _check_valid_field_type(field_name: str, dto_type: type[DTO], data_type: typ
         raise exceptions.MongoRepoException(
             message=f'Invalid type of the field "{field_name}", expected: {data_type}',
         )
+
+
+def _get_defaults(func: Callable) -> dict[str, Any]:
+    result = {}
+    params = inspect.signature(func).parameters
+    for param in params.values():
+        if param.default is not inspect._empty:
+            result[param.name] = param.default
+    return result
