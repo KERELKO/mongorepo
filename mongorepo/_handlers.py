@@ -10,7 +10,12 @@ from mongorepo._setters import (
 )
 from mongorepo._substitute import _substitute_method
 from mongorepo.asyncio.utils import _run_asyncio_create_index
-from mongorepo.utils import _create_index, _get_meta_attributes, raise_exc
+from mongorepo.utils import (
+    _create_index,
+    _get_meta_attributes,
+    _set__methods__,
+    raise_exc,
+)
 
 
 def _handle_mongo_repository(
@@ -22,6 +27,7 @@ def _handle_mongo_repository(
     update: bool,
     delete: bool,
     get_list: bool,
+    __methods__: bool,
     integer_fields: list[str] | None,
     array_fields: list[str] | None,
     method_access: Access | None,
@@ -53,6 +59,8 @@ def _handle_mongo_repository(
     if array_fields is not None:
         _set_array_fields_methods(cls, array_fields=array_fields, method_access=method_access)
 
+    if __methods__:
+        _set__methods__(cls)
     return cls
 
 
@@ -65,6 +73,7 @@ def _handle_async_mongo_repository(
     get_list: bool,
     update: bool,
     delete: bool,
+    __methods__: bool,
     integer_fields: list[str] | None,
     array_fields: list[str] | None,
     method_access: Access | None,
@@ -100,6 +109,9 @@ def _handle_async_mongo_repository(
 
     if index is not None:
         _run_asyncio_create_index(index=index, collection=collection)
+
+    if __methods__:
+        _set__methods__(cls)
     return cls
 
 
@@ -120,7 +132,7 @@ def _handle_implements(
         if inspect.isfunction(_generic_method) or inspect.ismethod(_generic_method):
             generic_method: Callable = _generic_method  # type: ignore[reportRedeclaration]
         elif isinstance(_generic_method, str):
-            generic_method: Callable | None = getattr(
+            generic_method: Callable | None = getattr(  # type: ignore
                 base_cls, _generic_method, None,
             )
             if generic_method is None or not inspect.isfunction(generic_method):

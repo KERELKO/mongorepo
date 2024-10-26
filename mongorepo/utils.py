@@ -308,3 +308,17 @@ def _check_valid_field_type(field_name: str, dto_type: type[DTO], data_type: typ
         raise exceptions.MongoRepoException(
             message=f'Invalid type of the field "{field_name}", expected: {data_type}',
         )
+
+
+def _set__methods__(cls: type) -> None:
+    def __methods__(cls) -> str:
+        methods = []
+        for name in dir(cls):
+            if name == '__methods__':
+                continue
+            member = getattr(cls, name)
+            if inspect.isfunction(member) or inspect.ismethod(member):
+                methods.append(f"{name}{inspect.signature(member)}")
+        return "\n".join(methods)
+
+    setattr(cls, '__methods__', property(__methods__))
