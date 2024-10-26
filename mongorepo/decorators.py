@@ -64,7 +64,7 @@ def mongo_repository(
             dto = UserDTO
             collection: Collection = db["users"]
             index = mongorepo.Index(field="name")
-            method_access = mongorepo.Access.PROTECTED
+            method_access = mongorepo.Access.PUBLIC
 
     r = MongoRepository()
 

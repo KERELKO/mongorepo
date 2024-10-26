@@ -64,6 +64,7 @@ def async_mongo_repository(
             dto = ExampleDTO
             collection: AsyncIOMotorCollection = db["example"]
             index = mongorepo.Index(field="id_field")
+            method_access = mongorepo.Access.PUBLIC
 
     r = MongoRepository()
 
