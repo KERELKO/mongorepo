@@ -1,12 +1,11 @@
-import pytest
-
 from mongorepo import Method
 from mongorepo.decorators import implements
 from tests.common import NestedListDTO, SimpleDTO, custom_collection
 
 
-@pytest.mark.skip
 def tests_implements_decorator_with_method_class():
+    """Test `@implements` decorator with `Method` class."""
+
     c = custom_collection(NestedListDTO)
 
     class IRepo:
@@ -35,8 +34,6 @@ def tests_implements_decorator_with_method_class():
 
     r.append_dto_by_title(dto=SimpleDTO(x='3', y=3), age=25, title='...')
     assert True
-
-    assert False
 
 
 def test_can_change_order_of_repo_parameters_and_passed_arguments():

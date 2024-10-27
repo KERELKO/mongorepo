@@ -8,7 +8,7 @@ from motor.motor_asyncio import AsyncIOMotorCollection
 from pymongo.collection import Collection
 
 from mongorepo import exceptions
-from mongorepo._base import DTO, Method
+from mongorepo._base import DTO, Method, _FiltersParameter
 from mongorepo._methods import CRUD_METHODS, INTEGER_METHODS, LIST_METHODS
 from mongorepo.asyncio._methods import (
     CRUD_METHODS_ASYNC,
@@ -29,7 +29,7 @@ class _MethodType(Enum):
     INTEGER = 3
 
 
-VALID_ACTIONS_FOR_INTERGER_METHODS: tuple[str, ...] = ('incr', 'decr')
+VALID_ACTIONS_FOR_INTEGER_METHODS: tuple[str, ...] = ('incr', 'decr')
 VALID_ACTIONS_FOR_ARRAY_METHODS: tuple[str, ...] = ('pop', 'list', 'append', 'remove')
 
 
@@ -75,41 +75,33 @@ def _manage_custom_params(
     *args,
     **kwargs,
 ) -> dict[str, Any]:
-    result = {}
-    i = 0
-    result['filters'] = {}
     defaults = _get_defaults(generic_method.source)
-    for param_name, mongo_param_name in generic_method.params.items():
-        try:
-            param_value = args[i]
-            if mongo_param_name == 'filters':
-                result['filters'][param_name] = param_value
-            else:
-                result[param_name] = param_value
-        except IndexError:
-            ...
-
-        if param_name not in kwargs and param_name not in defaults:
-            raise TypeError(
-                f'{generic_method.name}() missing required keyword argument: {param_name}',
-            )
-        elif param_name not in kwargs and param_name in defaults:
-            if mongo_param_name == 'filters':
-                result['filters'][param_name] = defaults[param_name]
-            else:
-                result[param_name] = defaults[param_name]
+    result: dict[str, Any] = {}
+    gen_map = {}
+    filters: dict[str, Any] = {}
+    i = 0
+    for gen_param in generic_method.get_source_params().keys():
+        if len(args) > i:
+            gen_map[gen_param] = args[i]
+            i += 1
             continue
-
-        if mongo_param_name == 'filters':
-            result['filters'][param_name] = kwargs[param_name]
+        elif gen_param in kwargs:
+            gen_map[gen_param] = kwargs[gen_param]
+        elif defaults.get(gen_param, None):
+            gen_map[gen_param] = defaults[gen_param]
         else:
-            result[mongo_param_name] = kwargs[param_name]
+            raise exceptions.MongoRepoException(
+                message=f'Cannot find value for {gen_param} parameter. '
+                f'{generic_method.name}() parameters: {generic_method.params}',
+            )
 
-    if 'filters' in result:
-        _filters: dict[str, Any] = result.pop('filters')
-        print('_filters: ', _filters)
-        result.update(**_filters)
-    print(result)
+    for key, value in gen_map.items():
+        if generic_method.params[key] == _FiltersParameter.FILTER.value:
+            filters[key] = value
+        else:
+            result[generic_method.params[key]] = value
+
+    result.update(filters)
     return result
 
 
@@ -123,7 +115,9 @@ def _manage_params(
     *args or **kwargs."""
 
     if generic_method.params:
-        return _manage_custom_params(generic_method, *args, **kwargs)
+        return _manage_custom_params(
+            generic_method, *args, **kwargs,
+        )
 
     params: dict[str, Any] = {}
     result: dict[str, Any] = {}
@@ -206,7 +200,6 @@ def _get_method_from_string(
 
     ```
     method = get_method_from_string(method_name='messages__list', is_async=True)
-    print(method)  # _get_list_of_field_values_method_async
     ```
 
     """
@@ -269,10 +262,10 @@ def _get_mongorepo_method_callable(
     elif mongorepo_method_type is _MethodType.INTEGER:
         action, field_name = (d := mongorepo_method_name.split('__'))[0], d[-1]
         _check_valid_field_type(field_name, dto, int)
-        if action not in VALID_ACTIONS_FOR_INTERGER_METHODS:
+        if action not in VALID_ACTIONS_FOR_INTEGER_METHODS:
             raise exceptions.MongoRepoException(
                 message=f'Invalid action for {mongorepo_method_name}(): '
-                f'{action}\n valid: {VALID_ACTIONS_FOR_INTERGER_METHODS}',
+                f'{action}\n valid: {VALID_ACTIONS_FOR_INTEGER_METHODS}',
             )
         mongorepo_method = mongorepo_method(
             dto_type=dto,

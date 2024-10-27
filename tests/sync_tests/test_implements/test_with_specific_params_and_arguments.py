@@ -4,7 +4,12 @@ from mongorepo.decorators import implements
 from tests.common import NestedListDTO, SimpleDTO, custom_collection
 
 
-@pytest.mark.skip('Impossible to pass on v2.0.0')
+@pytest.mark.skip(
+    reason=(
+        'To pass this test need to use `Method` class'
+        'Already tested in `test_implements_with_method_cls.py`'
+    ),
+)
 def test_can_change_order_of_repo_parameters_and_passed_arguments():
 
     c = custom_collection(NestedListDTO)

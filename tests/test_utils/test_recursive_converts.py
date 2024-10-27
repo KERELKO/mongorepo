@@ -23,15 +23,15 @@ def test_recursive_converts_to_dto() -> None:
     class RecursiveDTO:
         dtos: list[NestedListDTO]
 
-    s = SimpleDTO(x='123', y=5)
-    assert _recursive_convert_to_dto(SimpleDTO)(SimpleDTO, {'x': '123', 'y': 5}) == s
+    simple_dto = SimpleDTO(x='123', y=5)
+    assert _recursive_convert_to_dto(SimpleDTO)(SimpleDTO, {'x': '123', 'y': 5}) == simple_dto
 
-    n = NestedDTO(title='.', simple=s)
+    nested_dto = NestedDTO(title='.', simple=simple_dto)
     assert _recursive_convert_to_dto(NestedDTO)(
         NestedDTO, {'title': '.', 'simple': {'x': '123', 'y': 5}},
-    ) == n
-    nl = NestedListDTO(title='...', dtos=[s, s, s])
-    conv = _recursive_convert_to_dto(NestedListDTO)(
+    ) == nested_dto
+    nested_list_dto = NestedListDTO(title='...', dtos=[simple_dto, simple_dto, simple_dto])
+    convert = _recursive_convert_to_dto(NestedListDTO)(
         NestedListDTO,
         dct={
             'title': '...', 'dtos': [
@@ -39,10 +39,10 @@ def test_recursive_converts_to_dto() -> None:
             ],
         },
     )
-    assert conv == nl, conv
+    assert convert == nested_list_dto, convert
 
-    rnl = RecursiveDTO(
-        dtos=[nl, nl],
+    recursive_dto = RecursiveDTO(
+        dtos=[nested_list_dto, nested_list_dto],
     )
     final_conv = _recursive_convert_to_dto(RecursiveDTO)(
         RecursiveDTO,
@@ -62,4 +62,4 @@ def test_recursive_converts_to_dto() -> None:
         },
     )
 
-    assert rnl == final_conv, final_conv
+    assert recursive_dto == final_conv, final_conv

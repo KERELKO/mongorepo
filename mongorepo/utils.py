@@ -325,6 +325,7 @@ def _set__methods__(cls: type) -> None:
 
 
 def _get_defaults(func: Callable) -> dict[str, Any]:
+    """Return default values for function parameters if any provided."""
     result = {}
     params = inspect.signature(func).parameters
     for param in params.values():

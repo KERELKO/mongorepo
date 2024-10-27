@@ -31,6 +31,10 @@ class Access(int, Enum):
     PRIVATE = 2
 
 
+class _FiltersParameter(str, Enum):
+    FILTER = 'filters'
+
+
 @dataclass(eq=False)
 class _MethodDeps:
     """DTO for mongorepo methods dependencies.
@@ -70,6 +74,12 @@ class Method:
     @property
     def signature(self) -> inspect.Signature:
         return inspect.signature(self.source)
+
+    def get_source_params(self, exclude_self: bool = True) -> dict:
+        gen_params = dict(self.signature.parameters)
+        if exclude_self:
+            gen_params.pop('self')
+        return gen_params
 
     @property
     def is_async(self) -> bool:
