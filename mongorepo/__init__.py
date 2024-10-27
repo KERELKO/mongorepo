@@ -19,8 +19,13 @@ from .asyncio.decorators import async_mongo_repository as async_repository
 from .classes import BaseMongoRepository
 from .decorators import implements
 from .decorators import mongo_repository as repository
+from .queries import AggregationStage, Condition, Operation, UpdateModifier
 
 __all__ = [
+    'UpdateModifier',
+    'AggregationStage',
+    'Operation',
+    'Condition',
     'implements',
     'BaseMongoRepository',
     'AsyncBasedMongoRepository',
