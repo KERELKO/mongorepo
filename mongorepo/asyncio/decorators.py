@@ -16,6 +16,7 @@ def async_mongo_repository(
     integer_fields: list[str] | None = None,
     array_fields: list[str] | None = None,
     method_access: Access | None = None,
+    __methods__: bool = True,
 ) -> type | Callable:
     """## Async MongoDB repository decorator
 
@@ -40,7 +41,21 @@ def async_mongo_repository(
 
     incr__{field}, decr__{field}
 
-    ## Example
+    * __methods__: if `True` set class property `__methods__`
+    that list all available methods including `mongorepo` methods, can be useful
+    if you want to debug or see the signature of generated methods
+
+    ### Example of __methods__ property
+    ```
+    @async_mongorepo_repository(get_list=True, update=True, __methods__=True)
+    class A:
+        ...
+    print(A().__methods__)
+    # get_list(self, offset: int = 0, limit: int = 20) -> list[~DTO]
+    # update(self, dto: ~DTO, **filters: Any) -> Optional[~DTO]
+    ```
+
+    ## Decorator usage example
 
     ```
     @async_mongo_repository(method_access=mongorepo.Access.PROTECTED)
@@ -49,6 +64,7 @@ def async_mongo_repository(
             dto = ExampleDTO
             collection: AsyncIOMotorCollection = db["example"]
             index = mongorepo.Index(field="id_field")
+            method_access = mongorepo.Access.PUBLIC
 
     r = MongoRepository()
 
@@ -73,6 +89,7 @@ def async_mongo_repository(
             integer_fields=integer_fields,
             array_fields=array_fields,
             method_access=method_access,
+            __methods__=__methods__,
         )
 
     if cls is None:

@@ -5,11 +5,12 @@ from pymongo.collection import Collection
 
 from mongorepo import exceptions
 from mongorepo._base import DTO, _DTOField
+from mongorepo.queries import Operation
 from mongorepo.utils import _get_converter, _get_dataclass_fields, raise_exc
 
 
 def _update_list_field_method(
-    dto_type: type[DTO], collection: Collection, field_name: str, command: str = '$push',
+    dto_type: type[DTO], collection: Collection, field_name: str, command: Operation = '$push',
 ) -> Callable:
     dataclass_fields = _get_dataclass_fields(dto_type=dto_type, only_dto_types=True)
     field_type = dataclass_fields.get(field_name, None)

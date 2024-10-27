@@ -16,6 +16,7 @@ def mongo_repository(
     integer_fields: list[Annotated[str, 'field names']] | None = None,
     array_fields: list[Annotated[str, 'field names']] | None = None,
     method_access: Access | None = None,
+    __methods__: bool = True,
 ) -> type | Callable:
     """## Decorator for MongoDB repositories
 
@@ -40,7 +41,21 @@ def mongo_repository(
 
     increment_{field}, decrement_{field}
 
-    ## Example
+    * __methods__: if `True` set class property `__methods__`
+    that list all available methods including `mongorepo` methods, can be useful
+    if you want to debug or see the signature of generated methods
+
+    ### Example of __methods__ property
+    ```
+    @mongorepo_repository(get_list=True, update=True, __methods__=True)
+    class A:
+        ...
+    print(A().__methods__)
+    # get_list(self, offset: int = 0, limit: int = 20) -> list[~DTO]
+    # update(self, dto: ~DTO, **filters: Any) -> Optional[~DTO]
+    ```
+
+    ## Decorator usage Example
 
     ```
     @mongo_repository(delete=False)
@@ -49,7 +64,7 @@ def mongo_repository(
             dto = UserDTO
             collection: Collection = db["users"]
             index = mongorepo.Index(field="name")
-            method_access = mongorepo.Access.PROTECTED
+            method_access = mongorepo.Access.PUBLIC
 
     r = MongoRepository()
 
@@ -74,6 +89,7 @@ def mongo_repository(
             integer_fields=integer_fields,
             array_fields=array_fields,
             method_access=method_access,
+            __methods__=__methods__,
         )
 
     if cls is None:

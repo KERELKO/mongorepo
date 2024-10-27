@@ -1,4 +1,5 @@
 import random
+import warnings
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -56,18 +57,21 @@ class DictDTO:
 
 
 def collection_for_complicated_dto(async_client: bool = False):
+    warnings.warn('"collection_for_complicated_dto" is deprecated, use "custom_collection" instead')
     if async_client:
         return async_mongo_client()['dto_complicated_db']['dto']
     return mongo_client()['dto_complicated_db']['dto']
 
 
 def collection_for_simple_dto(async_client: bool = False):
+    warnings.warn('"collection_for_simple_dto" is deprecated, use "custom_collection" instead')
     if async_client:
         return async_mongo_client()['dto_simple_db']['dto']
     return mongo_client()['dto_simple_db']['dto']
 
 
 def collection_for_dto_with_id(async_client: bool = False):
+    warnings.warn('"collection_for_dto_with_id" is deprecated, use "custom_collection" instead')
     if async_client:
         return async_mongo_client()['dto_with_id_db']['dto']
     return mongo_client()['dto_with_id_db']['dto']
