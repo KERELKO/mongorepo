@@ -58,12 +58,11 @@ class Method:
     def __init__(
         self,
         source: Callable,
-        name: str | None = None,
         **params: str | tuple[str, ...],
     ) -> None:
         self.source: Callable = source
         self.params: dict[str, Any] = params
-        self.name: str = name or source.__name__
+        self.name: str = source.__name__
 
     def __repr__(self) -> str:
         params_repr = ', '.join(f'{k}={v}' for k, v in self.params.items())
