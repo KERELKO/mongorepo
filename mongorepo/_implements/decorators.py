@@ -1,10 +1,32 @@
-from typing import Callable
+from typing import Callable, overload
 
-from .handlers import _handle_implements
-from .methods import Method
+from .handlers import (
+    _handle_implements_custom_methods,
+    _handle_implements_specific_methods,
+)
+from .methods import Method, SpecificMethod
 
 
-def implements(base_cls: type, **methods: str | Callable | Method) -> Callable:
+@overload
+def implements(base_cls: type, **custom_methods: str | Callable | Method) -> Callable:
+    ...
+
+
+@overload
+def implements(base_cls: type) -> Callable:
+    ...
+
+
+@overload
+def implements(base_cls: type, *specific_methods: SpecificMethod) -> Callable:
+    ...
+
+
+def implements(
+    base_cls,
+    *specific_methods: SpecificMethod,
+    **custom_methods: str | Method | Callable,
+) -> Callable:
     """Decorator that allows to implement methods of `base_cls` you can specify
     them in `**methods`
 
@@ -26,10 +48,28 @@ def implements(base_cls: type, **methods: str | Callable | Method) -> Callable:
     ```
 
     """
-    def wrapper(cls) -> type:
-        return _handle_implements(
-            base_cls=base_cls,
-            cls=cls,
-            **methods,
+    if specific_methods and custom_methods:
+        raise ValueError(
+            'Specify either positional arguments (*specific_methods)'
+            'or keyword arguments (**custom_methods), not both.',
         )
+
+    def wrapper(cls) -> type:
+        if custom_methods:
+            return _handle_implements_custom_methods(
+                base_cls=base_cls,
+                cls=cls,
+                **custom_methods,
+            )
+        elif specific_methods:
+            return _handle_implements_specific_methods(
+                cls,
+                *specific_methods,
+            )
+        else:
+            return _handle_implements_custom_methods(
+                base_cls=base_cls,
+                cls=cls,
+                **custom_methods,
+            )
     return wrapper

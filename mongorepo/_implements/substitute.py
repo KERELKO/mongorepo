@@ -8,7 +8,7 @@ from motor.motor_asyncio import AsyncIOMotorCollection
 from pymongo.collection import Collection
 
 from mongorepo import exceptions
-from mongorepo._base import DTO
+from mongorepo._base import DTO, MethodDeps
 from mongorepo.utils import (
     _get_defaults,
     _replace_typevars,
@@ -17,6 +17,7 @@ from mongorepo.utils import (
 
 from .methods import Method
 from .methods import ParameterEnum as MongorepoParameter
+from .methods import SpecificMethod
 from .utils import _get_mongorepo_method_callable
 
 
@@ -28,6 +29,37 @@ class _MethodType(Enum):
 
 VALID_ACTIONS_FOR_INTEGER_METHODS: tuple[str, ...] = ('incr', 'decr')
 VALID_ACTIONS_FOR_ARRAY_METHODS: tuple[str, ...] = ('pop', 'list', 'append', 'remove')
+
+
+def _substitute_specific_method(
+    deps: MethodDeps,
+    method: SpecificMethod,
+) -> Callable:
+
+    callable_mongorepo_method = method.mongorepo_method(
+        dto_type=deps.dto_type, collection=deps.collection, id_field=deps.id_field,
+    )
+
+    def func(self, *args, **kwargs) -> Any:
+        required_params = _manage_custom_params(
+            Method(source=method.source, **method.params), *args, **kwargs,
+        )
+        return callable_mongorepo_method(self, **required_params)
+
+    async def async_func(self, *args, **kwargs) -> Any:
+        required_params = _manage_custom_params(
+            Method(source=method.source, **method.params), *args, **kwargs,
+        )
+        return await callable_mongorepo_method(self, **required_params)
+
+    new_method = async_func if inspect.iscoroutinefunction(method.source) else func
+
+    new_method.__annotations__ = method.source.__annotations__
+    new_method.__name__ = method.name
+
+    _replace_typevars(new_method, deps.dto_type)
+
+    return new_method
 
 
 def _substitute_method(

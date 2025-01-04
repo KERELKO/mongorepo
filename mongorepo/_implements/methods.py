@@ -1,6 +1,9 @@
 import inspect
 from enum import StrEnum
-from typing import Callable, Literal
+from typing import Callable, Literal, Protocol
+
+from mongorepo._methods import CRUD_METHODS
+from mongorepo.asyncio._methods import CRUD_METHODS_ASYNC
 
 
 class ParameterEnum(StrEnum):
@@ -46,11 +49,30 @@ class Method:
         return inspect.iscoroutinefunction(self.source)
 
 
+class SpecificMethod(Protocol):
+    mongorepo_method: Callable
+    name: str
+    source: Callable
+    params: dict[str, LParameter]
+
+
 class GetMethod(Method):
-    def __init__(self, source: Callable, filters: tuple[str, ...]) -> None:
+    def __init__(self, source: Callable, filters: list[str]) -> None:
         super().__init__(source, **dict.fromkeys(filters, 'filters'))  # type: ignore
+        self.mongorepo_method = CRUD_METHODS_ASYNC['get'] if self.is_async else CRUD_METHODS['get']
 
 
 class AddMethod(Method):
     def __init__(self, source: Callable, dto: str) -> None:
         super().__init__(source, **{dto: 'dto'})  # type: ignore
+        self.mongorepo_method = CRUD_METHODS_ASYNC['add'] if self.is_async else CRUD_METHODS['add']
+
+
+class UpdateMethod(Method):
+    def __init__(self, source: Callable, dto: str, filters: list[str]) -> None:
+        super().__init__(source, dto=dto, **dict.fromkeys(filters, 'filters'))  # type: ignore
+
+
+class DeleteMethod(Method):
+    def __init__(self, source: Callable, filters: list[str]) -> None:
+        super().__init__(source, **dict.fromkeys(filters, 'filters'))  # type: ignore

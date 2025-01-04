@@ -31,12 +31,8 @@ class Access(int, Enum):
     PRIVATE = 2
 
 
-class _FiltersParameter(str, Enum):
-    FILTER = 'filters'
-
-
 @dataclass(eq=False)
-class _MethodDeps:
+class MethodDeps:
     """DTO for mongorepo methods dependencies.
 
     ### includes:
@@ -48,10 +44,11 @@ class _MethodDeps:
     ```
 
     """
-    collection: Collection | AsyncIOMotorCollection | None = None
-    dto_type: type[DTO] | None = None  # type: ignore
+    collection: Collection | AsyncIOMotorCollection
+    dto_type: type
     id_field: str | None = None
-    field_name: str | None = None
+    custom_field_method_name: str | None = None
+    update_integer_weight: int | None = None
 
 
 class Method:

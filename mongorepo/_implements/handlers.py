@@ -2,13 +2,14 @@ import inspect
 from typing import Callable
 
 from mongorepo import exceptions
+from mongorepo._base import MethodDeps
 from mongorepo.utils import _get_meta_attributes, raise_exc
 
-from .methods import Method
-from .substitute import _substitute_method
+from .methods import Method, SpecificMethod
+from .substitute import _substitute_method, _substitute_specific_method
 
 
-def _handle_implements(
+def _handle_implements_custom_methods(
     base_cls: type,
     cls: type,
     **substitute: str | Callable | Method,
@@ -48,4 +49,24 @@ def _handle_implements(
             ),
         )
 
+    return cls
+
+
+def _handle_implements_specific_methods(
+    cls: type,
+    *specific_methods: SpecificMethod,
+) -> type:
+    attrs = _get_meta_attributes(cls)
+    dto_type = attrs['dto']
+    collection = attrs['collection']
+    id_field = attrs['id_field']
+    for method in specific_methods:
+        setattr(
+            cls,
+            method.name,
+            _substitute_specific_method(
+                MethodDeps(collection=collection, id_field=id_field, dto_type=dto_type),
+                method=method,
+            ),
+        )
     return cls
