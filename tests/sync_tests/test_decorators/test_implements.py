@@ -2,8 +2,8 @@
 from abc import ABC
 from typing import Generic, Protocol, TypeVar
 
-from mongorepo import DTO
-from mongorepo.decorators import implements, mongo_repository
+from mongorepo import DTO, implements
+from mongorepo.decorators import mongo_repository
 from tests.common import (
     ComplicatedDTO,
     SimpleDTO,

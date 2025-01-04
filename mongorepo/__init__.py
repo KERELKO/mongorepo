@@ -13,11 +13,12 @@ you can use the same classes and decorators located in `mongorepo.asyncio`
 
 """
 from . import asyncio, decorators, docs, exceptions
-from ._base import DTO, Access, Index, Method
+from ._base import DTO, Access, Index
+from ._implements.decorators import implements
+from ._implements.methods import Method
 from .asyncio.classes import AsyncBasedMongoRepository
 from .asyncio.decorators import async_mongo_repository as async_repository
 from .classes import BaseMongoRepository
-from .decorators import implements
 from .decorators import mongo_repository as repository
 from .queries import AggregationStage, Condition, Operation, UpdateModifier
 

@@ -1,20 +1,14 @@
-import inspect
-from typing import Callable
-
-from mongorepo import exceptions
-from mongorepo._base import Access, Method
+from mongorepo._base import Access
 from mongorepo._setters import (
     _set_array_fields_methods,
     _set_crud_methods,
     _set_integer_fields_methods,
 )
-from mongorepo._substitute import _substitute_method
 from mongorepo.asyncio.utils import _run_asyncio_create_index
 from mongorepo.utils import (
     _create_index,
     _get_meta_attributes,
     _set__methods__,
-    raise_exc,
 )
 
 
@@ -112,47 +106,4 @@ def _handle_async_mongo_repository(
 
     if __methods__:
         _set__methods__(cls)
-    return cls
-
-
-def _handle_implements(
-    base_cls: type,
-    cls: type,
-    **substitute: str | Callable | Method,
-) -> type:
-    attrs = _get_meta_attributes(cls)
-    if not substitute:
-        substitute = attrs['substitute'] if attrs['substitute'] is not None else raise_exc(
-            exceptions.MongoRepoException(message='No "substitute" in Meta class'),
-        )
-    dto_type = attrs['dto']
-    collection = attrs['collection']
-    id_field = attrs['id_field']
-    for mongorepo_method_name, _generic_method in substitute.items():
-        if not isinstance(_generic_method, Method):
-            if inspect.isfunction(_generic_method) or inspect.ismethod(_generic_method):
-                generic_method = Method(_generic_method)
-
-            elif isinstance(_generic_method, str):
-                __generic_method: Callable | None = getattr(
-                    base_cls, _generic_method, None,
-                )
-                if __generic_method is None or not inspect.isfunction(__generic_method):
-                    raise exceptions.InvalidMethodNameException(_generic_method)
-                generic_method = Method(__generic_method)  # type: ignore
-        else:
-            generic_method = _generic_method
-
-        setattr(
-            cls,
-            generic_method.name,
-            _substitute_method(
-                mongorepo_method_name,
-                generic_method,
-                dto_type,
-                collection,
-                id_field=id_field,
-            ),
-        )
-
     return cls

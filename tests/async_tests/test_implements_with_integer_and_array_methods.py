@@ -1,6 +1,6 @@
 import pytest
 
-from mongorepo.decorators import implements
+from mongorepo import implements
 from mongorepo.exceptions import InvalidMethodNameException
 from tests.common import NestedListDTO, SimpleDTO, custom_collection
 

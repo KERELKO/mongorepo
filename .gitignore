@@ -9,3 +9,4 @@ mkdocs.yml
 raw_tests.py
 .vscode/
 test_not_implemented.py
+dist/

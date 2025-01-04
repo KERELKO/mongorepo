@@ -1,5 +1,4 @@
-from mongorepo import Method
-from mongorepo.decorators import implements
+from mongorepo import Method, implements
 from tests.common import NestedListDTO, SimpleDTO, custom_collection
 
 
