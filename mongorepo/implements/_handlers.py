@@ -5,8 +5,8 @@ from mongorepo import exceptions
 from mongorepo._base import MethodDeps
 from mongorepo.utils import _get_meta_attributes, raise_exc
 
+from ._substitute import _substitute_method, _substitute_specific_method
 from .methods import Method, SpecificMethod
-from .substitute import _substitute_method, _substitute_specific_method
 
 
 def _handle_implements_custom_methods(

@@ -70,9 +70,44 @@ class AddMethod(Method):
 
 class UpdateMethod(Method):
     def __init__(self, source: Callable, dto: str, filters: list[str]) -> None:
-        super().__init__(source, dto=dto, **dict.fromkeys(filters, 'filters'))  # type: ignore
+        super().__init__(
+            source, **{dto: 'dto'}, **dict.fromkeys(filters, 'filters'),  # type: ignore
+        )
+        self.mongorepo_method = (
+            CRUD_METHODS_ASYNC['update'] if self.is_async else CRUD_METHODS['update']
+        )
 
 
 class DeleteMethod(Method):
     def __init__(self, source: Callable, filters: list[str]) -> None:
         super().__init__(source, **dict.fromkeys(filters, 'filters'))  # type: ignore
+        self.mongorepo_method = (
+            CRUD_METHODS_ASYNC['delete'] if self.is_async else CRUD_METHODS['delete']
+        )
+
+
+class GetListMethod(Method):
+    def __init__(self, source: Callable, offset: str, limit: str, filters: list[str]) -> None:
+        super().__init__(
+            source, **{offset: 'offset', limit: 'limit'},  # type: ignore
+            **dict.fromkeys(filters, 'filters'),  # type: ignore
+        )
+        self.mongorepo_method = (
+            CRUD_METHODS_ASYNC['get_list'] if self.is_async else CRUD_METHODS['get_list']
+        )
+
+
+class GetAllMethod(Method):
+    def __init__(self, source: Callable, filters: list[str]) -> None:
+        super().__init__(source, **dict.fromkeys(filters, 'filters'))  # type: ignore
+        self.mongorepo_method = (
+            CRUD_METHODS_ASYNC['get_all'] if self.is_async else CRUD_METHODS['get_all']
+        )
+
+
+class AddBatchMethod(Method):
+    def __init__(self, source: Callable, dto_list: str) -> None:
+        super().__init__(source, **{dto_list: 'dto_list'})  # type: ignore
+        self.mongorepo_method = (
+            CRUD_METHODS_ASYNC['add_batch'] if self.is_async else CRUD_METHODS['add_batch']
+        )

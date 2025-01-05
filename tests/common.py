@@ -1,10 +1,13 @@
 import random
 import warnings
+from contextlib import asynccontextmanager, contextmanager
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, AsyncGenerator, Generator
 
 import pymongo
-from motor.motor_asyncio import AsyncIOMotorClient
+import pymongo.collation
+import pymongo.collection
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection
 
 
 def mongo_client(mongo_uri: str = 'mongodb://mongodb:27017/') -> pymongo.MongoClient:
@@ -87,3 +90,23 @@ def custom_collection(dto: str | type, async_client: bool = False):
 def r() -> int:
     """Returns random integer."""
     return random.randint(1, 123456)
+
+
+@asynccontextmanager
+async def in_async_collection(dto: str | type) -> AsyncGenerator[AsyncIOMotorCollection, None]:
+    dto_name = dto if isinstance(dto, str) else dto.__name__
+    try:
+        collection = async_mongo_client()[f'{dto_name}_db'][dto_name]
+        yield collection
+    finally:
+        await collection.drop()
+
+
+@contextmanager
+def in_collection(dto: str | type) -> Generator[pymongo.collection.Collection, None, None]:
+    dto_name = dto if isinstance(dto, str) else dto.__name__
+    try:
+        collection = mongo_client()[f'{dto_name}_db'][dto_name]
+        yield collection
+    finally:
+        collection.drop()

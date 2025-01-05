@@ -59,8 +59,8 @@ def _get_list_method_async(
 ):
     to_dto = _get_converter(dto_type, id_field=id_field)
 
-    async def get_list(self, offset: int = 0, limit: int = 20) -> list[DTO]:
-        cursor = collection.find().skip(offset).limit(limit)
+    async def get_list(self, offset: int = 0, limit: int = 20, **filters) -> list[DTO]:
+        cursor = collection.find(filter=filters).skip(offset).limit(limit)
         return [to_dto(dto_type, doc) async for doc in cursor]
     return get_list
 

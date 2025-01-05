@@ -1,7 +1,6 @@
-import inspect
 from dataclasses import Field, dataclass
 from enum import Enum
-from typing import Any, Callable, ClassVar, Protocol, TypeVar
+from typing import Any, ClassVar, Protocol, TypeVar
 
 from motor.motor_asyncio import AsyncIOMotorCollection
 from pymongo.collection import Collection
@@ -49,35 +48,3 @@ class MethodDeps:
     id_field: str | None = None
     custom_field_method_name: str | None = None
     update_integer_weight: int | None = None
-
-
-class Method:
-    def __init__(
-        self,
-        source: Callable,
-        name: str | None = None,
-        **params: str | tuple[str, ...],
-    ) -> None:
-        self.source: Callable = source
-        self.params: dict[str, Any] = params
-        self.name: str = name or source.__name__
-
-    def __repr__(self) -> str:
-        params_repr = ', '.join(f'{k}={v}' for k, v in self.params.items())
-        return (
-            f'Method({self.source}, {self.name}, {params_repr})'
-        )
-
-    @property
-    def signature(self) -> inspect.Signature:
-        return inspect.signature(self.source)
-
-    def get_source_params(self, exclude_self: bool = True) -> dict:
-        gen_params = dict(self.signature.parameters)
-        if exclude_self:
-            gen_params.pop('self')
-        return gen_params
-
-    @property
-    def is_async(self) -> bool:
-        return inspect.iscoroutinefunction(self.source)

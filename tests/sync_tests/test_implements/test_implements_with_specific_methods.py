@@ -1,41 +1,102 @@
+from typing import Iterable
+
 import pytest
 
 from mongorepo import Method, implements
-from mongorepo._implements.methods import AddMethod, GetMethod
-from tests.common import NestedListDTO, SimpleDTO, custom_collection
+from mongorepo.implements.methods import (
+    AddBatchMethod,
+    AddMethod,
+    DeleteMethod,
+    GetAllMethod,
+    GetListMethod,
+    GetMethod,
+    UpdateMethod,
+)
+from tests.common import (
+    NestedListDTO,
+    SimpleDTO,
+    custom_collection,
+    in_collection,
+)
 
 
-def tests_implements_decorator_with_method_class():
+def tests_implements_crud_with_specific_method_protocol():
     """Test `@implements` decorator with classes that implement
     `SpecificMethod` protocol."""
 
-    c = custom_collection(NestedListDTO)
+    with in_collection(NestedListDTO) as c:
+        class IRepo:
+            def get(self, title: str) -> NestedListDTO:
+                ...
 
-    class IRepo:
-        def get(self, title: str) -> NestedListDTO:
-            ...
+            def add(self, model: NestedListDTO) -> NestedListDTO:
+                ...
 
-        def add(self, dto: NestedListDTO) -> None:
-            ...
+            def update(self, model: NestedListDTO, title: str) -> NestedListDTO:
+                ...
 
-    @implements(
-        IRepo,
-        GetMethod(IRepo.get, filters=['title']),
-        AddMethod(IRepo.add, dto='dto'),
-    )
-    class MongoRepo:
-        class Meta:
-            collection = c
-            dto = NestedListDTO
+            def delete(self, title: str) -> bool:
+                ...
 
-    r: IRepo = MongoRepo()  # type: ignore
-    r.add(NestedListDTO('...', dtos=[SimpleDTO(x='1', y=1), SimpleDTO(x='1', y=1)]))
-    assert True
+            def add_batch(self, models: list[NestedListDTO]) -> None:
+                ...
 
-    dto = r.get(title='...')
-    assert dto is not None
-    assert dto.title
-    assert len(dto.dtos) == 2
+            def get_all_by_title(self, title: str) -> Iterable[NestedListDTO]:
+                ...
+
+            def get_model_list(
+                self, title: str, limit: int, offset: int = 20,
+            ) -> list[NestedListDTO]:
+                ...
+
+        @implements(
+            IRepo,
+            AddMethod(IRepo.add, dto='model'),
+            GetMethod(IRepo.get, filters=['title']),
+            UpdateMethod(IRepo.update, dto='model', filters=['title']),
+            AddBatchMethod(IRepo.add_batch, dto_list='models'),
+            GetAllMethod(IRepo.get_all_by_title, filters=['title']),
+            GetListMethod(IRepo.get_model_list, offset='offset', limit='limit', filters=['title']),
+            DeleteMethod(IRepo.delete, filters=['title']),
+        )
+        class MongoRepo:
+            class Meta:
+                collection = c
+                dto = NestedListDTO
+
+        r: IRepo = MongoRepo()  # type: ignore
+        r.add(NestedListDTO('...', dtos=[SimpleDTO(x='1', y=1), SimpleDTO(x='1', y=1)]))
+        assert True
+
+        dto = r.get(title='...')
+        assert dto is not None
+        assert dto.title
+        assert len(dto.dtos) == 2
+
+        dto.title = 'Updated title'
+        updated_dto = r.update(model=dto, title='...')
+        assert updated_dto.title == 'Updated title'
+
+        r.add_batch(
+            [
+                NestedListDTO(title='1', dtos=[SimpleDTO(x='1', y=1)]),
+                NestedListDTO(title='2', dtos=[SimpleDTO(x='2', y=2)]),
+            ],
+        )
+
+        dtos = r.get_all_by_title(title='1')
+        for dto in dtos:
+            assert dto.title == '1'
+
+        dto_list = r.get_model_list(title='2', limit=5, offset=0)
+        assert len(dto_list) == 1
+        assert dto_list[0].title == '2'
+
+        deleted = r.delete(title='1')
+        assert deleted is True
+
+        none = r.get(title='1')
+        assert none is None
 
 
 @pytest.mark.skip()
@@ -90,10 +151,12 @@ def test_can_change_order_of_repo_parameters_and_passed_arguments():
     title = '...'
     r.add(NestedListDTO(title, dtos=[SimpleDTO(x='1', y=1), SimpleDTO(x='1', y=1)]))
 
+    # All arguments are keywords arguments
     _ = r.get_simple_dto_list_by_title(offset=0, title=title, limit=20)
+    # All arguments are keywords arguments + parameter by default
     _ = r.get_simple_dto_list_by_title(offset=0, title=title)
+    # All arguments are keyword arguments + random order
     _ = r.get_simple_dto_list_by_title(limit=5, title=title, offset=1)
-    _ = r.get_simple_dto_list_by_title(offset=5, title=title)
 
     r.append_dto_by_title(title=title, dto=SimpleDTO(x='3', y=3))
     r.append_dto_by_title(title, SimpleDTO(x='2', y=2))

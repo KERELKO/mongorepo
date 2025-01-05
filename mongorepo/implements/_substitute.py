@@ -15,10 +15,10 @@ from mongorepo.utils import (
     _validate_method_annotations,
 )
 
+from ._utils import _get_mongorepo_method_callable
 from .methods import Method
 from .methods import ParameterEnum as MongorepoParameter
 from .methods import SpecificMethod
-from .utils import _get_mongorepo_method_callable
 
 
 class _MethodType(Enum):
@@ -36,9 +36,14 @@ def _substitute_specific_method(
     method: SpecificMethod,
 ) -> Callable:
 
-    callable_mongorepo_method = method.mongorepo_method(
-        dto_type=deps.dto_type, collection=deps.collection, id_field=deps.id_field,
-    )
+    if deps.id_field is not None and deps.id_field in method.mongorepo_method.__annotations__:
+        callable_mongorepo_method = method.mongorepo_method(
+            dto_type=deps.dto_type, collection=deps.collection, id_field=deps.id_field,
+        )
+    else:
+        callable_mongorepo_method = method.mongorepo_method(
+            dto_type=deps.dto_type, collection=deps.collection,
+        )
 
     def func(self, *args, **kwargs) -> Any:
         required_params = _manage_custom_params(

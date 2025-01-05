@@ -1,6 +1,6 @@
 from typing import Callable, overload
 
-from .handlers import (
+from ._handlers import (
     _handle_implements_custom_methods,
     _handle_implements_specific_methods,
 )

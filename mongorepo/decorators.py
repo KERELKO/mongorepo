@@ -55,7 +55,7 @@ def mongo_repository(
     # update(self, dto: ~DTO, **filters: Any) -> Optional[~DTO]
     ```
 
-    ## Decorator usage Example
+    ## Decorator usage example
 
     ```
     @mongo_repository(delete=False)
