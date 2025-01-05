@@ -1,21 +1,13 @@
 import inspect
-from enum import StrEnum
-from typing import Callable, Literal, Protocol
+from typing import Callable, Protocol
 
-from mongorepo._methods import CRUD_METHODS
-from mongorepo.asyncio._methods import CRUD_METHODS_ASYNC
-
-
-class ParameterEnum(StrEnum):
-    FILTER = 'filters'
-    OFFSET = 'offset'
-    LIMIT = 'limit'
-    DTO = 'dto'
-    VALUE = 'value'
-    WEIGHT = 'weight'
-
-
-LParameter = Literal['filters', 'offset', 'limit', 'dto', 'value', 'weight']
+from mongorepo._base import LParameter, MethodAction
+from mongorepo._methods import CRUD_METHODS, INTEGER_METHODS, LIST_METHODS
+from mongorepo.asyncio._methods import (
+    CRUD_METHODS_ASYNC,
+    INTEGER_METHODS_ASYNC,
+    LIST_METHODS_ASYNC,
+)
 
 
 class Method:
@@ -54,18 +46,25 @@ class SpecificMethod(Protocol):
     name: str
     source: Callable
     params: dict[str, LParameter]
+    action: MethodAction
 
 
 class GetMethod(Method):
     def __init__(self, source: Callable, filters: list[str]) -> None:
         super().__init__(source, **dict.fromkeys(filters, 'filters'))  # type: ignore
-        self.mongorepo_method = CRUD_METHODS_ASYNC['get'] if self.is_async else CRUD_METHODS['get']
+        self.action = MethodAction.GET
+        self.mongorepo_method = (
+            CRUD_METHODS_ASYNC[self.action] if self.is_async else CRUD_METHODS[self.action]
+        )
 
 
 class AddMethod(Method):
     def __init__(self, source: Callable, dto: str) -> None:
         super().__init__(source, **{dto: 'dto'})  # type: ignore
-        self.mongorepo_method = CRUD_METHODS_ASYNC['add'] if self.is_async else CRUD_METHODS['add']
+        self.action = MethodAction.ADD
+        self.mongorepo_method = (
+            CRUD_METHODS_ASYNC[self.action] if self.is_async else CRUD_METHODS[self.action]
+        )
 
 
 class UpdateMethod(Method):
@@ -73,16 +72,18 @@ class UpdateMethod(Method):
         super().__init__(
             source, **{dto: 'dto'}, **dict.fromkeys(filters, 'filters'),  # type: ignore
         )
+        self.action = MethodAction.UPDATE
         self.mongorepo_method = (
-            CRUD_METHODS_ASYNC['update'] if self.is_async else CRUD_METHODS['update']
+            CRUD_METHODS_ASYNC[self.action] if self.is_async else CRUD_METHODS[self.action]
         )
 
 
 class DeleteMethod(Method):
     def __init__(self, source: Callable, filters: list[str]) -> None:
         super().__init__(source, **dict.fromkeys(filters, 'filters'))  # type: ignore
+        self.action = MethodAction.DELETE
         self.mongorepo_method = (
-            CRUD_METHODS_ASYNC['delete'] if self.is_async else CRUD_METHODS['delete']
+            CRUD_METHODS_ASYNC[self.action] if self.is_async else CRUD_METHODS[self.action]
         )
 
 
@@ -92,22 +93,92 @@ class GetListMethod(Method):
             source, **{offset: 'offset', limit: 'limit'},  # type: ignore
             **dict.fromkeys(filters, 'filters'),  # type: ignore
         )
+        self.action = MethodAction.GET_LIST
         self.mongorepo_method = (
-            CRUD_METHODS_ASYNC['get_list'] if self.is_async else CRUD_METHODS['get_list']
+            CRUD_METHODS_ASYNC[self.action] if self.is_async else CRUD_METHODS[self.action]
         )
 
 
 class GetAllMethod(Method):
     def __init__(self, source: Callable, filters: list[str]) -> None:
         super().__init__(source, **dict.fromkeys(filters, 'filters'))  # type: ignore
+        self.action = MethodAction.GET_ALL
         self.mongorepo_method = (
-            CRUD_METHODS_ASYNC['get_all'] if self.is_async else CRUD_METHODS['get_all']
+            CRUD_METHODS_ASYNC[self.action] if self.is_async else CRUD_METHODS[self.action]
         )
 
 
 class AddBatchMethod(Method):
     def __init__(self, source: Callable, dto_list: str) -> None:
         super().__init__(source, **{dto_list: 'dto_list'})  # type: ignore
+        self.action = MethodAction.ADD_BATCH
         self.mongorepo_method = (
-            CRUD_METHODS_ASYNC['add_batch'] if self.is_async else CRUD_METHODS['add_batch']
+            CRUD_METHODS_ASYNC[self.action] if self.is_async else CRUD_METHODS[self.action]
+        )
+
+
+class ListAppendMethod(Method):
+    def __init__(self, source: Callable, value: str, filters: list[str]) -> None:
+        super().__init__(
+            source, **{value: 'value'}, **dict.fromkeys(filters, 'filters'),  # type: ignore
+        )
+        self.action = MethodAction.LIST_APPEND
+        self.mongorepo_method = (
+            LIST_METHODS_ASYNC[self.action] if self.is_async else LIST_METHODS[self.action]
+        )
+
+
+class ListPopMethod(Method):
+    def __init__(self, source: Callable, filters: list[str]) -> None:
+        super().__init__(
+            source, **dict.fromkeys(filters, 'filters'),  # type: ignore
+        )
+        self.action = MethodAction.LIST_POP
+        self.mongorepo_method = (
+            LIST_METHODS_ASYNC[self.action] if self.is_async else LIST_METHODS[self.action]
+        )
+
+
+class ListRemoveMethod(Method):
+    def __init__(self, source: Callable, value: str, filters: list[str]) -> None:
+        super().__init__(
+            source, **{value: 'value'}, **dict.fromkeys(filters, 'filters'),  # type: ignore
+        )
+        self.action = MethodAction.LIST_REMOVE
+        self.mongorepo_method = (
+            LIST_METHODS_ASYNC[self.action] if self.is_async else LIST_METHODS[self.action]
+        )
+
+
+class ListGetFieldValuesMethod(Method):
+    def __init__(self, source: Callable, offset: str, limit: str, filters: list[str]) -> None:
+        super().__init__(
+            source, **{offset: 'offset', limit: 'limit'},  # type: ignore
+            **dict.fromkeys(filters, 'filters'),  # type: ignore
+        )
+        self.action = MethodAction.LIST_FIELD_VALUES
+        self.mongorepo_method = (
+            LIST_METHODS_ASYNC[self.action] if self.is_async else LIST_METHODS[self.action]
+        )
+
+
+class IncrementIntegerFieldMethod(Method):
+    def __init__(self, source: Callable, filters: list[str], weight: str | None = None) -> None:
+        super().__init__(
+            source, **{weight: 'weight'}, **dict.fromkeys(filters, 'filters'),  # type: ignore
+        )
+        self.action = MethodAction.INTEGER_INCREMENT
+        self.mongorepo_method = (
+            INTEGER_METHODS_ASYNC[self.action] if self.is_async else INTEGER_METHODS[self.action]
+        )
+
+
+class DecrementIntergerFieldMethod(Method):
+    def __init__(self, source: Callable, filters: list[str], weight: str | None = None) -> None:
+        super().__init__(
+            source, **{weight: 'weight'}, **dict.fromkeys(filters, 'filters'),  # type: ignore
+        )
+        self.action = MethodAction.INTEGER_DECREMENT
+        self.mongorepo_method = (
+            INTEGER_METHODS_ASYNC[self.action] if self.is_async else INTEGER_METHODS[self.action]
         )

@@ -16,7 +16,7 @@ def async_mongo_repository(
     integer_fields: list[str] | None = None,
     array_fields: list[str] | None = None,
     method_access: Access | None = None,
-    __methods__: bool = True,
+    __methods__: bool = False,
 ) -> type | Callable:
     """## Async MongoDB repository decorator
 

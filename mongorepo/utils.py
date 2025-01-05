@@ -203,7 +203,7 @@ def _recursive_convert_to_dto(dto_type: type[DTO], id_field: str | None = None) 
                             inner_wrapper(args[0], v, to_dto=True) for v in value  # type: ignore
                         ]
                     else:
-                        data[key] = value  # TODO: solve this problem
+                        data[key] = value  # TODO: solve mypy error
                 else:
                     data[key] = value
             return dto_type(**data) if to_dto else data

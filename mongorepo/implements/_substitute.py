@@ -9,16 +9,19 @@ from pymongo.collection import Collection
 
 from mongorepo import exceptions
 from mongorepo._base import DTO, MethodDeps
+from mongorepo._base import ParameterEnum as MongorepoParameter
 from mongorepo.utils import (
     _get_defaults,
     _replace_typevars,
     _validate_method_annotations,
 )
 
-from ._utils import _get_mongorepo_method_callable
-from .methods import Method
-from .methods import ParameterEnum as MongorepoParameter
-from .methods import SpecificMethod
+from ._utils import (
+    _get_method_from_string,
+    _get_mongorepo_method_callable,
+    _get_validated_mongorepo_method_callable,
+)
+from .methods import Method, SpecificMethod
 
 
 class _MethodType(Enum):
@@ -36,14 +39,11 @@ def _substitute_specific_method(
     method: SpecificMethod,
 ) -> Callable:
 
-    if deps.id_field is not None and deps.id_field in method.mongorepo_method.__annotations__:
-        callable_mongorepo_method = method.mongorepo_method(
-            dto_type=deps.dto_type, collection=deps.collection, id_field=deps.id_field,
-        )
-    else:
-        callable_mongorepo_method = method.mongorepo_method(
-            dto_type=deps.dto_type, collection=deps.collection,
-        )
+    callable_mongorepo_method = _get_mongorepo_method_callable(
+        method.action,
+        method.mongorepo_method,
+        deps,
+    )
 
     def func(self, *args, **kwargs) -> Any:
         required_params = _manage_custom_params(
@@ -74,10 +74,17 @@ def _substitute_method(
     collection: Collection | AsyncIOMotorCollection,
     id_field: str | None = None,
 ) -> Callable:
-    is_async = inspect.iscoroutinefunction(generic_method)
 
-    mongorepo_method = _get_mongorepo_method_callable(
-        mongorepo_method_name, generic_method, dto, collection, id_field,
+    mongorepo_method_function, mongorepo_method_type = _get_method_from_string(
+        mongorepo_method_name, is_async=generic_method.is_async,
+    )
+    mongorepo_method = _get_validated_mongorepo_method_callable(
+        mongorepo_method_name,
+        mongorepo_method_type,
+        mongorepo_method_function,
+        dto,
+        collection,
+        id_field,
     )
 
     _validate_method_annotations(generic_method.source)
@@ -94,7 +101,7 @@ def _substitute_method(
         )
         return await mongorepo_method(self, **required_params)
 
-    new_method = async_func if is_async else func
+    new_method = async_func if generic_method.is_async else func
 
     new_method.__annotations__ = generic_method.source.__annotations__
     new_method.__name__ = generic_method.name

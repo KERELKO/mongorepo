@@ -16,7 +16,7 @@ def mongo_repository(
     integer_fields: list[Annotated[str, 'field names']] | None = None,
     array_fields: list[Annotated[str, 'field names']] | None = None,
     method_access: Access | None = None,
-    __methods__: bool = True,
+    __methods__: bool = False,
 ) -> type | Callable:
     """## Decorator for MongoDB repositories
 
