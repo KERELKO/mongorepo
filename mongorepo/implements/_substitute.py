@@ -1,6 +1,5 @@
 import inspect
 from dataclasses import is_dataclass
-from enum import Enum
 from inspect import Parameter, _empty
 from typing import Any, Callable, TypeVar
 
@@ -21,23 +20,18 @@ from ._utils import (
     _get_mongorepo_method_callable,
     _get_validated_mongorepo_method_callable,
 )
-from .methods import Method, SpecificMethod
-
-
-class _MethodType(Enum):
-    CRUD = 1
-    LIST = 2
-    INTEGER = 3
-
-
-VALID_ACTIONS_FOR_INTEGER_METHODS: tuple[str, ...] = ('incr', 'decr')
-VALID_ACTIONS_FOR_ARRAY_METHODS: tuple[str, ...] = ('pop', 'list', 'append', 'remove')
+from .methods import Method, SpecificFieldMethod, SpecificMethod
 
 
 def _substitute_specific_method(
     deps: MethodDeps,
-    method: SpecificMethod,
+    method: SpecificMethod | SpecificFieldMethod,
 ) -> Callable:
+
+    if hasattr(method, 'field_name'):
+        deps.custom_field_method_name = getattr(method, 'field_name')
+    if hasattr(method, 'integer_weight'):
+        deps.update_integer_weight = getattr(method, 'integer_weight')
 
     callable_mongorepo_method = _get_mongorepo_method_callable(
         method.action,

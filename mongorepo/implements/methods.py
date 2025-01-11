@@ -1,5 +1,5 @@
 import inspect
-from typing import Callable, Protocol
+from typing import Any, Callable, Protocol
 
 from mongorepo._base import LParameter, MethodAction
 from mongorepo._methods import CRUD_METHODS, INTEGER_METHODS, LIST_METHODS
@@ -8,6 +8,19 @@ from mongorepo.asyncio._methods import (
     INTEGER_METHODS_ASYNC,
     LIST_METHODS_ASYNC,
 )
+
+
+class SpecificMethod(Protocol):
+    mongorepo_method: Callable
+    name: str
+    source: Callable
+    params: dict[str, LParameter]
+    action: MethodAction
+
+
+class SpecificFieldMethod(SpecificMethod):
+    field_name: str | None
+    integer_weight: int | None
 
 
 class Method:
@@ -39,14 +52,6 @@ class Method:
     @property
     def is_async(self) -> bool:
         return inspect.iscoroutinefunction(self.source)
-
-
-class SpecificMethod(Protocol):
-    mongorepo_method: Callable
-    name: str
-    source: Callable
-    params: dict[str, LParameter]
-    action: MethodAction
 
 
 class GetMethod(Method):
@@ -88,7 +93,13 @@ class DeleteMethod(Method):
 
 
 class GetListMethod(Method):
-    def __init__(self, source: Callable, offset: str, limit: str, filters: list[str]) -> None:
+    def __init__(
+        self,
+        source: Callable,
+        filters: list[str],
+        offset: str,
+        limit: str,
+    ) -> None:
         super().__init__(
             source, **{offset: 'offset', limit: 'limit'},  # type: ignore
             **dict.fromkeys(filters, 'filters'),  # type: ignore
@@ -118,10 +129,11 @@ class AddBatchMethod(Method):
 
 
 class ListAppendMethod(Method):
-    def __init__(self, source: Callable, value: str, filters: list[str]) -> None:
+    def __init__(self, source: Callable, field_name: str, value: str, filters: list[str]) -> None:
         super().__init__(
             source, **{value: 'value'}, **dict.fromkeys(filters, 'filters'),  # type: ignore
         )
+        self.field_name = field_name
         self.action = MethodAction.LIST_APPEND
         self.mongorepo_method = (
             LIST_METHODS_ASYNC[self.action] if self.is_async else LIST_METHODS[self.action]
@@ -129,10 +141,11 @@ class ListAppendMethod(Method):
 
 
 class ListPopMethod(Method):
-    def __init__(self, source: Callable, filters: list[str]) -> None:
+    def __init__(self, source: Callable, field_name: str, filters: list[str]) -> None:
         super().__init__(
             source, **dict.fromkeys(filters, 'filters'),  # type: ignore
         )
+        self.field_name = field_name
         self.action = MethodAction.LIST_POP
         self.mongorepo_method = (
             LIST_METHODS_ASYNC[self.action] if self.is_async else LIST_METHODS[self.action]
@@ -140,10 +153,11 @@ class ListPopMethod(Method):
 
 
 class ListRemoveMethod(Method):
-    def __init__(self, source: Callable, value: str, filters: list[str]) -> None:
+    def __init__(self, source: Callable, field_name: str, value: str, filters: list[str]) -> None:
         super().__init__(
             source, **{value: 'value'}, **dict.fromkeys(filters, 'filters'),  # type: ignore
         )
+        self.field_name = field_name
         self.action = MethodAction.LIST_REMOVE
         self.mongorepo_method = (
             LIST_METHODS_ASYNC[self.action] if self.is_async else LIST_METHODS[self.action]
@@ -151,11 +165,25 @@ class ListRemoveMethod(Method):
 
 
 class ListGetFieldValuesMethod(Method):
-    def __init__(self, source: Callable, offset: str, limit: str, filters: list[str]) -> None:
+    def __init__(
+        self,
+        source: Callable,
+        field_name: str,
+        filters: list[str],
+        offset: str | None = None,
+        limit: str | None = None,
+    ) -> None:
+        params: dict[str, Any] = {}
+        if offset:
+            params[offset] = 'offset'
+        if limit:
+            params[limit] = 'limit'
         super().__init__(
-            source, **{offset: 'offset', limit: 'limit'},  # type: ignore
+            source,
+            **params,
             **dict.fromkeys(filters, 'filters'),  # type: ignore
         )
+        self.field_name = field_name
         self.action = MethodAction.LIST_FIELD_VALUES
         self.mongorepo_method = (
             LIST_METHODS_ASYNC[self.action] if self.is_async else LIST_METHODS[self.action]
@@ -164,8 +192,9 @@ class ListGetFieldValuesMethod(Method):
 
 class IncrementIntegerFieldMethod(Method):
     def __init__(self, source: Callable, filters: list[str], weight: str | None = None) -> None:
+        params = {} if weight is None else {weight: 'weight'}
         super().__init__(
-            source, **{weight: 'weight'}, **dict.fromkeys(filters, 'filters'),  # type: ignore
+            source, **params, **dict.fromkeys(filters, 'filters'),  # type: ignore
         )
         self.action = MethodAction.INTEGER_INCREMENT
         self.mongorepo_method = (
@@ -175,8 +204,9 @@ class IncrementIntegerFieldMethod(Method):
 
 class DecrementIntergerFieldMethod(Method):
     def __init__(self, source: Callable, filters: list[str], weight: str | None = None) -> None:
+        params = {} if weight is None else {weight: 'weight'}
         super().__init__(
-            source, **{weight: 'weight'}, **dict.fromkeys(filters, 'filters'),  # type: ignore
+            source, **params, **dict.fromkeys(filters, 'filters'),  # type: ignore
         )
         self.action = MethodAction.INTEGER_DECREMENT
         self.mongorepo_method = (
