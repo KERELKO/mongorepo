@@ -54,7 +54,7 @@ async def test_cannot_initialize_class_if_dto_is_not_dataclass():
 
     with pytest.raises(exceptions.NotDataClass):
         @async_mongo_repository
-        class TestMongoRepository[Bob]:  # type:ignore
+        class TestMongoRepository[Bob]:  # type: ignore
             class Meta:
                 collection = collection_for_simple_dto(async_client=True)
 

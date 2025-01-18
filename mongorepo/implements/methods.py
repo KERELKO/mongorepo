@@ -110,6 +110,7 @@ class GetListMethod(Method):
         )
 
 
+# TODO: implement async method
 class GetAllMethod(Method):
     def __init__(self, source: Callable, filters: list[str]) -> None:
         super().__init__(source, **dict.fromkeys(filters, 'filters'))  # type: ignore

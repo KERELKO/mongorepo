@@ -7,7 +7,7 @@ from motor.motor_asyncio import AsyncIOMotorCollection
 from pymongo.collection import Collection
 
 from mongorepo import exceptions
-from mongorepo._base import DTO, MethodDeps
+from mongorepo._base import DTO, MethodAction, MethodDeps
 from mongorepo._base import ParameterEnum as MongorepoParameter
 from mongorepo.utils import (
     _get_defaults,
@@ -27,6 +27,7 @@ def _substitute_specific_method(
     deps: MethodDeps,
     method: SpecificMethod | SpecificFieldMethod,
 ) -> Callable:
+    is_async = inspect.iscoroutinefunction(method.source)
 
     if hasattr(method, 'field_name'):
         deps.custom_field_method_name = getattr(method, 'field_name')
@@ -51,7 +52,10 @@ def _substitute_specific_method(
         )
         return await callable_mongorepo_method(self, **required_params)
 
-    new_method = async_func if inspect.iscoroutinefunction(method.source) else func
+    if method.action == MethodAction.GET_ALL and is_async is True:
+        new_method = func
+    else:
+        new_method = async_func if is_async else func
 
     new_method.__annotations__ = method.source.__annotations__
     new_method.__name__ = method.name
