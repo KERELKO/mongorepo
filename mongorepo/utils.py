@@ -1,4 +1,5 @@
 import inspect
+import warnings
 from dataclasses import is_dataclass
 from types import UnionType
 from typing import (
@@ -70,6 +71,8 @@ def _get_meta_attributes(cls, raise_exceptions: bool = True) -> dict[str, Any]:
     attributes['method_access'] = method_access
 
     substitute: dict[str, str] | None = getattr(meta, 'substitute', None)
+    if substitute is not None:
+        warnings.warn("'substitute' dictionary is deprecated, please pass arguments in other place")
     attributes['substitute'] = substitute
 
     id_field: str | None = getattr(meta, 'id_field', None)

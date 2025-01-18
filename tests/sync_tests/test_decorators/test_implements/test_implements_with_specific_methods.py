@@ -4,7 +4,7 @@ from mongorepo import implements
 from mongorepo.implements.methods import (
     AddBatchMethod,
     AddMethod,
-    DecrementIntergerFieldMethod,
+    DecrementIntegerFieldMethod,
     DeleteMethod,
     GetAllMethod,
     GetListMethod,
@@ -187,7 +187,7 @@ def test_implements_integer_methods_with_specific_method_protocol() -> None:
             IncrementIntegerFieldMethod(
                 IRepo.update_year_with_weight, field_name='year', filters=['id'], weight='weight',
             ),
-            DecrementIntergerFieldMethod(
+            DecrementIntegerFieldMethod(
                 IRepo.update_year, field_name='year', filters=['id'],
             ),
         )

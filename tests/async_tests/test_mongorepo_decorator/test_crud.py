@@ -76,7 +76,7 @@ async def test_can_create_index():
     dto = await r.get(x='123')
     assert dto is not None
 
-    await asyncio.sleep(2)
+    await asyncio.sleep(1)
 
     assert 'async_index_for_x' in await cl.index_information()
 
@@ -101,6 +101,9 @@ async def test_get_list_with_add_batch_methods_with_decorator():
     dto_list = await repo.get_list(offset=0, limit=10)
     for dto in dto_list:
         assert dto
+        assert isinstance(dto, SimpleDTO)
+
+    async for dto in repo.get_all():
         assert isinstance(dto, SimpleDTO)
 
     cl.drop()

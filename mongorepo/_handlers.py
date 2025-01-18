@@ -1,10 +1,12 @@
+import asyncio
+
 from mongorepo._base import Access
 from mongorepo._setters import (
     _set_array_fields_methods,
     _set_crud_methods,
     _set_integer_fields_methods,
 )
-from mongorepo.asyncio.utils import _run_asyncio_create_index
+from mongorepo.asyncio.utils import _create_index_async
 from mongorepo.utils import (
     _create_index,
     _get_meta_attributes,
@@ -102,7 +104,7 @@ def _handle_async_mongo_repository(
         )
 
     if index is not None:
-        _run_asyncio_create_index(index=index, collection=collection)
+        asyncio.create_task(_create_index_async(index=index, collection=collection))
 
     if __methods__:
         _set__methods__(cls)

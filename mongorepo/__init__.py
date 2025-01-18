@@ -12,7 +12,7 @@ Lib also has async support, so
 you can use the same classes and decorators located in `mongorepo.asyncio`
 
 """
-from . import asyncio, decorators, docs, exceptions
+from . import asyncio, decorators, exceptions
 from ._base import DTO, Access, Index
 from .asyncio.classes import AsyncBasedMongoRepository
 from .asyncio.decorators import async_mongo_repository as async_repository
@@ -38,6 +38,5 @@ __all__ = [
     'Index',
     'asyncio',
     'decorators',
-    'docs',
     'exceptions',
 ]
