@@ -19,7 +19,7 @@ class SpecificMethod(Protocol):
 
 
 class SpecificFieldMethod(SpecificMethod):
-    field_name: str | None
+    field_name: str
     integer_weight: int | None
 
 
@@ -191,24 +191,38 @@ class ListGetFieldValuesMethod(Method):
 
 
 class IncrementIntegerFieldMethod(Method):
-    def __init__(self, source: Callable, filters: list[str], weight: str | None = None) -> None:
+    def __init__(
+        self,
+        source: Callable,
+        field_name: str,
+        filters: list[str],
+        weight: str | None = None,
+    ) -> None:
         params = {} if weight is None else {weight: 'weight'}
         super().__init__(
             source, **params, **dict.fromkeys(filters, 'filters'),  # type: ignore
         )
         self.action = MethodAction.INTEGER_INCREMENT
+        self.field_name = field_name
         self.mongorepo_method = (
             INTEGER_METHODS_ASYNC[self.action] if self.is_async else INTEGER_METHODS[self.action]
         )
 
 
 class DecrementIntergerFieldMethod(Method):
-    def __init__(self, source: Callable, filters: list[str], weight: str | None = None) -> None:
+    def __init__(
+        self,
+        source: Callable,
+        field_name: str,
+        filters: list[str],
+        weight: str | None = None,
+    ) -> None:
         params = {} if weight is None else {weight: 'weight'}
         super().__init__(
             source, **params, **dict.fromkeys(filters, 'filters'),  # type: ignore
         )
         self.action = MethodAction.INTEGER_DECREMENT
+        self.field_name = field_name
         self.mongorepo_method = (
             INTEGER_METHODS_ASYNC[self.action] if self.is_async else INTEGER_METHODS[self.action]
         )

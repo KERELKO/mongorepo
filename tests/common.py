@@ -59,6 +59,22 @@ class DictDTO:
     records: dict[str, Any] = field(default_factory=dict)
 
 
+@dataclass
+class Box:
+    id: str
+    value: str
+
+
+@dataclass
+class MixDTO:
+    id: str
+    name: str
+    year: int
+    main_box: Box
+    records: list[int] = field(default_factory=list)
+    boxs: list[Box] = field(default_factory=list)
+
+
 def collection_for_complicated_dto(async_client: bool = False):
     warnings.warn('"collection_for_complicated_dto" is deprecated, use "custom_collection" instead')
     if async_client:

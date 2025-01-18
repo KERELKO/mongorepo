@@ -9,7 +9,7 @@ build:
 
 .PHONY: up
 up:
-	${DC} -f .devcontainer/compose.yaml up
+	${DC} -f .devcontainer/compose.yaml up --build
 
 .PHONY: bash
 bash:

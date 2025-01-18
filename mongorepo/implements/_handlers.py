@@ -60,6 +60,7 @@ def _handle_implements_specific_methods(
     dto_type = attrs['dto']
     collection = attrs['collection']
     id_field = attrs['id_field']
+
     for method in specific_methods:
         setattr(
             cls,

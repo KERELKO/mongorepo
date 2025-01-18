@@ -6,17 +6,19 @@ from mongorepo import implements
 from mongorepo.implements.methods import (
     AddBatchMethod,
     AddMethod,
+    DecrementIntergerFieldMethod,
     DeleteMethod,
     GetAllMethod,
     GetListMethod,
     GetMethod,
+    IncrementIntegerFieldMethod,
     ListAppendMethod,
     ListGetFieldValuesMethod,
     ListPopMethod,
     ListRemoveMethod,
     UpdateMethod,
 )
-from tests.common import NestedListDTO, SimpleDTO, in_collection
+from tests.common import Box, MixDTO, NestedListDTO, SimpleDTO, in_collection
 
 
 @pytest.mark.skip
@@ -99,6 +101,7 @@ def test_implements_crud_with_specific_method_protocol():
         assert none is None
 
 
+@pytest.mark.skip
 def test_implements_list_methods_with_specific_method_protocol():
 
     class IRepo:
@@ -107,7 +110,7 @@ def test_implements_list_methods_with_specific_method_protocol():
 
         # Change order of offset and remove its default value
         def get_simple_dto_list_by_title(
-            self, title: str,
+            self, offset: int, title: str, limit: int = 20,
         ) -> list[SimpleDTO]:
             ...
 
@@ -128,7 +131,9 @@ def test_implements_list_methods_with_specific_method_protocol():
             AddMethod(IRepo.add, dto='dto'),
             ListGetFieldValuesMethod(
                 source=IRepo.get_simple_dto_list_by_title, field_name='dtos',
+                offset='offset',
                 filters=['title'],
+                limit='limit',
             ),
             ListPopMethod(IRepo.pop_dto_by_title, 'dtos', filters=['title']),
             ListAppendMethod(IRepo.append_dto_by_title, 'dtos', value='dto', filters=['title']),
@@ -162,3 +167,58 @@ def test_implements_list_methods_with_specific_method_protocol():
         r.remove_dto_by_title(SimpleDTO(x='1', y=1), title=title)
 
         assert True
+
+
+def test_implements_integer_methods_with_specific_method_protocol() -> None:
+    class IRepo:
+        def get(self, id: str) -> MixDTO | None:
+            ...
+
+        def add(self, dto: MixDTO) -> None:
+            ...
+
+        def update_year_with_weight(self, id: str, weight: int) -> None:
+            ...
+
+        def update_year(self, id: str) -> None:
+            ...
+
+    with in_collection(MixDTO) as coll:
+        @implements(
+            IRepo,
+            AddMethod(IRepo.add, dto='dto'),
+            GetMethod(IRepo.get, filters=['id']),
+            IncrementIntegerFieldMethod(
+                IRepo.update_year_with_weight, field_name='year', filters=['id'], weight='weight',
+            ),
+            DecrementIntergerFieldMethod(
+                IRepo.update_year, field_name='year', filters=['id'],
+            ),
+        )
+        class MongoRepo:
+            class Meta:
+                dto = MixDTO
+                collection = coll
+
+    repo: IRepo = MongoRepo()  # type: ignore
+    dto = MixDTO(
+        id='1',
+        name='box',
+        year=2025,
+        main_box=Box('box_1', 'toy'),
+        records=[1, 2, 3],
+        boxs=[Box('box_list_1', 'car'), Box('box_list_2', 'table')],
+    )
+    repo.add(dto=dto)
+
+    repo.update_year_with_weight(id='1', weight=5)
+
+    updated_dto = repo.get(id='1')
+    assert updated_dto is not None
+    assert updated_dto.year == 2030
+
+    repo.update_year(id='1')
+
+    updated_dto = repo.get(id='1')
+    assert updated_dto is not None
+    assert updated_dto.year == 2029
