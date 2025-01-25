@@ -27,10 +27,9 @@ def implements(
     *specific_methods: SpecificMethod,
     **custom_methods: str | Method | Callable,
 ) -> Callable:
-    """Decorator that allows to implement methods of `base_cls` you can specify
-    them in `**methods`
+    """Decorator that allows to implement methods of `base_cls`
 
-    ## Example:
+    ## [Not recommended] Simple Usage Example:
 
     ```
     class A:
@@ -45,6 +44,31 @@ def implements(
 
     my_entity = MongoRepo().get_my_entity(id="10")
 
+    ```
+    ## [Recommended] Usage with `SpecificMethod` protocol example:
+
+    ```
+    class IRepo:
+        async def get(self, title: str) -> SomeDataclass:
+            ...
+
+        async def add(self, model: SomeDataclass) -> SomeDataclass:
+            ...
+
+    @implements(
+        IRepo,
+        GetMethod(IRepo.get, filters=['title']),
+        AddMethod(IRepo.add, dto='model'),
+    )
+    class MongoRepo:
+        class Meta:
+            collection = some_collection()
+            dto = SomeDataclass
+
+    r: IRepo = MongoRepo()
+    await r.add(SomeDataclass('some title'))
+    dto = await r.get(title='some title')
+    print(dto)  # SomeDataclass(title='some title')
     ```
 
     """

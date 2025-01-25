@@ -11,6 +11,28 @@ from mongorepo.asyncio._methods import (
 
 
 class SpecificMethod(Protocol):
+    """Protocol for specific methods.
+
+    ### Implementations::
+
+        | import from               | class
+        mongorepo.implements.methods.GetMethod
+        mongorepo.implements.methods.GetListMethod
+        mongorepo.implements.methods.GetAllMethod
+        mongorepo.implements.methods.AddMethod
+        mongorepo.implements.methods.AddBatchMethod
+        mongorepo.implements.methods.UpdateMethod
+        mongorepo.implements.methods.DeleteMethod
+
+        mongorepo.implements.methods.IncrementIntegerFieldMethod
+        mongorepo.implements.methods.DecrementintegerFieldMethod
+
+        mongorepo.implements.methods.ListAppendMethod
+        mongorepo.implements.methods.ListPopMethod
+        mongorepo.implements.methods.ListRemoveMethod
+        mongorepo.implements.methods.ListGetFieldValuesMethod
+
+    """
     mongorepo_method: Callable
     name: str
     source: Callable
@@ -24,6 +46,8 @@ class SpecificFieldMethod(SpecificMethod):
 
 
 class Method:
+    """Base class that represents mongorepo method."""
+
     def __init__(
         self,
         source: Callable,
@@ -74,7 +98,7 @@ class GetMethod(Method):
     class MongoRepo:
         class Meta:
             dto = User
-            collection = db.users.users_collection
+            collection = mongo_client().users.users_collection
 
     repo = MongoRepo()
     user = repo.get(id='123')
@@ -110,7 +134,7 @@ class AddMethod(Method):
     class MongoRepo:
         class Meta:
             dto = User
-            collection = db.users.users_collection
+            collection = mongo_client().users.users_collection
 
     repo = MongoRepo()
     added_user = repo.add(user=User(name='admin'))
@@ -154,7 +178,7 @@ class UpdateMethod(Method):
     class MongoRepo:
         class Meta:
             dto = User
-            collection = db.users.users_collection
+            collection = mongo_client().users.users_collection
 
     repo = MongoRepo()
     updated_user: User = repo.update_user(id='123', UpdateUser(name='admin_1'))
@@ -207,7 +231,7 @@ class DeleteMethod(Method):
     class MongoRepo:
         class Meta:
             dto = User
-            collection = db.users.users_collection
+            collection = mongo_client().users.users_collection
 
     repo = MongoRepo()
     deleted: bool = repo.remove_user(id='1')
@@ -241,7 +265,7 @@ class GetListMethod(Method):
     class MongoRepo:
         class Meta:
             dto = Book
-            collection = db.books.books_collection
+            collection = mongo_client().books.books_collection
 
     repo = MongoRepo()
     books = repo.get_list_of_books(category='fiction')
@@ -285,7 +309,7 @@ class GetAllMethod(Method):
     class MongoRepo:
         class Meta:
             dto = Book
-            collection = db.books.books_collection
+            collection = mongo_client().books.books_collection
 
     repo = MongoRepo()
     books = repo.get_all_books()
@@ -320,7 +344,7 @@ class AddBatchMethod(Method):
     class MongoRepo:
         class Meta:
             dto = Book
-            collection = db.books.books_collection
+            collection = mongo_client().books.books_collection
 
     repo = MongoRepo()
     repo.add_books([
@@ -373,7 +397,7 @@ class ListAppendMethod(Method):
     class MongoRepo:
         class Meta:
             dto = Cargo
-            collection = db.cargo.cargo_collection
+            collection = mongo_client().cargo.cargo_collection
 
     repo = MongoRepo()
     repo.add_box_to_cargo(id='1', box=Box(weight=5))
@@ -428,7 +452,7 @@ class ListPopMethod(Method):
     class MongoRepo:
         class Meta:
             dto = Cargo
-            collection = db.cargo.cargo_collection
+            collection = mongo_client().cargo.cargo_collection
 
     repo = MongoRepo()
     cargo = repo.get(id='1')
@@ -488,7 +512,7 @@ class ListRemoveMethod(Method):
     class MongoRepo:
         class Meta:
             dto = Cargo
-            collection = db.cargo.cargo_collection
+            collection = mongo_client().cargo.cargo_collection
 
     repo = MongoRepo()
     cargo = repo.get(id='1')
@@ -547,7 +571,7 @@ class ListGetFieldValuesMethod(Method):
     class MongoRepo:
         class Meta:
             dto = Cargo
-            collection = db.cargo.cargo_collection
+            collection = mongo_client().cargo.cargo_collection
 
     repo = MongoRepo()
     cargo = repo.get(id='1')
@@ -614,7 +638,7 @@ class IncrementIntegerFieldMethod(Method):
     class MongoRepo:
         class Meta:
             dto = Record
-            collection = db.records.record_collection
+            collection = mongo_client().records.record_collection
 
     repo = MongoRepo()
     repo.add(Record(id='1', views=1000))
@@ -673,7 +697,7 @@ class DecrementIntegerFieldMethod(Method):
     class MongoRepo:
         class Meta:
             dto = Record
-            collection = db.records.record_collection
+            collection = mongo_client().records.record_collection
 
     repo = MongoRepo()
     repo.add(Record(id='1', views=1000))
