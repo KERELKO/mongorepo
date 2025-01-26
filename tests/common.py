@@ -1,10 +1,13 @@
 import random
 import warnings
+from contextlib import asynccontextmanager, contextmanager
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, AsyncGenerator, Generator
 
 import pymongo
-from motor.motor_asyncio import AsyncIOMotorClient
+import pymongo.collation
+import pymongo.collection
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection
 
 
 def mongo_client(mongo_uri: str = 'mongodb://mongodb:27017/') -> pymongo.MongoClient:
@@ -56,6 +59,22 @@ class DictDTO:
     records: dict[str, Any] = field(default_factory=dict)
 
 
+@dataclass
+class Box:
+    id: str
+    value: str
+
+
+@dataclass
+class MixDTO:
+    id: str
+    name: str
+    year: int
+    main_box: Box
+    records: list[int] = field(default_factory=list)
+    boxs: list[Box] = field(default_factory=list)
+
+
 def collection_for_complicated_dto(async_client: bool = False):
     warnings.warn('"collection_for_complicated_dto" is deprecated, use "custom_collection" instead')
     if async_client:
@@ -87,3 +106,23 @@ def custom_collection(dto: str | type, async_client: bool = False):
 def r() -> int:
     """Returns random integer."""
     return random.randint(1, 123456)
+
+
+@asynccontextmanager
+async def in_async_collection(dto: str | type) -> AsyncGenerator[AsyncIOMotorCollection, None]:
+    dto_name = dto if isinstance(dto, str) else dto.__name__
+    try:
+        collection = async_mongo_client()[f'{dto_name}_db'][dto_name]
+        yield collection
+    finally:
+        await collection.drop()
+
+
+@contextmanager
+def in_collection(dto: str | type) -> Generator[pymongo.collection.Collection, None, None]:
+    dto_name = dto if isinstance(dto, str) else dto.__name__
+    try:
+        collection = mongo_client()[f'{dto_name}_db'][dto_name]
+        yield collection
+    finally:
+        collection.drop()

@@ -1,3 +1,4 @@
+import asyncio
 from dataclasses import asdict
 from typing import Any, AsyncGenerator, Generic
 
@@ -6,7 +7,7 @@ from motor.motor_asyncio import AsyncIOMotorCollection
 from mongorepo import exceptions
 from mongorepo._base import DTO, Index
 from mongorepo.asyncio._methods import _add_method_async
-from mongorepo.asyncio.utils import _run_asyncio_create_index
+from mongorepo.asyncio.utils import _create_index_async
 from mongorepo.utils import (
     _get_collection_and_dto,
     _get_converter,
@@ -51,7 +52,7 @@ class AsyncBasedMongoRepository(Generic[DTO]):
                 raise exceptions.NoCollectionException(
                     message='Cannot access collection from Meta to create index',
                 )
-            _run_asyncio_create_index(index, collection=collection)
+            asyncio.create_task(_create_index_async(index, collection=collection))
         return instance
 
     def __init__(self, collection: AsyncIOMotorCollection | None = None) -> None:

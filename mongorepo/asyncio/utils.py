@@ -1,19 +1,7 @@
-import asyncio
-
 import pymongo
 from motor.motor_asyncio import AsyncIOMotorCollection
 
 from mongorepo._base import Index
-
-
-def _run_asyncio_create_index(index: Index | str, collection: AsyncIOMotorCollection) -> None:
-    """Tries to create an index for `AsyncIOMotorCollection` in async loop or
-    after."""
-    loop = asyncio.get_running_loop()
-    if loop.is_running():
-        asyncio.create_task(_create_index_async(index=index, collection=collection))
-    else:
-        loop.run_until_complete(_create_index_async(index=index, collection=collection))
 
 
 async def _create_index_async(index: Index | str, collection: AsyncIOMotorCollection) -> None:
