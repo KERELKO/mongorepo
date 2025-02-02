@@ -121,7 +121,6 @@ def _manage_custom_params(
     aliases: dict[str, Any] = method.params.get(MongorepoParameter.FILTER_ALIAS, {})  # type: ignore
     i = 0
 
-    print(f'kwargs: {kwargs}, args: {args}, method.params: {method.params}')
     # Iterate over all names of the method's arguments
     for source_param in method.get_source_params().keys():
 
@@ -146,8 +145,6 @@ def _manage_custom_params(
                 f'{method.name}() parameters: {method.params}',
             )
 
-    print(f'source_params_map.items(): {source_params_map.items()}')
-    print(f'method.params: {method.params}\n')
     for key, value in source_params_map.items():
         if method.params.get(key, None) == MongorepoParameter.FILTER:
             filters[key] = value

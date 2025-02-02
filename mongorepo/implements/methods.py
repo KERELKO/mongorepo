@@ -20,6 +20,30 @@ class FieldAlias[T]:
 
     alias = FieldAlias('name', 'username')
     ```
+
+    ### Usage Example:
+    ```
+    @dataclass
+    class User:
+        name: str
+
+    class UserRepository(ABC):
+        @abstractmethod
+        def get_user(self, username: str) -> User | None:
+            ...
+
+    @implements(
+        UserRepository,
+        #                                                             User.name -> alias
+        GetMethod(UserRepository.get_user, filters=[ FieldAlias[User]('name', 'username') ])
+    )
+    class MongoUserRepository:
+        ...
+
+    repo: UserRepository = MongoUserRepository()
+    user = repo.get_user(username='admin')
+    print(user)  # User(name='admin')
+    ```
     """
 
     __slots__ = ('name', 'aliases')
