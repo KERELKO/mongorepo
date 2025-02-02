@@ -110,35 +110,51 @@ def _substitute_method(
 
 
 def _manage_custom_params(
-    generic_method: Method,
+    method: Method,
     *args,
     **kwargs,
 ) -> dict[str, Any]:
-    defaults = _get_defaults(generic_method.source)
+    defaults = _get_defaults(method.source)
     result: dict[str, Any] = {}
-    gen_map = {}
     filters: dict[str, Any] = {}
+    source_params_map: dict[str, Any] = {}
+    aliases: dict[str, Any] = method.params.get(MongorepoParameter.FILTER_ALIAS, {})  # type: ignore
     i = 0
-    for gen_param in generic_method.get_source_params().keys():
+
+    print(f'kwargs: {kwargs}, args: {args}, method.params: {method.params}')
+    # Iterate over all names of the method's arguments
+    for source_param in method.get_source_params().keys():
+
+        # Parameter was passed as positional argument
         if len(args) > i:
-            gen_map[gen_param] = args[i]
+            source_params_map[source_param] = args[i]
             i += 1
             continue
-        elif gen_param in kwargs:
-            gen_map[gen_param] = kwargs[gen_param]
-        elif defaults.get(gen_param, None):
-            gen_map[gen_param] = defaults[gen_param]
+
+        # Parameter was passed as keyword argument ?
+        elif source_param in kwargs:
+            source_params_map[source_param] = kwargs[source_param]
+
+        # If parameter was not passed check for defaults
+        elif defaults.get(source_param, None):
+            source_params_map[source_param] = defaults[source_param]
+
+        # Missing parameter
         else:
             raise exceptions.MongoRepoException(
-                message=f'Cannot find value for {gen_param} parameter. '
-                f'{generic_method.name}() parameters: {generic_method.params}',
+                message=f'Cannot find value for {source_param} parameter. '
+                f'{method.name}() parameters: {method.params}',
             )
 
-    for key, value in gen_map.items():
-        if generic_method.params[key] == MongorepoParameter.FILTER:
+    print(f'source_params_map.items(): {source_params_map.items()}')
+    print(f'method.params: {method.params}\n')
+    for key, value in source_params_map.items():
+        if method.params.get(key, None) == MongorepoParameter.FILTER:
             filters[key] = value
+        elif (dto_field := aliases.get(key, None)) is not None:
+            filters[dto_field] = value
         else:
-            result[generic_method.params[key]] = value
+            result[method.params[key]] = value
 
     result.update(filters)
     return result

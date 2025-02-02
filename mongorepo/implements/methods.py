@@ -1,13 +1,50 @@
 import inspect
 from typing import Any, Callable, Protocol
 
-from mongorepo._base import LParameter, MethodAction
+from mongorepo._base import LParameter, MethodAction, ParameterEnum
 from mongorepo._methods import CRUD_METHODS, INTEGER_METHODS, LIST_METHODS
 from mongorepo.asyncio._methods import (
     CRUD_METHODS_ASYNC,
     INTEGER_METHODS_ASYNC,
     LIST_METHODS_ASYNC,
 )
+
+
+class FieldAlias[T]:
+    """Class that allow to set alias for `dataclass` field
+    ### Example:
+    ```
+    @dataclass
+    class User:
+        name: str
+
+    alias = FieldAlias('name', 'username')
+    ```
+    """
+
+    __slots__ = ('name', 'aliases')
+
+    def __init__(self, field: str, *aliases: str) -> None:
+        self.name = field
+        self.aliases = aliases
+
+    def is_alias(self, string: str) -> bool:
+        return string in self.aliases
+
+    def __hash__(self) -> int:
+        return hash(self.name)
+
+    def __eq__(self, other) -> bool:
+        if isinstance(other, FieldAlias):
+            return self.name == other.name and self.aliases == other.aliases
+        return False
+
+    def __repr__(self) -> str:
+        aliases = ', '.join([f'"{a}"' for a in self.aliases])
+        return f'{self.__class__.__name__}("{self.name}", {aliases})'
+
+    def __str__(self) -> str:
+        return self.name
 
 
 class SpecificMethod(Protocol):
@@ -106,8 +143,13 @@ class GetMethod(Method):
 
     """
 
-    def __init__(self, source: Callable, filters: list[str]) -> None:
-        super().__init__(source, **dict.fromkeys(filters, 'filters'))  # type: ignore
+    def __init__(self, source: Callable, filters: list[FieldAlias | str]) -> None:
+        params = {f: ParameterEnum.FILTER for f in filters if isinstance(f, str)}
+        aliases = {
+            ParameterEnum.FILTER_ALIAS: dict.fromkeys(a.aliases, a.name)
+            for a in filters if isinstance(a, FieldAlias)
+        }
+        super().__init__(source, **params, **aliases)  # type: ignore
         self.action = MethodAction.GET
         self.mongorepo_method = (
             CRUD_METHODS_ASYNC[self.action] if self.is_async else CRUD_METHODS[self.action]
