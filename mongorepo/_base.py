@@ -75,6 +75,15 @@ class ParameterEnum(StrEnum):
     DTO = 'dto'
     VALUE = 'value'
     WEIGHT = 'weight'
+    FILTER_ALIAS = '__filter_alias'
 
 
-LParameter = Literal['filters', 'offset', 'limit', 'dto', 'value', 'weight']
+LParameter = Literal[
+    ParameterEnum.FILTER,
+    ParameterEnum.OFFSET,
+    ParameterEnum.LIMIT,
+    ParameterEnum.DTO,
+    ParameterEnum.VALUE,
+    ParameterEnum.WEIGHT,
+    ParameterEnum.FILTER_ALIAS,
+]
