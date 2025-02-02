@@ -3,6 +3,7 @@ from .methods import (
     AddBatchMethod,
     AddMethod,
     DeleteMethod,
+    FieldAlias,
     GetAllMethod,
     GetListMethod,
     GetMethod,
@@ -12,6 +13,7 @@ from .methods import (
 )
 
 __all__ = [
+    'FieldAlias',
     'implements',
     'AddBatchMethod',
     'AddMethod',

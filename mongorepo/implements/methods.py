@@ -47,6 +47,17 @@ class FieldAlias[T]:
         return self.name
 
 
+class _ManageMethodFiltersMixin:
+    @staticmethod
+    def manage_filters(filters: list[str | FieldAlias]) -> dict[str, Any]:
+        params = {f: ParameterEnum.FILTER for f in filters if isinstance(f, str)}
+        aliases = {
+            ParameterEnum.FILTER_ALIAS: dict.fromkeys(a.aliases, a.name)
+            for a in filters if isinstance(a, FieldAlias)
+        }
+        return {**params, **aliases}
+
+
 class SpecificMethod(Protocol):
     """Protocol for specific methods.
 
@@ -115,7 +126,7 @@ class Method:
         return inspect.iscoroutinefunction(self.source)
 
 
-class GetMethod(Method):
+class GetMethod(Method, _ManageMethodFiltersMixin):
     """
     ### Class that represents mongorepo `get` method
     * supports `async`, `await` syntax
@@ -144,12 +155,7 @@ class GetMethod(Method):
     """
 
     def __init__(self, source: Callable, filters: list[FieldAlias | str]) -> None:
-        params = {f: ParameterEnum.FILTER for f in filters if isinstance(f, str)}
-        aliases = {
-            ParameterEnum.FILTER_ALIAS: dict.fromkeys(a.aliases, a.name)
-            for a in filters if isinstance(a, FieldAlias)
-        }
-        super().__init__(source, **params, **aliases)  # type: ignore
+        super().__init__(source, **self.manage_filters(filters))  # type: ignore
         self.action = MethodAction.GET
         self.mongorepo_method = (
             CRUD_METHODS_ASYNC[self.action] if self.is_async else CRUD_METHODS[self.action]
@@ -192,7 +198,7 @@ class AddMethod(Method):
         )
 
 
-class UpdateMethod(Method):
+class UpdateMethod(Method, _ManageMethodFiltersMixin):
     """
     ### Class that represents mongorepo `update` method
     * supports `async`, `await` syntax
@@ -247,9 +253,9 @@ class UpdateMethod(Method):
     ```
 
     """
-    def __init__(self, source: Callable, dto: str, filters: list[str]) -> None:
+    def __init__(self, source: Callable, dto: str, filters: list[FieldAlias | str]) -> None:
         super().__init__(
-            source, **{dto: 'dto'}, **dict.fromkeys(filters, 'filters'),  # type: ignore
+            source, **{dto: 'dto'}, **self.manage_filters(filters),  # type: ignore
         )
         self.action = MethodAction.UPDATE
         self.mongorepo_method = (
@@ -257,7 +263,7 @@ class UpdateMethod(Method):
         )
 
 
-class DeleteMethod(Method):
+class DeleteMethod(Method, _ManageMethodFiltersMixin):
     """
     ### Class that represents mongorepo `delete` method
     * supports `async`, `await` syntax
@@ -280,15 +286,15 @@ class DeleteMethod(Method):
     ```
 
     """
-    def __init__(self, source: Callable, filters: list[str]) -> None:
-        super().__init__(source, **dict.fromkeys(filters, 'filters'))  # type: ignore
+    def __init__(self, source: Callable, filters: list[FieldAlias | str]) -> None:
+        super().__init__(source, **self.manage_filters(filters))
         self.action = MethodAction.DELETE
         self.mongorepo_method = (
             CRUD_METHODS_ASYNC[self.action] if self.is_async else CRUD_METHODS[self.action]
         )
 
 
-class GetListMethod(Method):
+class GetListMethod(Method, _ManageMethodFiltersMixin):
     """
     ### Class that represents mongorepo `get_list` method
     * supports `async`, `await` syntax
@@ -318,13 +324,13 @@ class GetListMethod(Method):
     def __init__(
         self,
         source: Callable,
-        filters: list[str],
+        filters: list[FieldAlias | str],
         offset: str,
         limit: str,
     ) -> None:
         super().__init__(
             source, **{offset: 'offset', limit: 'limit'},  # type: ignore
-            **dict.fromkeys(filters, 'filters'),  # type: ignore
+            **self.manage_filters(filters),
         )
         self.action = MethodAction.GET_LIST
         self.mongorepo_method = (
@@ -332,7 +338,7 @@ class GetListMethod(Method):
         )
 
 
-class GetAllMethod(Method):
+class GetAllMethod(Method, _ManageMethodFiltersMixin):
     """
     ### Class that represents mongorepo `get_all` method
     * supports `async`, `await` syntax
@@ -359,8 +365,8 @@ class GetAllMethod(Method):
     ```
     """
 
-    def __init__(self, source: Callable, filters: list[str]) -> None:
-        super().__init__(source, **dict.fromkeys(filters, 'filters'))  # type: ignore
+    def __init__(self, source: Callable, filters: list[FieldAlias | str]) -> None:
+        super().__init__(source, **self.manage_filters(filters))
         self.action = MethodAction.GET_ALL
         self.mongorepo_method = (
             CRUD_METHODS_ASYNC[self.action] if self.is_async else CRUD_METHODS[self.action]
@@ -404,7 +410,7 @@ class AddBatchMethod(Method):
         )
 
 
-class ListAppendMethod(Method):
+class ListAppendMethod(Method, _ManageMethodFiltersMixin):
     """### Class that represents mongorepo `list_append` method
 
     * supports `async`, `await` syntax
@@ -449,9 +455,11 @@ class ListAppendMethod(Method):
 
     """
 
-    def __init__(self, source: Callable, field_name: str, value: str, filters: list[str]) -> None:
+    def __init__(
+        self, source: Callable, field_name: str, value: str, filters: list[FieldAlias | str],
+    ) -> None:
         super().__init__(
-            source, **{value: 'value'}, **dict.fromkeys(filters, 'filters'),  # type: ignore
+            source, **{value: 'value'}, **self.manage_filters(filters),  # type: ignore
         )
         self.field_name = field_name
         self.action = MethodAction.LIST_APPEND
@@ -460,7 +468,7 @@ class ListAppendMethod(Method):
         )
 
 
-class ListPopMethod(Method):
+class ListPopMethod(Method, _ManageMethodFiltersMixin):
     """### Class that represents mongorepo `list_pop` method
 
     * supports `async`, `await` syntax
@@ -506,9 +514,9 @@ class ListPopMethod(Method):
 
     """
 
-    def __init__(self, source: Callable, field_name: str, filters: list[str]) -> None:
+    def __init__(self, source: Callable, field_name: str, filters: list[FieldAlias | str]) -> None:
         super().__init__(
-            source, **dict.fromkeys(filters, 'filters'),  # type: ignore
+            source, **self.manage_filters(filters),
         )
         self.field_name = field_name
         self.action = MethodAction.LIST_POP
@@ -517,7 +525,7 @@ class ListPopMethod(Method):
         )
 
 
-class ListRemoveMethod(Method):
+class ListRemoveMethod(Method, _ManageMethodFiltersMixin):
     """### Class that represents mongorepo `list_remove` method
 
     * supports `async`, `await` syntax
@@ -565,9 +573,11 @@ class ListRemoveMethod(Method):
 
     """
 
-    def __init__(self, source: Callable, field_name: str, value: str, filters: list[str]) -> None:
+    def __init__(
+        self, source: Callable, field_name: str, value: str, filters: list[FieldAlias | str],
+    ) -> None:
         super().__init__(
-            source, **{value: 'value'}, **dict.fromkeys(filters, 'filters'),  # type: ignore
+            source, **{value: 'value'}, **self.manage_filters(filters),  # type: ignore
         )
         self.field_name = field_name
         self.action = MethodAction.LIST_REMOVE
@@ -576,7 +586,7 @@ class ListRemoveMethod(Method):
         )
 
 
-class ListGetFieldValuesMethod(Method):
+class ListGetFieldValuesMethod(Method, _ManageMethodFiltersMixin):
     """### Class that represents mongorepo `list_field_values` method
 
     * supports `async`, `await` syntax
@@ -628,7 +638,7 @@ class ListGetFieldValuesMethod(Method):
         self,
         source: Callable,
         field_name: str,
-        filters: list[str],
+        filters: list[FieldAlias | str],
         offset: str | None = None,
         limit: str | None = None,
     ) -> None:
@@ -640,7 +650,7 @@ class ListGetFieldValuesMethod(Method):
         super().__init__(
             source,
             **params,
-            **dict.fromkeys(filters, 'filters'),  # type: ignore
+            **self.manage_filters(filters),
         )
         self.field_name = field_name
         self.action = MethodAction.LIST_FIELD_VALUES
@@ -649,7 +659,7 @@ class ListGetFieldValuesMethod(Method):
         )
 
 
-class IncrementIntegerFieldMethod(Method):
+class IncrementIntegerFieldMethod(Method, _ManageMethodFiltersMixin):
     """
     ### Class that represents mongorepo `integer_increment` method
     * supports `async`, `await` syntax
@@ -693,12 +703,12 @@ class IncrementIntegerFieldMethod(Method):
         self,
         source: Callable,
         field_name: str,
-        filters: list[str],
+        filters: list[FieldAlias | str],
         weight: str | None = None,
     ) -> None:
         params = {} if weight is None else {weight: 'weight'}
         super().__init__(
-            source, **params, **dict.fromkeys(filters, 'filters'),  # type: ignore
+            source, **params, **self.manage_filters(filters),  # type: ignore
         )
         self.action = MethodAction.INTEGER_INCREMENT
         self.field_name = field_name
@@ -707,7 +717,7 @@ class IncrementIntegerFieldMethod(Method):
         )
 
 
-class DecrementIntegerFieldMethod(Method):
+class DecrementIntegerFieldMethod(Method, _ManageMethodFiltersMixin):
     """
     ### Class that represents mongorepo `integer_decrement` method
     * supports `async`, `await` syntax
@@ -754,12 +764,12 @@ class DecrementIntegerFieldMethod(Method):
         self,
         source: Callable,
         field_name: str,
-        filters: list[str],
+        filters: list[FieldAlias | str],
         weight: str | None = None,
     ) -> None:
         params = {} if weight is None else {weight: 'weight'}
         super().__init__(
-            source, **params, **dict.fromkeys(filters, 'filters'),  # type: ignore
+            source, **params, **self.manage_filters(filters),  # type: ignore
         )
         self.action = MethodAction.INTEGER_DECREMENT
         self.field_name = field_name
