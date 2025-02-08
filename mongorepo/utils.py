@@ -1,4 +1,5 @@
 import inspect
+import warnings
 from dataclasses import is_dataclass
 from types import UnionType
 from typing import (
@@ -70,6 +71,8 @@ def _get_meta_attributes(cls, raise_exceptions: bool = True) -> dict[str, Any]:
     attributes['method_access'] = method_access
 
     substitute: dict[str, str] | None = getattr(meta, 'substitute', None)
+    if substitute is not None:
+        warnings.warn("'substitute' dictionary is deprecated, please pass arguments in other place")
     attributes['substitute'] = substitute
 
     id_field: str | None = getattr(meta, 'id_field', None)
@@ -186,7 +189,7 @@ def _convert_to_dto_with_id(
     return wrapper
 
 
-def _recursive_convert_to_dto(dto_type: type[DTO], id_field: str | None = None) -> Callable:
+def _nested_convert_to_dto(dto_type: type[DTO], id_field: str | None = None) -> Callable:
     def outer_wrapper(dto_type: type[DTO], dct: dict[str, Any]) -> DTO:
         def inner_wrapper(
             dto_type: type[DTO], dct: dict[str, Any], to_dto: bool = False,
@@ -203,7 +206,7 @@ def _recursive_convert_to_dto(dto_type: type[DTO], id_field: str | None = None) 
                             inner_wrapper(args[0], v, to_dto=True) for v in value  # type: ignore
                         ]
                     else:
-                        data[key] = value  # TODO: solve this problem
+                        data[key] = value  # TODO: solve mypy error
                 else:
                     data[key] = value
             return dto_type(**data) if to_dto else data
@@ -224,7 +227,7 @@ def _get_converter(dto_type: type[DTO], id_field: str | None = None) -> Callable
     converter = _convert_to_dto
     r = _has_dataclass_fields(dto_type=dto_type)
     if r:
-        converter = _recursive_convert_to_dto(dto_type, id_field)
+        converter = _nested_convert_to_dto(dto_type, id_field)
     elif id_field is not None:
         converter = _convert_to_dto_with_id(id_field=id_field)
     return converter

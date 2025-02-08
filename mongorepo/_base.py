@@ -1,7 +1,6 @@
-import inspect
 from dataclasses import Field, dataclass
-from enum import Enum
-from typing import Any, Callable, ClassVar, Protocol, TypeVar
+from enum import Enum, StrEnum
+from typing import Any, ClassVar, Literal, Protocol, TypeVar
 
 from motor.motor_asyncio import AsyncIOMotorCollection
 from pymongo.collection import Collection
@@ -31,12 +30,8 @@ class Access(int, Enum):
     PRIVATE = 2
 
 
-class _FiltersParameter(str, Enum):
-    FILTER = 'filters'
-
-
 @dataclass(eq=False)
-class _MethodDeps:
+class MethodDeps:
     """DTO for mongorepo methods dependencies.
 
     ### includes:
@@ -48,38 +43,47 @@ class _MethodDeps:
     ```
 
     """
-    collection: Collection | AsyncIOMotorCollection | None = None
-    dto_type: type[DTO] | None = None  # type: ignore
+    collection: Collection | AsyncIOMotorCollection
+    dto_type: type
     id_field: str | None = None
-    field_name: str | None = None
+    custom_field_method_name: str | None = None
+    update_integer_weight: int | None = None
 
 
-class Method:
-    def __init__(
-        self,
-        source: Callable,
-        **params: str | tuple[str, ...],
-    ) -> None:
-        self.source: Callable = source
-        self.params: dict[str, Any] = params
-        self.name: str = source.__name__
+class MethodAction(StrEnum):
+    GET = 'get'
+    GET_LIST = 'get_list'
+    GET_ALL = 'get_all'
+    UPDATE = 'update'
+    ADD = 'add'
+    ADD_BATCH = 'add_batch'
+    DELETE = 'delete'
 
-    def __repr__(self) -> str:
-        params_repr = ', '.join(f'{k}={v}' for k, v in self.params.items())
-        return (
-            f'Method({self.source}, {self.name}, {params_repr})'
-        )
+    INTEGER_INCREMENT = 'incr__'
+    INTEGER_DECREMENT = 'decr__'
 
-    @property
-    def signature(self) -> inspect.Signature:
-        return inspect.signature(self.source)
+    LIST_APPEND = '__append'
+    LIST_REMOVE = '__remove'
+    LIST_POP = '__pop'
+    LIST_FIELD_VALUES = '__list'
 
-    def get_source_params(self, exclude_self: bool = True) -> dict:
-        gen_params = dict(self.signature.parameters)
-        if exclude_self:
-            gen_params.pop('self')
-        return gen_params
 
-    @property
-    def is_async(self) -> bool:
-        return inspect.iscoroutinefunction(self.source)
+class ParameterEnum(StrEnum):
+    FILTER = 'filters'
+    OFFSET = 'offset'
+    LIMIT = 'limit'
+    DTO = 'dto'
+    VALUE = 'value'
+    WEIGHT = 'weight'
+    FILTER_ALIAS = '__filter_alias'
+
+
+LParameter = Literal[
+    ParameterEnum.FILTER,
+    ParameterEnum.OFFSET,
+    ParameterEnum.LIMIT,
+    ParameterEnum.DTO,
+    ParameterEnum.VALUE,
+    ParameterEnum.WEIGHT,
+    ParameterEnum.FILTER_ALIAS,
+]

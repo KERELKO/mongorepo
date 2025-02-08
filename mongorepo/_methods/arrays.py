@@ -31,7 +31,7 @@ def _get_list_of_field_values_method(
     field_type = dataclass_fields.get(field_name, None)
 
     def get_list_dto(
-        self, offset: int, limit: int, **filters,
+        self, offset: int = 0, limit: int = 20, **filters,
     ) -> list[_DTOField]:  # type: ignore
         document = collection.find_one(
             filters, {field_name: {'$slice': [offset, limit]}},

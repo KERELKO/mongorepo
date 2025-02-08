@@ -16,7 +16,7 @@ def async_mongo_repository(
     integer_fields: list[str] | None = None,
     array_fields: list[str] | None = None,
     method_access: Access | None = None,
-    __methods__: bool = True,
+    __methods__: bool = False,
 ) -> type | Callable:
     """## Async MongoDB repository decorator
 
@@ -51,14 +51,14 @@ def async_mongo_repository(
     class A:
         ...
     print(A().__methods__)
-    # get_list(self, offset: int = 0, limit: int = 20) -> list[~DTO]
-    # update(self, dto: ~DTO, **filters: Any) -> Optional[~DTO]
+    >>> get_list(self, offset: int = 0, limit: int = 20) -> list[~DTO]
+    >>> update(self, dto: ~DTO, **filters: Any) -> Optional[~DTO]
     ```
 
     ## Decorator usage example
 
     ```
-    @async_mongo_repository(method_access=mongorepo.Access.PROTECTED)
+    @async_mongo_repository(get_all=True)
     class MongoRepository:
         class Meta:
             dto = ExampleDTO
