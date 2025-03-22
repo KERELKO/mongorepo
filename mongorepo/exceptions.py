@@ -1,23 +1,22 @@
-from dataclasses import dataclass, field
+class MongorepoException(Exception):
+    def __init__(self, message: str | None = None):
+        self.message = message
+
+    def __str__(self) -> str:
+        return self.message or super().__str__()
 
 
-@dataclass(eq=False)
-class MongoRepoException(Exception):
-    message: str | None = field(kw_only=True, default=None)
-
-
-@dataclass(eq=False)
-class NoMetaException(MongoRepoException):
-
+class NoMetaException(MongorepoException):
     def __str__(self) -> str:
         if self.message:
             return self.message
         return 'Class does not have "Meta" class inside'
 
 
-@dataclass(eq=False)
-class NoDTOTypeException(MongoRepoException):
-    with_meta: bool = True
+class NoDTOTypeException(MongorepoException):
+    def __init__(self, message: str | None = None, with_meta: bool = True):
+        self.with_meta: bool = with_meta
+        self.message = message
 
     def __str__(self) -> str:
         if self.message:
@@ -25,9 +24,10 @@ class NoDTOTypeException(MongoRepoException):
         return 'DTO type was not provided' + ' in "Meta" class' if self.with_meta else ''
 
 
-@dataclass(eq=False)
-class NoCollectionException(MongoRepoException):
-    with_meta: bool = True
+class NoCollectionException(MongorepoException):
+    def __init__(self, message: str | None = None, with_meta: bool = True):
+        self.with_meta: bool = with_meta
+        self.message = message
 
     def __str__(self) -> str:
         if self.message:
@@ -35,17 +35,23 @@ class NoCollectionException(MongoRepoException):
         return 'Collection was not provided' + ' in "Meta" class' if self.with_meta else ''
 
 
-class NotDataClass(MongoRepoException):
+class NotDataClass(MongorepoException):
     def __str__(self) -> str:
         if self.message:
             return self.message
         return 'Provided dto type does not implement dataclass interface'
 
 
-@dataclass(eq=False)
-class InvalidMethodNameException(MongoRepoException):
-    method_name: str
-    available_methods: tuple[str, ...] | None = None
+class InvalidMethodNameException(MongorepoException):
+    def __init__(
+        self,
+        method_name: str,
+        message: str | None = None,
+        available_methods: tuple[str, ...] | None = None,
+    ):
+        self.message = message
+        self.method_name: str = method_name
+        self.available_methods: tuple[str, ...] | None = available_methods
 
     def __str__(self) -> str:
         if self.message:
@@ -56,8 +62,7 @@ class InvalidMethodNameException(MongoRepoException):
         return message
 
 
-@dataclass(eq=False)
-class TypeHintException(MongoRepoException):
+class TypeHintException(MongorepoException):
     def __str__(self) -> str:
         if self.message:
             return self.message
@@ -65,7 +70,7 @@ class TypeHintException(MongoRepoException):
         return message
 
 
-class NotFoundException(MongoRepoException):
+class NotFoundException(MongorepoException):
     def __init__(self, **filters) -> None:
         self.filters = filters
 
@@ -74,10 +79,11 @@ class NotFoundException(MongoRepoException):
         return f'Document not found, filters: {filters}'
 
 
-@dataclass(eq=False)
-class InvalidActionException(MongoRepoException):
-    action: str
-    valid_actions: list[str]
+class InvalidActionException(MongorepoException):
+    def __init__(self, valid_actions: list[str], action: str, message: str | None = None):
+        self.message = message
+        self.action: str = action
+        self.valid_actions: list[str] = valid_actions
 
     def __str__(self) -> str:
         return (

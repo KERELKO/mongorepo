@@ -13,15 +13,32 @@ from typing import (
 )
 
 import pymongo
+from motor.motor_asyncio import AsyncIOMotorCollection
 from pymongo.collection import Collection
 
 from mongorepo import exceptions
-from mongorepo._base import DTO, Access, Index
+from mongorepo._base import (
+    DTO,
+    MONGOREPO_COLLECTION,
+    Access,
+    Dataclass,
+    Index,
+    MetaAttributes,
+)
 
 
-def raise_exc(exc: Exception) -> NoReturn:
+def raise_exc(exc: Exception | type[Exception]) -> NoReturn:
     """Allows to write one-lined exceptions."""
     raise exc
+
+
+def _deprecated(msg: str):
+    def decorator(func: Callable):
+        def wrapper(*args, **kwargs):
+            warnings.warn(msg)
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
 
 
 def get_prefix(access: Access | None, cls: type | None = None) -> str:
@@ -39,6 +56,18 @@ def get_prefix(access: Access | None, cls: type | None = None) -> str:
     return prefix
 
 
+def _get_meta(cls: type) -> type:
+    """Tries to get `Meta` class for the class or raises `NoMetaException`
+    exception."""
+    meta = cls.__dict__.get('Meta', None)
+    if not meta:
+        raise exceptions.NoMetaException
+    if not isinstance(meta, type):
+        raise exceptions.NoMetaException
+    return meta
+
+
+@_deprecated('No sense to use it')
 def _get_collection_and_dto(cls: type, raise_exceptions: bool = True) -> dict[str, Any]:
     """Collect `dto` and `collection` attributes from `Meta` class."""
     attributes: dict[str, Any] = {}
@@ -57,38 +86,32 @@ def _get_collection_and_dto(cls: type, raise_exceptions: bool = True) -> dict[st
     return attributes
 
 
-def _get_meta_attributes(cls, raise_exceptions: bool = True) -> dict[str, Any]:
+def _get_meta_attributes(cls: type) -> MetaAttributes:
     """Collect all available attributes from `Meta` class."""
-    attributes: dict[str, Any] = _get_collection_and_dto(
-        cls=cls, raise_exceptions=raise_exceptions,
-    )
     meta = _get_meta(cls)
 
+    dto_type: type[Dataclass] | None = getattr(meta, 'dto', None)
+
+    collection: AsyncIOMotorCollection | Collection[Any] | None = getattr(meta, 'collection', None)
+
     index: Index | str | None = getattr(meta, 'index', None)
-    attributes['index'] = index
 
     method_access: Access | None = getattr(meta, 'method_access', None)
-    attributes['method_access'] = method_access
 
     substitute: dict[str, str] | None = getattr(meta, 'substitute', None)
     if substitute is not None:
         warnings.warn("'substitute' dictionary is deprecated, please pass arguments in other place")
-    attributes['substitute'] = substitute
 
     id_field: str | None = getattr(meta, 'id_field', None)
-    attributes['id_field'] = id_field
 
-    return attributes
-
-
-def _get_meta(cls: type) -> Any:
-    """Tries to get `Meta` class for the class or raises an exception."""
-    meta = cls.__dict__.get('Meta', None)
-    if not meta:
-        raise exceptions.NoMetaException
-    if not isinstance(meta, type):
-        raise exceptions.NoMetaException
-    return meta
+    return MetaAttributes(
+        dto=dto_type,
+        collection=collection,  # type: ignore
+        index=index,
+        method_access=method_access,
+        substitute=substitute,
+        id_field=id_field,
+    )
 
 
 def _get_validated_type_hint(hint: Any, get_type: bool = False) -> Any:
@@ -147,7 +170,7 @@ def _create_index(index: Index | str, collection: Collection) -> None:
     )
 
 
-def _get_dto_from_origin(cls: type) -> Any:
+def _get_dto_from_origin(cls: type) -> type[Dataclass]:
     """
     Tries to get `dto` from origin of the class or raises an exception
 
@@ -194,7 +217,7 @@ def _nested_convert_to_dto(dto_type: type[DTO], id_field: str | None = None) -> 
         def inner_wrapper(
             dto_type: type[DTO], dct: dict[str, Any], to_dto: bool = False,
         ) -> dict[str, Any] | DTO:
-            data = {}
+            data: dict[str, Any] = {}
             type_hints = _get_dto_type_hints(dto_type, get_types=False)
             for key, value in dct.items():
                 if is_dataclass(type_hints.get(key, None)):
@@ -246,9 +269,9 @@ def _has_dataclass_fields(dto_type: type[DTO]) -> bool:
 
 
 def _get_dataclass_fields(
-    dto_type: type[DTO],
+    dto_type: type[Dataclass],
     only_dto_types: bool = False,
-) -> dict[str, type[DTO]]:
+) -> dict[str, type[Dataclass] | Dataclass]:
     """Returns dictionary of fields which has dataclasses as type hints or as
     arguments.
 
@@ -268,16 +291,27 @@ def _get_dataclass_fields(
     return dataclass_fields
 
 
+def _get_collection_from_object(instance: Any) -> AsyncIOMotorCollection | Collection[Any]:
+    """Tries to get collection from object attributes."""
+    col: Any | None = getattr(instance, MONGOREPO_COLLECTION, None)
+    if not isinstance(col, (AsyncIOMotorCollection, Collection)):
+        raise exceptions.MongorepoException(
+            message='Invalid collection type: expected=AsyncIOMotorCollection | Collection, '
+            f'got={col.__class__.__name__}',
+        )
+    return col
+
+
 def _validate_method_annotations(method: Callable) -> None:
     if not method.__annotations__:
-        raise exceptions.MongoRepoException(message=f'No type hints for {method.__name__}()')
+        raise exceptions.MongorepoException(message=f'No type hints for {method.__name__}()')
     if 'return' not in method.__annotations__:
-        raise exceptions.MongoRepoException(
+        raise exceptions.MongorepoException(
             message=f'return type is not specified for "{method}" method',
         )
     params = inspect.signature(method).parameters
     if list(params)[0] != 'self':
-        raise exceptions.MongoRepoException(
+        raise exceptions.MongorepoException(
             message=f'First parameter must be self: "{method}" method',
         )
     for param, type_hint in params.items():
@@ -286,11 +320,11 @@ def _validate_method_annotations(method: Callable) -> None:
         if type_hint == inspect._empty and type_hint.kind not in [
             inspect.Parameter.VAR_KEYWORD, inspect.Parameter.VAR_POSITIONAL,
         ]:
-            raise exceptions.MongoRepoException(
+            raise exceptions.MongorepoException(
                 message=f'Parameter "{param}" does not have type hint',
             )
         if type_hint is Any:
-            raise exceptions.MongoRepoException(
+            raise exceptions.MongorepoException(
                 message=f'Parameter "{param}" cannot be typing.Any, use specific type',
             )
 
@@ -304,11 +338,11 @@ def _replace_typevars(func: Callable, typevar: Any) -> None:
 def _check_valid_field_type(field_name: str, dto_type: type[DTO], data_type: type) -> None:
     dto_fields = _get_dto_type_hints(dto_type)
     if field_name not in dto_fields:
-        raise exceptions.MongoRepoException(
+        raise exceptions.MongorepoException(
             message=f'{dto_type} does not have field "{field_name}"',
         )
     if dto_fields[field_name] is not data_type:
-        raise exceptions.MongoRepoException(
+        raise exceptions.MongorepoException(
             message=f'Invalid type of the field "{field_name}", expected: {data_type}',
         )
 

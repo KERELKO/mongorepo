@@ -4,8 +4,10 @@ from typing import Any, Generic, Iterable
 from pymongo.collection import Collection
 
 from mongorepo import exceptions
-from mongorepo._base import DTO, Index
+from mongorepo._base import DTO, Index, MetaAttributes
+from mongorepo._collections import COLLECTION_PROVIDER, CollectionProvider
 from mongorepo._methods import _add_method
+from mongorepo._methods.impl import AddMethod, GetMethod
 from mongorepo.utils import (
     _create_index,
     _get_converter,
@@ -14,7 +16,7 @@ from mongorepo.utils import (
 )
 
 
-class BaseMongoRepository(Generic[DTO]):
+class _BaseMongoRepository(Generic[DTO]):
     """
     ## Base MongoDB repository class
     #### Extends child classes with various methods:
@@ -44,7 +46,9 @@ class BaseMongoRepository(Generic[DTO]):
         setattr(instance, 'dto_type', dto_type)
 
         try:
-            meta = _get_meta_attributes(cls, raise_exceptions=False)
+            meta: MetaAttributes[Collection] | None = _get_meta_attributes(
+                cls, raise_exceptions=False,
+            )
         except exceptions.NoMetaException:
             meta = None
 
@@ -80,7 +84,7 @@ class BaseMongoRepository(Generic[DTO]):
         try:
             meta = _get_meta_attributes(cls, raise_exceptions=False)
         except exceptions.NoMetaException:
-            raise exceptions.MongoRepoException(
+            raise exceptions.MongorepoException(
                 message='"Meta" class with "collecton" was not defined in the class',
             )
         if meta['collection'] is None:
@@ -118,3 +122,69 @@ class BaseMongoRepository(Generic[DTO]):
 
     def add(self, dto: DTO) -> DTO:
         return self.__add(self, dto)
+
+
+class BaseMongoRepository(Generic[DTO]):
+    """
+    ## Base MongoDB repository class
+    #### Extends child classes with various methods:
+
+    ```
+    add(self, dto: DTO) -> DTO
+    get(self, **filters) -> DTO | None
+    get_all(self, **filters) -> Iterable[DTO]
+    update(self, dto: DTO, **filters) -> DTO
+    delete(self, **filters) -> bool
+    ```
+
+    #### Provide DTO type in type hints, example:
+
+    ```
+    class DummyMongoRepository(BaseMongoRepository[UserDTO]):
+        ...
+    ```
+
+    * If you want to create an index use `mongorepo.Index`
+      or just a name of the field to put index on
+    """
+
+    def __new__(cls, *args, **kwargs) -> 'BaseMongoRepository[DTO]':
+        instance = super().__new__(cls)
+        dto_type = _get_dto_from_origin(cls)
+
+        try:
+            meta: MetaAttributes[Collection] | None = _get_meta_attributes(cls)
+        except exceptions.NoMetaException:
+            meta = None
+
+        id_field: str | None = meta['id_field'] if meta else None
+        collection: Collection | None = meta['collection'] if meta else None
+        index: Index | str | None = meta['index'] if meta else None
+
+        if not hasattr(cls, COLLECTION_PROVIDER):
+            setattr(cls, COLLECTION_PROVIDER, CollectionProvider(collection))
+
+        if index is not None:
+            if collection is None:
+                raise exceptions.NoCollectionException(
+                    message='Index can be created only if collection provided in Meta class',
+                )
+            _create_index(index, collection=collection)
+        setattr(
+            cls,
+            '_mongorepo_add',
+            AddMethod(dto_type, owner=cls, id_field=id_field),  # type: ignore
+        )
+        setattr(
+            cls,
+            '_mongorepo_get',
+            GetMethod(dto_type, owner=cls, id_field=id_field),  # type: ignore
+        )
+
+        return instance
+
+    def get(self, **filters: Any) -> DTO | None:
+        return self._mongorepo_get(**filters)  # type: ignore
+
+    def add(self, dto: DTO) -> DTO:
+        return self._mongorepo_add(dto)  # type: ignore

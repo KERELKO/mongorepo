@@ -1,17 +1,26 @@
 from dataclasses import Field, dataclass
 from enum import Enum, StrEnum
-from typing import Any, ClassVar, Literal, Protocol, TypeVar
+from typing import (
+    Any,
+    ClassVar,
+    Generic,
+    Literal,
+    Protocol,
+    TypedDict,
+    TypeVar,
+)
 
 from motor.motor_asyncio import AsyncIOMotorCollection
 from pymongo.collection import Collection
 
 
-class DataclassInstance(Protocol):
+class Dataclass(Protocol):
     __dataclass_fields__: ClassVar[dict[str, Field[Any]]]
 
 
-DTO = TypeVar('DTO', bound=DataclassInstance)
-_DTOField = TypeVar('_DTOField', bound=DataclassInstance)
+DTO = TypeVar('DTO', bound=Dataclass)
+_DTOField = TypeVar('_DTOField', bound=Dataclass)
+CollectionType = TypeVar('CollectionType', AsyncIOMotorCollection, Collection[Any])
 
 
 @dataclass(repr=False, slots=True, eq=False)
@@ -50,6 +59,15 @@ class MethodDeps:
     update_integer_weight: int | None = None
 
 
+class MetaAttributes(Generic[CollectionType], TypedDict, total=True):
+    dto: type[Dataclass] | None
+    collection: CollectionType | None
+    index: str | Index | None
+    method_access: Access | None
+    substitute: dict[str, Any] | None
+    id_field: str | None
+
+
 class MethodAction(StrEnum):
     GET = 'get'
     GET_LIST = 'get_list'
@@ -66,6 +84,16 @@ class MethodAction(StrEnum):
     LIST_REMOVE = '__remove'
     LIST_POP = '__pop'
     LIST_FIELD_VALUES = '__list'
+
+    def as_mongo_action(self) -> str:
+        match self:
+            case self.LIST_APPEND:
+                return '$push'
+            case self.LIST_REMOVE:
+                return '$pull'
+            case self.LIST_POP:
+                return '$pop'
+        return self.value
 
 
 class ParameterEnum(StrEnum):
@@ -87,3 +115,5 @@ LParameter = Literal[
     ParameterEnum.WEIGHT,
     ParameterEnum.FILTER_ALIAS,
 ]
+
+MONGOREPO_COLLECTION = '_mongorepo_collection'

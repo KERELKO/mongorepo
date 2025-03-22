@@ -80,16 +80,7 @@ def mongo_repository(
         return _handle_mongo_repository(
             cls=cls,
             add=add,
-            update=update,
-            get_all=get_all,
             get=get,
-            get_list=get_list,
-            delete=delete,
-            add_batch=add_batch,
-            integer_fields=integer_fields,
-            array_fields=array_fields,
-            method_access=method_access,
-            __methods__=__methods__,
         )
 
     if cls is None:

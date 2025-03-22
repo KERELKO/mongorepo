@@ -1,6 +1,11 @@
 import asyncio
+from typing import Any, cast
 
+from pymongo.collection import Collection
+
+from mongorepo import exceptions
 from mongorepo._base import Access
+from mongorepo._methods.impl import AddMethod, GetMethod
 from mongorepo._setters import (
     _set_array_fields_methods,
     _set_crud_methods,
@@ -11,10 +16,36 @@ from mongorepo.utils import (
     _create_index,
     _get_meta_attributes,
     _set__methods__,
+    get_prefix,
+    raise_exc,
 )
 
+from ._collections import COLLECTION_PROVIDER, CollectionProvider
 
-def _handle_mongo_repository(
+
+def _handle_mongo_repository(cls, add: bool, get: bool) -> type:
+    attributes = _get_meta_attributes(cls)
+
+    collection: Collection[Any] | None = cast(Collection, attributes['collection'])
+    dto = attributes['dto'] or raise_exc(exceptions.NoDTOTypeException)
+    index = attributes['index']
+    id_field = attributes['id_field']
+    prefix = get_prefix(attributes['method_access'])
+
+    if not hasattr(cls, COLLECTION_PROVIDER):
+        setattr(cls, COLLECTION_PROVIDER, CollectionProvider(collection))
+
+    if index is not None and collection is not None:
+        _create_index(index, collection)
+
+    if add:
+        setattr(cls, f'{prefix}add', AddMethod(dto, owner=cls, id_field=id_field))
+    if get:
+        setattr(cls, f'{prefix}get', GetMethod(dto, owner=cls, id_field=id_field))
+    return cls
+
+
+def __handle_mongo_repository(
     cls,
     add: bool,
     get: bool,
@@ -30,7 +61,7 @@ def _handle_mongo_repository(
 ) -> type:
     """Calls for functions that set different methods and attributes to the
     class."""
-    attributes = _get_meta_attributes(cls, raise_exceptions=False)
+    attributes = _get_meta_attributes(cls)
     collection = attributes['collection']
     index = attributes['index']
 
