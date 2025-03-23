@@ -14,7 +14,7 @@ def mongo_repository(
     update: bool = True,
     delete: bool = True,
     integer_fields: Iterable[str] | None = None,
-    array_fields: Iterable[str] | None = None,
+    list_fields: Iterable[str] | None = None,
     method_access: Access | None = None,
     __methods__: bool = False,
 ) -> type | Callable:
@@ -31,7 +31,7 @@ def mongo_repository(
     * You can use `method_access` to make all methods
     private, protected or public (use `mongorepo.Access`)
 
-    * Add `array_fields` to params to extend repository with methods
+    * Add `list_fields` to params to extend repository with methods
     that related to list fields in your dto type
 
     {field}__pop, {field}__list, {field}__remove, {field__append}
@@ -80,8 +80,16 @@ def mongo_repository(
         return _handle_mongo_repository(
             cls=cls,
             add=add,
+            add_batch=add_batch,
+            get_all=get_all,
+            get_list=get_list,
+            delete=delete,
+            update=update,
             get=get,
-            array_fields=array_fields,
+            integer_fields=integer_fields,
+            list_fields=list_fields,
+            method_access=method_access,
+            __methods__=__methods__,
         )
 
     if cls is None:

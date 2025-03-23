@@ -4,7 +4,6 @@ from mongorepo import implements
 from mongorepo.implements.methods import (
     AddBatchMethod,
     AddMethod,
-    DecrementIntegerFieldMethod,
     DeleteMethod,
     GetAllMethod,
     GetListMethod,
@@ -25,25 +24,29 @@ def test_implements_crud_with_specific_method_protocol():
 
     with in_collection(NestedListDTO) as c:
         class IRepo:
-            def get(self, title: str) -> NestedListDTO:
+            def get(self, title: str) -> NestedListDTO:  # type: ignore[empty-body]
                 ...
 
-            def add(self, model: NestedListDTO) -> NestedListDTO:
+            def add(self, model: NestedListDTO) -> NestedListDTO:  # type: ignore[empty-body]
                 ...
 
-            def update(self, model: NestedListDTO, title: str) -> NestedListDTO:
+            def update(  # type: ignore[empty-body]
+                self, model: NestedListDTO, title: str,
+            ) -> NestedListDTO:
                 ...
 
-            def delete(self, title: str) -> bool:
+            def delete(self, title: str) -> bool:  # type: ignore[empty-body]
                 ...
 
-            def add_batch(self, models: list[NestedListDTO]) -> None:
+            def add_batch(self, models: list[NestedListDTO]) -> None:  # type: ignore[empty-body]
                 ...
 
-            def get_all_by_title(self, title: str) -> Iterable[NestedListDTO]:
+            def get_all_by_title(  # type: ignore[empty-body]
+                self, title: str,
+            ) -> Iterable[NestedListDTO]:
                 ...
 
-            def get_model_list(
+            def get_model_list(  # type: ignore[empty-body]
                 self, title: str, limit: int, offset: int = 20,
             ) -> list[NestedListDTO]:
                 ...
@@ -105,12 +108,12 @@ def test_implements_list_methods_with_specific_method_protocol():
             ...
 
         # Change order of offset and remove its default value
-        def get_simple_dto_list_by_title(
+        def get_simple_dto_list_by_title(  # type: ignore[empty-body]
             self, offset: int, title: str, limit: int = 20,
         ) -> list[SimpleDTO]:
             ...
 
-        def pop_dto_by_title(self, title: str) -> SimpleDTO:
+        def pop_dto_by_title(self, title: str) -> SimpleDTO:  # type: ignore[empty-body]
             ...
 
         # Set dto as a second parameter
@@ -187,8 +190,8 @@ def test_implements_integer_methods_with_specific_method_protocol() -> None:
             IncrementIntegerFieldMethod(
                 IRepo.update_year_with_weight, field_name='year', filters=['id'], weight='weight',
             ),
-            DecrementIntegerFieldMethod(
-                IRepo.update_year, field_name='year', filters=['id'],
+            IncrementIntegerFieldMethod(
+                IRepo.update_year, field_name='year', filters=['id'], default_weight_value=-1,
             ),
         )
         class MongoRepo:

@@ -4,9 +4,15 @@ from dataclasses import dataclass
 from typing import Generic, Protocol
 
 from mongorepo import DTO, Access
+from mongorepo._collections import use_collection
 from mongorepo.classes import BaseMongoRepository
 from mongorepo.decorators import mongo_repository
-from tests.common import DTOWithID, collection_for_dto_with_id, mongo_client
+from tests.common import (
+    DTOWithID,
+    collection_for_dto_with_id,
+    in_collection,
+    mongo_client,
+)
 
 
 def test_decorator_with_abstract_class():
@@ -97,18 +103,16 @@ def test_base_mongo_class_with_abstract_class():
                 raise NoProductAvailable
             return product
 
-    collection = mongo_client()['product_db']['product']
-    repo = MongoProductRepository(collection=collection)
+    with in_collection(Product) as coll:
+        repo = use_collection(coll)(MongoProductRepository)()
 
-    product = Product(title='phone', price=499, description='the best phone')
-    repo.add(dto=product)
+        product = Product(title='phone', price=499, description='the best phone')
+        repo.add(dto=product)
 
-    resolved_product: Product = repo.get(title='phone', price=499)
+        resolved_product: Product = repo.get(title='phone', price=499)
 
-    assert resolved_product.title == 'phone' and product.price == 499
-    assert resolved_product.description == 'the best phone'
-
-    collection.drop()
+        assert resolved_product.title == 'phone' and product.price == 499
+        assert resolved_product.description == 'the best phone'
 
 
 def test_decorator_with_protocol_and_dto_with_id():

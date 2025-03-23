@@ -1,15 +1,14 @@
-import pytest
-
 from mongorepo import implements
+from mongorepo.implements.methods import (
+    AddMethod,
+    ListAppendMethod,
+    ListGetFieldValuesMethod,
+    ListPopMethod,
+    ListRemoveMethod,
+)
 from tests.common import NestedListDTO, SimpleDTO, custom_collection
 
 
-@pytest.mark.skip(
-    reason=(
-        'To pass this test need to use `Method` class'
-        'Already tested in `test_implements_with_method_cls.py`'
-    ),
-)
 def test_can_change_order_of_repo_parameters_and_passed_arguments():
 
     c = custom_collection(NestedListDTO)
@@ -19,12 +18,12 @@ def test_can_change_order_of_repo_parameters_and_passed_arguments():
             ...
 
         # Change order of offset and remove its default value
-        def get_simple_dto_list_by_title(
+        def get_simple_dto_list_by_title(  # type: ignore[empty-body]
             self, offset: int, title: str, limit: int = 20,
         ) -> list[SimpleDTO]:
             ...
 
-        def pop_dto_by_title(self, title: str) -> SimpleDTO:
+        def pop_dto_by_title(self, title: str) -> SimpleDTO:  # type: ignore[empty-body]
             ...
 
         # Set dto as a second parameter
@@ -36,11 +35,21 @@ def test_can_change_order_of_repo_parameters_and_passed_arguments():
 
     @implements(
         IRepo,
-        add=IRepo.add,
-        dtos__list=IRepo.get_simple_dto_list_by_title,
-        dtos__pop=IRepo.pop_dto_by_title,
-        dtos__append=IRepo.append_dto_by_title,
-        dtos__remove=IRepo.remove_dto_by_title,
+        AddMethod(IRepo.add, dto='dto'),
+        ListGetFieldValuesMethod(
+            IRepo.get_simple_dto_list_by_title,
+            field_name='dtos',
+            filters=['title'],
+            offset='offset',
+            limit='limit',
+        ),
+        ListPopMethod(IRepo.pop_dto_by_title, field_name='dtos', filters=['title']),
+        ListAppendMethod(
+            IRepo.append_dto_by_title, filters=['title'], field_name='dtos', value='dto',
+        ),
+        ListRemoveMethod(
+            IRepo.remove_dto_by_title, value='dto', field_name='dtos', filters=['title'],
+        ),
     )
     class MongoRepo:
         class Meta:

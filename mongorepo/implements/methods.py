@@ -2,12 +2,6 @@ import inspect
 from typing import Any, Callable, Protocol
 
 from mongorepo._base import LParameter, MethodAction, ParameterEnum
-from mongorepo._methods import CRUD_METHODS, INTEGER_METHODS, LIST_METHODS
-from mongorepo.asyncio._methods import (
-    CRUD_METHODS_ASYNC,
-    INTEGER_METHODS_ASYNC,
-    LIST_METHODS_ASYNC,
-)
 
 
 class FieldAlias:
@@ -34,7 +28,7 @@ class FieldAlias:
 
     @implements(
         UserRepository,
-        #                                                             User.name -> alias
+        #                                                      User.name = username
         GetMethod(UserRepository.get_user, filters=[ FieldAlias('name', 'username') ])
     )
     class MongoUserRepository:
@@ -97,7 +91,6 @@ class SpecificMethod(Protocol):
         mongorepo.implements.methods.DeleteMethod
 
         mongorepo.implements.methods.IncrementIntegerFieldMethod
-        mongorepo.implements.methods.DecrementintegerFieldMethod
 
         mongorepo.implements.methods.ListAppendMethod
         mongorepo.implements.methods.ListPopMethod
@@ -105,7 +98,6 @@ class SpecificMethod(Protocol):
         mongorepo.implements.methods.ListGetFieldValuesMethod
 
     """
-    mongorepo_method: Callable
     name: str
     source: Callable
     params: dict[str, LParameter]
@@ -181,9 +173,6 @@ class GetMethod(Method, _ManageMethodFiltersMixin):
     def __init__(self, source: Callable, filters: list[FieldAlias | str]) -> None:
         super().__init__(source, **self.manage_filters(filters))  # type: ignore
         self.action = MethodAction.GET
-        self.mongorepo_method = (
-            CRUD_METHODS_ASYNC[self.action] if self.is_async else CRUD_METHODS[self.action]
-        )
 
 
 class AddMethod(Method):
@@ -217,9 +206,6 @@ class AddMethod(Method):
     def __init__(self, source: Callable, dto: str) -> None:
         super().__init__(source, **{dto: 'dto'})  # type: ignore
         self.action = MethodAction.ADD
-        self.mongorepo_method = (
-            CRUD_METHODS_ASYNC[self.action] if self.is_async else CRUD_METHODS[self.action]
-        )
 
 
 class UpdateMethod(Method, _ManageMethodFiltersMixin):
@@ -282,9 +268,6 @@ class UpdateMethod(Method, _ManageMethodFiltersMixin):
             source, **{dto: 'dto'}, **self.manage_filters(filters),  # type: ignore
         )
         self.action = MethodAction.UPDATE
-        self.mongorepo_method = (
-            CRUD_METHODS_ASYNC[self.action] if self.is_async else CRUD_METHODS[self.action]
-        )
 
 
 class DeleteMethod(Method, _ManageMethodFiltersMixin):
@@ -313,9 +296,6 @@ class DeleteMethod(Method, _ManageMethodFiltersMixin):
     def __init__(self, source: Callable, filters: list[FieldAlias | str]) -> None:
         super().__init__(source, **self.manage_filters(filters))
         self.action = MethodAction.DELETE
-        self.mongorepo_method = (
-            CRUD_METHODS_ASYNC[self.action] if self.is_async else CRUD_METHODS[self.action]
-        )
 
 
 class GetListMethod(Method, _ManageMethodFiltersMixin):
@@ -357,9 +337,6 @@ class GetListMethod(Method, _ManageMethodFiltersMixin):
             **self.manage_filters(filters),
         )
         self.action = MethodAction.GET_LIST
-        self.mongorepo_method = (
-            CRUD_METHODS_ASYNC[self.action] if self.is_async else CRUD_METHODS[self.action]
-        )
 
 
 class GetAllMethod(Method, _ManageMethodFiltersMixin):
@@ -392,9 +369,6 @@ class GetAllMethod(Method, _ManageMethodFiltersMixin):
     def __init__(self, source: Callable, filters: list[FieldAlias | str]) -> None:
         super().__init__(source, **self.manage_filters(filters))
         self.action = MethodAction.GET_ALL
-        self.mongorepo_method = (
-            CRUD_METHODS_ASYNC[self.action] if self.is_async else CRUD_METHODS[self.action]
-        )
 
 
 class AddBatchMethod(Method):
@@ -429,9 +403,6 @@ class AddBatchMethod(Method):
     def __init__(self, source: Callable, dto_list: str) -> None:
         super().__init__(source, **{dto_list: 'dto_list'})  # type: ignore
         self.action = MethodAction.ADD_BATCH
-        self.mongorepo_method = (
-            CRUD_METHODS_ASYNC[self.action] if self.is_async else CRUD_METHODS[self.action]
-        )
 
 
 class ListAppendMethod(Method, _ManageMethodFiltersMixin):
@@ -487,9 +458,6 @@ class ListAppendMethod(Method, _ManageMethodFiltersMixin):
         )
         self.field_name = field_name
         self.action = MethodAction.LIST_APPEND
-        self.mongorepo_method = (
-            LIST_METHODS_ASYNC[self.action] if self.is_async else LIST_METHODS[self.action]
-        )
 
 
 class ListPopMethod(Method, _ManageMethodFiltersMixin):
@@ -544,9 +512,6 @@ class ListPopMethod(Method, _ManageMethodFiltersMixin):
         )
         self.field_name = field_name
         self.action = MethodAction.LIST_POP
-        self.mongorepo_method = (
-            LIST_METHODS_ASYNC[self.action] if self.is_async else LIST_METHODS[self.action]
-        )
 
 
 class ListRemoveMethod(Method, _ManageMethodFiltersMixin):
@@ -605,9 +570,6 @@ class ListRemoveMethod(Method, _ManageMethodFiltersMixin):
         )
         self.field_name = field_name
         self.action = MethodAction.LIST_REMOVE
-        self.mongorepo_method = (
-            LIST_METHODS_ASYNC[self.action] if self.is_async else LIST_METHODS[self.action]
-        )
 
 
 class ListGetFieldValuesMethod(Method, _ManageMethodFiltersMixin):
@@ -678,9 +640,6 @@ class ListGetFieldValuesMethod(Method, _ManageMethodFiltersMixin):
         )
         self.field_name = field_name
         self.action = MethodAction.LIST_FIELD_VALUES
-        self.mongorepo_method = (
-            LIST_METHODS_ASYNC[self.action] if self.is_async else LIST_METHODS[self.action]
-        )
 
 
 class IncrementIntegerFieldMethod(Method, _ManageMethodFiltersMixin):
@@ -729,6 +688,7 @@ class IncrementIntegerFieldMethod(Method, _ManageMethodFiltersMixin):
         field_name: str,
         filters: list[FieldAlias | str],
         weight: str | None = None,
+        default_weight_value: int = 1,
     ) -> None:
         params = {} if weight is None else {weight: 'weight'}
         super().__init__(
@@ -736,67 +696,4 @@ class IncrementIntegerFieldMethod(Method, _ManageMethodFiltersMixin):
         )
         self.action = MethodAction.INTEGER_INCREMENT
         self.field_name = field_name
-        self.mongorepo_method = (
-            INTEGER_METHODS_ASYNC[self.action] if self.is_async else INTEGER_METHODS[self.action]
-        )
-
-
-class DecrementIntegerFieldMethod(Method, _ManageMethodFiltersMixin):
-    """
-    ### Class that represents mongorepo `integer_decrement` method
-    * supports `async`, `await` syntax
-    ## Usage example
-
-    ```
-
-    @dataclass
-    class Record:
-        id: str
-        views: int
-
-    class RecordRepo(typing.Protocol):
-        # this method can be also asynchronous
-        def decrement_views(
-            self, id: str, weight: int = 5,
-        ) -> None:  # or raises mongorepo.exceptions.NotFoundException
-            ...
-
-    @implements(
-        RecordRepo,
-        DecrementIntegerFieldMethod(
-            RecordRepo.decrement_views,
-            field_name='views',  # Record.views
-            filters=['id'],
-            weight='weight',
-        )
-    )
-    class MongoRepo:
-        class Meta:
-            dto = Record
-            collection = mongo_client().records.record_collection
-
-    repo = MongoRepo()
-    repo.add(Record(id='1', views=1000))
-    repo.decrement_views(id='1')
-    print(repo.get(id='1'))  # Record(id='1', views=995)
-    repo.decrement_views(id='1', weight=95)
-    print(repo.get(id='1'))  # Record(id='1', views=900)
-    ```
-    """
-
-    def __init__(
-        self,
-        source: Callable,
-        field_name: str,
-        filters: list[FieldAlias | str],
-        weight: str | None = None,
-    ) -> None:
-        params = {} if weight is None else {weight: 'weight'}
-        super().__init__(
-            source, **params, **self.manage_filters(filters),  # type: ignore
-        )
-        self.action = MethodAction.INTEGER_DECREMENT
-        self.field_name = field_name
-        self.mongorepo_method = (
-            INTEGER_METHODS_ASYNC[self.action] if self.is_async else INTEGER_METHODS[self.action]
-        )
+        self.integer_weight = default_weight_value

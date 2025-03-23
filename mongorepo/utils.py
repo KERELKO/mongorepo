@@ -2,15 +2,7 @@ import inspect
 import warnings
 from dataclasses import is_dataclass
 from types import UnionType
-from typing import (
-    Any,
-    Callable,
-    NoReturn,
-    Optional,
-    TypeVar,
-    get_args,
-    get_origin,
-)
+from typing import Any, Callable, NoReturn, Optional, get_args, get_origin
 
 import pymongo
 from motor.motor_asyncio import AsyncIOMotorCollection
@@ -329,12 +321,6 @@ def _validate_method_annotations(method: Callable) -> None:
             raise exceptions.MongorepoException(
                 message=f'Parameter "{param}" cannot be typing.Any, use specific type',
             )
-
-
-def _replace_typevars(func: Callable, typevar: Any) -> None:
-    for param, anno in func.__annotations__.items():
-        if isinstance(anno, TypeVar):
-            func.__annotations__[param] = typevar
 
 
 def _check_valid_field_type(field_name: str, dto_type: type[DTO], data_type: type) -> None:

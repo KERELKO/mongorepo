@@ -21,7 +21,7 @@ def test_all_methods_with_inherited_repo():
         unum = random.randint(1, 4567)
         repo = TestMongoRepository()
 
-        new_dto: SimpleDTO = repo.add(SimpleDTO(x='hey', y=num))
+        new_dto = repo.add(SimpleDTO(x='hey', y=num))
         assert new_dto.x == 'hey'
 
         updated_dto = repo.update(SimpleDTO(x='hey all!', y=unum), y=num)
@@ -32,7 +32,7 @@ def test_all_methods_with_inherited_repo():
             assert selected_dto.x == 'hey all!'
             break
 
-        dto: SimpleDTO | None = repo.get(y=unum)
+        dto = repo.get(y=unum)
         assert dto is not None
 
         is_deleted = repo.delete(y=unum)
@@ -40,6 +40,16 @@ def test_all_methods_with_inherited_repo():
 
         dto = repo.get(y=unum)
         assert dto is None
+
+        batch = [SimpleDTO(x='1', y=1), SimpleDTO(x='2', y=2), SimpleDTO(x='3', y=3)]
+        repo.add_batch(batch)
+
+        get_list = repo.get_list()
+        assert len(get_list) == 3
+
+        added = [1, 2, 3]
+        for dto in repo.get_all():
+            assert dto.y in added
 
 
 def test_can_get_dto_with_id():
@@ -52,7 +62,7 @@ def test_can_get_dto_with_id():
         num = random.randint(1, 12346)
         repo = TestMongoRepository()
 
-        new_dto: DTOWithID = repo.add(DTOWithID(x='dto with id', y=num))
+        new_dto = repo.add(DTOWithID(x='dto with id', y=num))
         assert new_dto.x == 'dto with id'
 
         dto: DTOWithID = repo.get(y=num)  # type: ignore

@@ -51,13 +51,18 @@ def use_collection[T: type](
     useful for dynamic look up of collection
 
     ```
+    # 1. Valid
+    # @use_collection(my_collection)
     @mongorepo.repository(add=True, get=True)
+    # 2. Valid
+    # @use_collection(my_collection)
     class Repository:
         class Meta:
             dto = SimpleDTO
 
     def provide_repository() -> Repository:
-        return use_collection(coll)(Repository)()
+        # 3. Valid
+        return use_collection(my_collection)(Repository)()
 
     repo = provide_repository()
     ```

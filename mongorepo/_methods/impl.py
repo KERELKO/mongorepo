@@ -109,7 +109,6 @@ class GetAllMethod[T: Dataclass]:
         self.session = session
         self.modifiers_before = [m for m in modifiers if isinstance(m, ModifierBefore)]
         self.converter = converter or _get_converter(dto_type, id_field)
-        self.id_field = id_field
         self.kwargs = kwargs
 
     def __call__(self, **filters: t.Any) -> t.Generator[T, None, None]:
@@ -140,7 +139,6 @@ class GetListMethod[T: Dataclass]:
         self.modifiers_after = [m for m in modifiers if isinstance(m, ModifierAfter)]
         self.modifiers_before = [m for m in modifiers if isinstance(m, ModifierBefore)]
         self.converter = converter or _get_converter(dto_type, id_field)
-        self.id_field = id_field
         self.kwargs = kwargs
 
     def __call__(self, offset: int = 0, limit: int = 20, **filters: t.Any) -> list[T]:
@@ -199,9 +197,7 @@ class DeleteMethod[T: Dataclass]:
         dto_type: type[T],
         owner: HasCollectionProvider,
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
-        converter: t.Callable[[type[T], dict[str, t.Any]], T] | None = None,
         session: ClientSession | None = None,
-        id_field: str | None = None,
         **kwargs,
     ) -> None:
         self.dto_type = dto_type
@@ -209,8 +205,6 @@ class DeleteMethod[T: Dataclass]:
         self.session = session
         self.modifiers_after = [m for m in modifiers if isinstance(m, ModifierAfter)]
         self.modifiers_before = [m for m in modifiers if isinstance(m, ModifierBefore)]
-        self.converter = converter or _get_converter(dto_type, id_field)
-        self.id_field = id_field
         self.kwargs = kwargs
 
     def __call__(self, **filters: t.Any) -> bool:
@@ -219,7 +213,7 @@ class DeleteMethod[T: Dataclass]:
         for modifier_before in self.modifiers_before:
             modifier_before.modify(**filters)
 
-        deleted = collection.find_one_and_delete(filters)
+        deleted = collection.find_one_and_delete(filters, session=self.session)
 
         for modifier_after in self.modifiers_after:
             modifier_after.modify(deleted)
@@ -244,7 +238,6 @@ class UpdateMethod[T: Dataclass]:
         self.modifiers_after = [m for m in modifiers if isinstance(m, ModifierAfter)]
         self.modifiers_before = [m for m in modifiers if isinstance(m, ModifierBefore)]
         self.converter = converter or _get_converter(dto_type, id_field)
-        self.id_field = id_field
         self.kwargs = kwargs
 
     def __call__(self, dto: T, **filters: t.Any) -> T | None:
@@ -268,7 +261,7 @@ class UpdateMethod[T: Dataclass]:
         return result
 
 
-class UpdateArrayFieldMethod[T: Dataclass]:
+class UpdateListFieldMethod[T: Dataclass]:
     def __init__(
         self,
         dto_type: type[T],
@@ -276,7 +269,6 @@ class UpdateArrayFieldMethod[T: Dataclass]:
         field_name: str,
         action: t.Literal['$push', '$pull'],
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
-        converter: t.Callable[[type[T], dict[str, t.Any]], T] | None = None,
         session: ClientSession | None = None,
         id_field: str | None = None,
         **kwargs,
@@ -291,7 +283,6 @@ class UpdateArrayFieldMethod[T: Dataclass]:
         self.session = session
         self.modifiers_after = [m for m in modifiers if isinstance(m, ModifierAfter)]
         self.modifiers_before = [m for m in modifiers if isinstance(m, ModifierBefore)]
-        self.converter = converter or _get_converter(dto_type, id_field)
         self.id_field = id_field
         self.kwargs = kwargs
 
@@ -313,7 +304,7 @@ class UpdateArrayFieldMethod[T: Dataclass]:
         return res
 
 
-class AppendArrayMethod[T: Dataclass](UpdateArrayFieldMethod[T]):
+class AppendListMethod[T: Dataclass](UpdateListFieldMethod[T]):
     def __init__(
         self,
         dto_type: type[T],
@@ -339,7 +330,7 @@ class AppendArrayMethod[T: Dataclass](UpdateArrayFieldMethod[T]):
         return super().__call__(value, **filters)
 
 
-class RemoveArrayMethod[T: Dataclass](UpdateArrayFieldMethod[T]):
+class RemoveListMethod[T: Dataclass](UpdateListFieldMethod[T]):
     def __init__(
         self,
         dto_type: type[T],
@@ -365,7 +356,7 @@ class RemoveArrayMethod[T: Dataclass](UpdateArrayFieldMethod[T]):
         return super().__call__(value, **filters)
 
 
-class GetArrayValuesMethod[T: Dataclass]:
+class GetListValuesMethod[T: Dataclass]:
     def __init__(
         self,
         dto_type: type[T],
@@ -414,7 +405,7 @@ class GetArrayValuesMethod[T: Dataclass]:
         return result
 
 
-class PopArrayMethod[T: Dataclass]:
+class PopListMethod[T: Dataclass]:
     def __init__(
         self,
         dto_type: type[T],
@@ -454,6 +445,43 @@ class PopArrayMethod[T: Dataclass]:
             )
         else:
             result = document[self.field_name][-1]
+
+        for modifier_aftert in self.modifiers_after:
+            modifier_aftert.modify(result)
+
+        return result
+
+
+class IncrementIntegerFieldMethod[T: Dataclass]:
+    def __init__(
+        self,
+        dto_type: type[T],
+        owner: HasCollectionProvider,
+        field_name: str,
+        weight: int = 1,
+        modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
+        session: ClientSession | None = None,
+        id_field: str | None = None,
+        **kwargs,
+    ) -> None:
+        self.field_name = field_name
+        self.owner = owner
+        self.weight = weight
+        self.session = session
+        self.modifiers_after = [m for m in modifiers if isinstance(m, ModifierAfter)]
+        self.modifiers_before = [m for m in modifiers if isinstance(m, ModifierBefore)]
+        self.kwargs = kwargs
+
+    def __call__(self, weight: int | None = None, **filters) -> UpdateResult:
+        collection: Collection = self.owner._mongorepo_collection_provider
+
+        for modifier_before in self.modifiers_before:
+            modifier_before.modify(**filters)
+
+        w = weight if weight is not None else self.weight
+        result = collection.update_one(
+            filter=filters, update={'$inc': {self.field_name: w}},
+        )
 
         for modifier_aftert in self.modifiers_after:
             modifier_aftert.modify(result)

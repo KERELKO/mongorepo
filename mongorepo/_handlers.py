@@ -1,4 +1,3 @@
-import asyncio
 from typing import Any, Iterable, cast
 
 from pymongo.collection import Collection
@@ -6,21 +5,24 @@ from pymongo.collection import Collection
 from mongorepo import exceptions
 from mongorepo._base import Access
 from mongorepo._methods.impl import (
+    AddBatchMethod,
     AddMethod,
+    AppendListMethod,
+    DeleteMethod,
+    GetAllMethod,
+    GetListMethod,
+    GetListValuesMethod,
     GetMethod,
-    UpdateArrayFieldMethod,
+    IncrementIntegerFieldMethod,
+    PopListMethod,
+    RemoveListMethod,
+    UpdateMethod,
 )
-from mongorepo._setters import (
-    _set_array_fields_methods,
-    _set_crud_methods,
-    _set_integer_fields_methods,
-)
-from mongorepo.asyncio.utils import _create_index_async
 from mongorepo.utils import (
     _check_valid_field_type,
     _create_index,
+    _get_converter,
     _get_meta_attributes,
-    _set__methods__,
     get_prefix,
     raise_exc,
 )
@@ -38,8 +40,8 @@ def _handle_mongo_repository(
     delete: bool,
     get_list: bool,
     __methods__: bool,
-    array_fields: Iterable[str] | None,
-    integer_fields: list[str] | None,
+    list_fields: Iterable[str] | None,
+    integer_fields: Iterable[str] | None,
     method_access: Access | None,
 ) -> type:
     attributes = _get_meta_attributes(cls)
@@ -59,68 +61,59 @@ def _handle_mongo_repository(
     if index is not None and collection is not None:
         _create_index(index, collection)
 
+    converter = _get_converter(dto, id_field)
+
     if add:
-        setattr(cls, f'{prefix}add', AddMethod(dto, owner=cls, id_field=id_field))
+        setattr(
+            cls, f'{prefix}add', AddMethod(dto, owner=cls, id_field=id_field, converter=converter),
+        )
+    if add_batch:
+        setattr(
+            cls,
+            f'{prefix}add_batch',
+            AddBatchMethod(dto, owner=cls, id_field=id_field, converter=converter),
+        )
     if get:
-        setattr(cls, f'{prefix}get', GetMethod(dto, owner=cls, id_field=id_field))
-    if array_fields:
-        for field in array_fields:
+        setattr(
+            cls, f'{prefix}get', GetMethod(dto, owner=cls, id_field=id_field, converter=converter),
+        )
+    if get_all:
+        setattr(
+            cls, f'{prefix}get_all', GetAllMethod(dto, cls, converter=converter),
+        )
+    if get_list:
+        setattr(
+            cls, f'{prefix}get_list', GetListMethod(dto, cls, converter=converter),
+        )
+    if delete:
+        setattr(cls, f'{prefix}delete', DeleteMethod(dto, cls))
+    if update:
+        setattr(cls, f'{prefix}update', UpdateMethod(dto, cls, converter=converter))
+
+    if list_fields:
+        for field in list_fields:
             _check_valid_field_type(field, dto, list)
-            append_method = UpdateArrayFieldMethod(
-                dto_type=dto, owner=cls, field_name=field, action='$push',
-            )
-            remove_method = UpdateArrayFieldMethod(
-                dto_type=dto, owner=cls, field_name=field, action='$pull',
-            )
+
+            append_method = AppendListMethod(dto_type=dto, owner=cls, field_name=field)
+            remove_method = RemoveListMethod(dto_type=dto, owner=cls, field_name=field)
+            pop_method = PopListMethod(dto_type=dto, owner=cls, field_name=field)
+            list_values_method = GetListValuesMethod(dto_type=dto, owner=cls, field_name=field)
+
             setattr(cls, f'{prefix}{field}__append', append_method)
             setattr(cls, f'{prefix}{field}__remove', remove_method)
+            setattr(cls, f'{prefix}{field}__pop', pop_method)
+            setattr(cls, f'{prefix}{field}__list', list_values_method)
 
-    return cls
+    if integer_fields:
+        for field in integer_fields:
+            _check_valid_field_type(field, dto, int)
 
+            increment_method = IncrementIntegerFieldMethod(dto, cls, field_name=field, weight=1)
+            decrement_method = IncrementIntegerFieldMethod(dto, cls, field_name=field, weight=-1)
 
-def __handle_mongo_repository(
-    cls,
-    add: bool,
-    get: bool,
-    add_batch: bool,
-    get_all: bool,
-    update: bool,
-    delete: bool,
-    get_list: bool,
-    __methods__: bool,
-    array_fields: list[str] | None,
-    integer_fields: list[str] | None,
-    method_access: Access | None,
-) -> type:
-    """Calls for functions that set different methods and attributes to the
-    class."""
-    attributes = _get_meta_attributes(cls)
-    collection = attributes['collection']
-    index = attributes['index']
+            setattr(cls, f'{prefix}incr__{field}', increment_method)
+            setattr(cls, f'{prefix}decr__{field}', decrement_method)
 
-    _set_crud_methods(
-        cls,
-        add=add,
-        get=get,
-        get_all=get_all,
-        get_list=get_list,
-        update=update,
-        delete=delete,
-        add_batch=add_batch,
-        method_access=method_access,
-    )
-
-    if index is not None:
-        _create_index(index=index, collection=collection)
-
-    if integer_fields is not None:
-        _set_integer_fields_methods(cls, integer_fields=integer_fields, method_access=method_access)
-
-    if array_fields is not None:
-        _set_array_fields_methods(cls, array_fields=array_fields, method_access=method_access)
-
-    if __methods__:
-        _set__methods__(cls)
     return cls
 
 
@@ -140,36 +133,4 @@ def _handle_async_mongo_repository(
 ) -> type:
     """Calls for functions that set different async methods and attributes to
     the class."""
-    attributes = _get_meta_attributes(cls, raise_exceptions=False)
-    collection = attributes['collection']
-    index = attributes['index']
-
-    _set_crud_methods(
-        cls,
-        add=add,
-        get=get,
-        get_all=get_all,
-        update=update,
-        delete=delete,
-        add_batch=add_batch,
-        method_access=method_access,
-        get_list=get_list,
-        async_methods=True,
-    )
-
-    if integer_fields is not None:
-        _set_integer_fields_methods(
-            cls, integer_fields=integer_fields, async_methods=True, method_access=method_access,
-        )
-
-    if array_fields is not None:
-        _set_array_fields_methods(
-            cls, array_fields=array_fields, async_methods=True, method_access=method_access,
-        )
-
-    if index is not None:
-        asyncio.create_task(_create_index_async(index=index, collection=collection))
-
-    if __methods__:
-        _set__methods__(cls)
     return cls

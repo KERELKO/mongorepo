@@ -93,7 +93,7 @@ def _manage_custom_params(
         # Missing parameter
         else:
             raise exceptions.MongorepoException(
-                message=f'Cannot find value for {source_param} parameter. '
+                message=f'Cannot find value for {source_param} parameter, '
                 f'{method.name}() parameters: {method.params}',
             )
 

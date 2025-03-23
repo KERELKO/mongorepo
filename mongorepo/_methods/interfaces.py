@@ -27,12 +27,12 @@ class IAddMethodAsync[T: Dataclass](t.Protocol):
 
 
 class IAddBatchMethod[T: Dataclass](t.Protocol):
-    def __call__(self, dto_list: list[T]) -> InsertManyResult:
+    def __call__(self, dto_list: list[T]) -> 'InsertManyResult':
         ...
 
 
 class IAddBatchMethodAsync[T: Dataclass](t.Protocol):
-    async def __call__(self, dto_list: list[T]) -> InsertManyResult:
+    async def __call__(self, dto_list: list[T]) -> 'InsertManyResult':
         ...
 
 
@@ -67,7 +67,7 @@ class IDeleteMethodAsync(t.Protocol):
 
 
 class IUpdateMethod[T: Dataclass](t.Protocol):
-    async def __call__(self, dto: T, **filters: t.Any) -> T | None:
+    def __call__(self, dto: T, **filters: t.Any) -> T | None:
         ...
 
 
@@ -77,42 +77,44 @@ class IUpdateMethodAsync[T: Dataclass](t.Protocol):
 
 
 class IUpdateArrayMethod[T: Dataclass](t.Protocol):
-    def __call__(self, value: t.Any, **filters: t.Any) -> UpdateResult:
+    def __call__(self, value: t.Any, **filters: t.Any) -> 'UpdateResult':
         ...
 
 
 class IUpdateArrayMethodAsync[T: Dataclass](t.Protocol):
-    async def __call__(self, value: t.Any, **filters: t.Any) -> UpdateResult:
+    async def __call__(self, value: t.Any, **filters: t.Any) -> 'UpdateResult':
         ...
 
 
-class IPopArrayMethod[T](t.Protocol):
+class IPopListMethod[T](t.Protocol):
     def __call__(self, **filters: t.Any) -> T | None:
         ...
 
 
-class IPopArrayMethodAsync[T](t.Protocol):
+class IPopListMethodAsync[T](t.Protocol):
     async def __call__(self, **filters: t.Any) -> T | None:
         ...
 
 
-class IGetArrayValuesMethod[T](t.Protocol):
-    def __call__(self, offset: int, limit: int, **filters: t.Any) -> list[T] | list[t.Any] | None:
+class IGetListValuesMethod[T](t.Protocol):
+    def __call__(
+        self, offset: int = 0, limit: int = 20, **filters: t.Any,
+    ) -> list[T] | list[t.Any] | None:
         ...
 
 
-class IGetArrayValuesMethodAsync[T](t.Protocol):
+class IGetListValuesMethodAsync[T](t.Protocol):
     async def __call__(
-        self, offset: int, limit: int, **filters: t.Any,
+        self, offset: int = 0, limit: int = 20, **filters: t.Any,
     ) -> list[T] | list[t.Any] | None:
         ...
 
 
 class IIncrementIntegerFieldMethod(t.Protocol):
-    def __call__(self, weight: int, **filters) -> UpdateResult:
+    def __call__(self, weight: int | None = None, **filters) -> 'UpdateResult':
         ...
 
 
 class IIncrementIntegerFieldMethodAsync(t.Protocol):
-    async def __call__(self, weight: int, **filters) -> UpdateResult:
+    async def __call__(self, weight: int | None = None, **filters) -> 'UpdateResult':
         ...
