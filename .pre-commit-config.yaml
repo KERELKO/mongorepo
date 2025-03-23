@@ -36,7 +36,7 @@ repos:
   - id: flake8
     args: [
         --max-line-length=100,
-        --ignore=A005 E800,
+        --ignore=A005 E800 W503,
     ]
     exclude: .git|__pycache__|tests
     additional_dependencies:

@@ -1,12 +1,12 @@
 # type: ignore
-from mongorepo.asyncio.decorators import async_mongo_repository
+from mongorepo import async_repository
 from tests.common import NestedListDTO, SimpleDTO, custom_collection
 
 
 async def test_can_use_array_methods_with_dto_fields() -> None:
     c = custom_collection(dto=NestedListDTO, async_client=True)
 
-    @async_mongo_repository(array_fields=['dtos'])
+    @async_repository(list_fields=['dtos'])
     class MongoRepository:
         class Meta:
             dto = NestedListDTO

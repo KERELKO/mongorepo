@@ -42,7 +42,7 @@ class IGetAllMethod[T: Dataclass](t.Protocol):
 
 
 class IGetAllMethodAsync[T: Dataclass](t.Protocol):
-    async def __call__(self, **filters: t.Any) -> t.AsyncGenerator[None, T]:
+    async def __call__(self, **filters: t.Any) -> t.AsyncGenerator[T, None]:
         ...
 
 

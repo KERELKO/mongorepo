@@ -4,15 +4,14 @@ import random
 
 import pytest
 
-from mongorepo import Index, exceptions
-from mongorepo.asyncio.decorators import async_mongo_repository
+from mongorepo import Index, async_repository, exceptions
 from tests.common import SimpleDTO, collection_for_simple_dto, r
 
 
 async def test_all_methods_with_async_decorator():
     cl = collection_for_simple_dto(async_client=True)
 
-    @async_mongo_repository
+    @async_repository
     class TestMongoRepository:
         class Meta:
             dto = SimpleDTO
@@ -52,8 +51,8 @@ async def test_cannot_initialize_class_if_dto_is_not_dataclass():
         def __init__(self, name: str) -> None:
             self.name = name
 
-    with pytest.raises(exceptions.NotDataClass):
-        @async_mongo_repository
+    with pytest.raises(exceptions.NoDTOTypeException):
+        @async_repository
         class TestMongoRepository[Bob]:  # type: ignore
             class Meta:
                 collection = collection_for_simple_dto(async_client=True)
@@ -64,7 +63,7 @@ async def test_cannot_initialize_class_if_dto_is_not_dataclass():
 async def test_can_create_index():
     cl = collection_for_simple_dto(async_client=True)
 
-    @async_mongo_repository
+    @async_repository
     class TestMongoRepository:
         class Meta:
             collection = cl
@@ -86,7 +85,7 @@ async def test_can_create_index():
 async def test_get_list_with_add_batch_methods_with_decorator():
     cl = collection_for_simple_dto(async_client=True)
 
-    @async_mongo_repository(add_batch=True, get_list=True)
+    @async_repository(add_batch=True, get_list=True)
     class TestMongoRepository:
         class Meta:
             dto = SimpleDTO

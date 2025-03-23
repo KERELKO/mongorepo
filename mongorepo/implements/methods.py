@@ -103,6 +103,10 @@ class SpecificMethod(Protocol):
     params: dict[str, LParameter]
     action: MethodAction
 
+    @property
+    def is_async(self) -> bool:
+        ...
+
 
 class SpecificFieldMethod(SpecificMethod):
     field_name: str

@@ -1,10 +1,10 @@
+# mypy: disable-error-code="empty-body"
 from typing import AsyncGenerator
 
 from mongorepo import implements
 from mongorepo.implements.methods import (
     AddBatchMethod,
     AddMethod,
-    DecrementIntegerFieldMethod,
     DeleteMethod,
 )
 from mongorepo.implements.methods import FieldAlias as FA
@@ -57,7 +57,7 @@ async def test_field_alias_with_crud_protocol_methods():
             ) -> list[NestedListDTO]:
                 ...
 
-        title_alias = FA[NestedListDTO]('title', 'dto_title')
+        title_alias = FA('title', 'dto_title')
 
         @implements(
             IRepo,
@@ -96,7 +96,7 @@ async def test_field_alias_with_crud_protocol_methods():
             ],
         )
 
-        async for dto in r.get_all_by_title(title='1'):
+        async for dto in r.get_all_by_title(title='1'):  # type: ignore
             assert dto.title == '1'
 
         dto_list = await r.get_model_list(dto_title='2', limit=5, offset=0)
@@ -201,8 +201,9 @@ async def test_implements_integer_methods_with_specific_method_protocol() -> Non
             IncrementIntegerFieldMethod(
                 IRepo.update_year_with_weight, field_name='year', filters=[f], weight='weight',
             ),
-            DecrementIntegerFieldMethod(
+            IncrementIntegerFieldMethod(
                 IRepo.update_year, field_name='year', filters=[FA('id', 'mix_dto_id')],
+                default_weight_value=-1,
             ),
         )
         class MongoRepo:

@@ -1,10 +1,10 @@
+# mypy: disable-error-code="empty-body"
 from typing import AsyncGenerator
 
 from mongorepo import implements
 from mongorepo.implements.methods import (
     AddBatchMethod,
     AddMethod,
-    DecrementIntegerFieldMethod,
     DeleteMethod,
     GetAllMethod,
     GetListMethod,
@@ -89,7 +89,7 @@ async def test_implements_crud_with_specific_method_protocol():
             ],
         )
 
-        async for dto in r.get_all_by_title(title='1'):
+        async for dto in r.get_all_by_title(title='1'):  # type: ignore
             assert dto.title == '1'
 
         dto_list = await r.get_model_list(title='2', limit=5, offset=0)
@@ -192,8 +192,8 @@ async def test_implements_integer_methods_with_specific_method_protocol() -> Non
             IncrementIntegerFieldMethod(
                 IRepo.update_year_with_weight, field_name='year', filters=['id'], weight='weight',
             ),
-            DecrementIntegerFieldMethod(
-                IRepo.update_year, field_name='year', filters=['id'],
+            IncrementIntegerFieldMethod(
+                IRepo.update_year, field_name='year', filters=['id'], default_weight_value=-1,
             ),
         )
         class MongoRepo:
