@@ -1,13 +1,19 @@
-from dataclasses import asdict
-from typing import Any, Generic, Iterable
+from typing import TYPE_CHECKING, Any, Generator, Generic
 
 from pymongo.collection import Collection
 
 from mongorepo import exceptions
-from mongorepo._base import DTO, Index, MetaAttributes
+from mongorepo._base import DTO, Dataclass, Index, MetaAttributes
 from mongorepo._collections import COLLECTION_PROVIDER, CollectionProvider
-from mongorepo._methods import _add_method
-from mongorepo._methods.impl import AddMethod, GetMethod
+from mongorepo._methods.impl import (
+    AddBatchMethod,
+    AddMethod,
+    DeleteMethod,
+    GetAllMethod,
+    GetListMethod,
+    GetMethod,
+    UpdateMethod,
+)
 from mongorepo.utils import (
     _create_index,
     _get_converter,
@@ -15,113 +21,8 @@ from mongorepo.utils import (
     _get_meta_attributes,
 )
 
-
-class _BaseMongoRepository(Generic[DTO]):
-    """
-    ## Base MongoDB repository class
-    #### Extends child classes with various methods:
-
-    ```
-    add(self, dto: DTO) -> DTO
-    get(self, **filters) -> DTO | None
-    get_all(self, **filters) -> Iterable[DTO]
-    update(self, dto: DTO, **filters) -> DTO
-    delete(self, **filters) -> bool
-    ```
-
-    #### Provide DTO type in type hints, example:
-
-    ```
-    class DummyMongoRepository(BaseMongoRepository[UserDTO]):
-        ...
-    ```
-
-    * If you want to create an index use `mongorepo.Index`
-      or just a name of the field to put index on
-    """
-
-    def __new__(cls, *args, **kwargs) -> 'BaseMongoRepository':
-        instance = super().__new__(cls)
-        dto_type = _get_dto_from_origin(cls)
-        setattr(instance, 'dto_type', dto_type)
-
-        try:
-            meta: MetaAttributes[Collection] | None = _get_meta_attributes(
-                cls, raise_exceptions=False,
-            )
-        except exceptions.NoMetaException:
-            meta = None
-
-        index: Index | str | None = meta['index'] if meta else None
-        id_field: str | None = meta['id_field'] if meta else None
-
-        setattr(instance, '__convert_to_dto', _get_converter(dto_type, id_field=id_field))
-        setattr(instance, '__id_field', id_field)
-
-        if index is not None:
-            collection: Collection | None = meta['collection'] if meta else None
-            if collection is None:
-                raise exceptions.NoCollectionException(
-                    message='Cannot access collection from Meta to create index',
-                )
-            _create_index(index, collection=collection)
-        return instance
-
-    def __init__(self, collection: Collection | None = None) -> None:
-        self.collection = self.__get_collection(collection)
-        self.__convert_to_dto = self.__dict__['__convert_to_dto']
-        self.dto_type = self.__dict__.get('dto_type', None) or _get_dto_from_origin(self.__class__)
-        self.__add = _add_method(
-            dto_type=self.dto_type,
-            collection=self.collection,
-            id_field=self.__dict__['__id_field'],
-        )
-
-    @classmethod
-    def __get_collection(cls, collection: Collection | None) -> Collection:
-        if collection is not None:
-            return collection
-        try:
-            meta = _get_meta_attributes(cls, raise_exceptions=False)
-        except exceptions.NoMetaException:
-            raise exceptions.MongorepoException(
-                message='"Meta" class with "collecton" was not defined in the class',
-            )
-        if meta['collection'] is None:
-            raise exceptions.NoCollectionException
-        defined_collection = meta['collection']
-        return defined_collection
-
-    def _convert_to_dto(self, dct: dict[str, Any]) -> DTO:
-        return self.__convert_to_dto(self.dto_type, dct)
-
-    def get(self, **filters: Any) -> DTO | None:
-        result = self.collection.find_one(filters)
-        return self._convert_to_dto(result) if result else None
-
-    def get_all(self, **filters: Any) -> Iterable[DTO]:
-        cursor = self.collection.find(filters)
-        for doc in cursor:
-            yield self._convert_to_dto(doc)
-
-    def get_list(self, offset: int = 0, limit: int = 20) -> list[DTO]:
-        cursor = self.collection.find().skip(offset).limit(limit)
-        return [self._convert_to_dto(doc) for doc in cursor]
-
-    def update(self, dto: DTO, **filters: Any) -> DTO:
-        data: dict[str, dict[str, Any]] = {'$set': {}}
-        for field, value in asdict(dto).items():
-            data['$set'][field] = value
-        self.collection.find_one_and_update(filter=filters, update=data)
-        return dto
-
-    def delete(self, **filters: Any) -> bool:
-        """Returns True if document was deleted else False."""
-        deleted = self.collection.find_one_and_delete(filters)
-        return True if deleted else False
-
-    def add(self, dto: DTO) -> DTO:
-        return self.__add(self, dto)
+if TYPE_CHECKING:
+    from pymongo.results import InsertManyResult
 
 
 class BaseMongoRepository(Generic[DTO]):
@@ -170,15 +71,41 @@ class BaseMongoRepository(Generic[DTO]):
                     message='Index can be created only if collection provided in Meta class',
                 )
             _create_index(index, collection=collection)
+        converter = _get_converter(dto_type, id_field)
         setattr(
-            cls,
+            instance,
             '_mongorepo_add',
-            AddMethod(dto_type, owner=cls, id_field=id_field),  # type: ignore
+            AddMethod(dto_type, cls, id_field=id_field, converter=converter),  # type: ignore
         )
         setattr(
-            cls,
+            instance,
+            '_mongorepo_add_batch',
+            AddBatchMethod(dto_type, cls, id_field=id_field, converter=converter),  # type: ignore
+        )
+        setattr(
+            instance,
             '_mongorepo_get',
-            GetMethod(dto_type, owner=cls, id_field=id_field),  # type: ignore
+            GetMethod(dto_type, cls, id_field=id_field, converter=converter),  # type: ignore
+        )
+        setattr(
+            instance,
+            '_mongorepo_get_list',
+            GetListMethod(dto_type, cls, id_field=id_field, converter=converter),  # type: ignore
+        )
+        setattr(
+            instance,
+            '_mongorepo_get_all',
+            GetAllMethod(dto_type, cls, id_field=id_field, converter=converter),  # type: ignore
+        )
+        setattr(
+            instance,
+            '_mongorepo_update',
+            UpdateMethod(dto_type, cls, id_field=id_field, converter=converter),  # type: ignore
+        )
+        setattr(
+            instance,
+            '_mongorepo_delete',
+            DeleteMethod(dto_type, cls, id_field=id_field, converter=converter),  # type: ignore
         )
 
         return instance
@@ -186,5 +113,20 @@ class BaseMongoRepository(Generic[DTO]):
     def get(self, **filters: Any) -> DTO | None:
         return self._mongorepo_get(**filters)  # type: ignore
 
+    def get_all(self, **filters: Any) -> Generator[DTO, None, None]:
+        yield from self._mongorepo_get_all(**filters)  # type: ignore
+
+    def get_list(self, offset: int = 0, limit: int = 20, **filters: Any) -> list[DTO]:
+        return self._mongorepo_get_list(offset=offset, limit=limit, **filters)  # type: ignore
+
     def add(self, dto: DTO) -> DTO:
         return self._mongorepo_add(dto)  # type: ignore
+
+    def add_batch(self, dto_list: list[DTO]) -> 'InsertManyResult':
+        return self._mongorepo_add_batch(dto_list)  # type: ignore
+
+    def update(self, dto: Dataclass, **filters: Any) -> DTO | None:
+        return self._mongorepo_update(dto, **filters)  # type: ignore
+
+    def delete(self, **filters: Any) -> bool:
+        return self._mongorepo_delete(**filters)  # type: ignore

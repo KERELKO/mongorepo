@@ -1,11 +1,15 @@
 import asyncio
-from typing import Any, cast
+from typing import Any, Iterable, cast
 
 from pymongo.collection import Collection
 
 from mongorepo import exceptions
 from mongorepo._base import Access
-from mongorepo._methods.impl import AddMethod, GetMethod
+from mongorepo._methods.impl import (
+    AddMethod,
+    GetMethod,
+    UpdateArrayFieldMethod,
+)
 from mongorepo._setters import (
     _set_array_fields_methods,
     _set_crud_methods,
@@ -13,6 +17,7 @@ from mongorepo._setters import (
 )
 from mongorepo.asyncio.utils import _create_index_async
 from mongorepo.utils import (
+    _check_valid_field_type,
     _create_index,
     _get_meta_attributes,
     _set__methods__,
@@ -23,14 +28,30 @@ from mongorepo.utils import (
 from ._collections import COLLECTION_PROVIDER, CollectionProvider
 
 
-def _handle_mongo_repository(cls, add: bool, get: bool) -> type:
+def _handle_mongo_repository(
+    cls,
+    add: bool,
+    get: bool,
+    add_batch: bool,
+    get_all: bool,
+    update: bool,
+    delete: bool,
+    get_list: bool,
+    __methods__: bool,
+    array_fields: Iterable[str] | None,
+    integer_fields: list[str] | None,
+    method_access: Access | None,
+) -> type:
     attributes = _get_meta_attributes(cls)
 
     collection: Collection[Any] | None = cast(Collection, attributes['collection'])
     dto = attributes['dto'] or raise_exc(exceptions.NoDTOTypeException)
     index = attributes['index']
     id_field = attributes['id_field']
-    prefix = get_prefix(attributes['method_access'])
+
+    prefix = get_prefix(
+        access=attributes['method_access'] if not method_access else method_access, cls=cls,
+    )
 
     if not hasattr(cls, COLLECTION_PROVIDER):
         setattr(cls, COLLECTION_PROVIDER, CollectionProvider(collection))
@@ -42,6 +63,18 @@ def _handle_mongo_repository(cls, add: bool, get: bool) -> type:
         setattr(cls, f'{prefix}add', AddMethod(dto, owner=cls, id_field=id_field))
     if get:
         setattr(cls, f'{prefix}get', GetMethod(dto, owner=cls, id_field=id_field))
+    if array_fields:
+        for field in array_fields:
+            _check_valid_field_type(field, dto, list)
+            append_method = UpdateArrayFieldMethod(
+                dto_type=dto, owner=cls, field_name=field, action='$push',
+            )
+            remove_method = UpdateArrayFieldMethod(
+                dto_type=dto, owner=cls, field_name=field, action='$pull',
+            )
+            setattr(cls, f'{prefix}{field}__append', append_method)
+            setattr(cls, f'{prefix}{field}__remove', remove_method)
+
     return cls
 
 
@@ -55,8 +88,8 @@ def __handle_mongo_repository(
     delete: bool,
     get_list: bool,
     __methods__: bool,
-    integer_fields: list[str] | None,
     array_fields: list[str] | None,
+    integer_fields: list[str] | None,
     method_access: Access | None,
 ) -> type:
     """Calls for functions that set different methods and attributes to the

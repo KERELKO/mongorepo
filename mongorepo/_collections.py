@@ -60,7 +60,6 @@ def use_collection[T: type](
         return use_collection(coll)(Repository)()
 
     repo = provide_repository()
-    dto = SimpleDTO(x='123', y=123)
     ```
     """
     def wrapper(cls: T) -> T:

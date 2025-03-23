@@ -5,9 +5,9 @@ from mongorepo import exceptions
 from mongorepo._base import Dataclass, MethodAction
 from mongorepo._base import ParameterEnum as MongorepoParameter
 from mongorepo._collections import HasCollectionProvider
-from mongorepo.implements.mapper import implements_mapper
 from mongorepo.utils import _get_defaults
 
+from ._utils import implements_mapper, initialize_callable_mongorepo_method
 from .methods import Method, SpecificFieldMethod, SpecificMethod
 
 
@@ -16,16 +16,26 @@ def _substitute_specific_method(
     method: SpecificMethod | SpecificFieldMethod,
     dto_type: type[Dataclass],
     id_field: str | None = None,
-    custom_field_method_name: str | None = None,
-    update_integer_weight: int | None = None,
+    field_name: str | None = None,
+    integer_weight: int | None = None,
     **kwargs,
 ) -> Callable:
     is_async = inspect.iscoroutinefunction(method.source)
 
-    callable_mongorepo_method = implements_mapper(method)(
+    if hasattr(method, 'field_name'):
+        field_name = method.field_name  # type: ignore
+
+    if hasattr(method, 'integer_weight'):
+        integer_weight = method.integer_weight  # type: ignore
+
+    mapped_method = implements_mapper(method)
+    callable_mongorepo_method = initialize_callable_mongorepo_method(
+        mongorepo_method=mapped_method,
         dto_type=dto_type,
         owner=cls,
         id_field=id_field,
+        field_name=field_name,
+        integer_weight=integer_weight,
     )
 
     def func(self, *args, **kwargs) -> Any:

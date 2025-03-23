@@ -126,7 +126,7 @@ def _update_field_method_async(
 
     async def update_field(self, field_name: str, value: Any, **filters) -> DTO | None:
         if field_name not in dto_type.__dict__['__annotations__']:
-            raise exceptions.MongoRepoException(
+            raise exceptions.MongorepoException(
                 message=f'{dto_type} does not have field "{field_name}"',
             )
         document = await collection.find_one_and_update(

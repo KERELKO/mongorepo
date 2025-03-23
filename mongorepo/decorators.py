@@ -1,4 +1,4 @@
-from typing import Annotated, Callable
+from typing import Callable, Iterable
 
 from mongorepo._base import Access
 from mongorepo._handlers import _handle_mongo_repository
@@ -13,8 +13,8 @@ def mongo_repository(
     get_list: bool = True,
     update: bool = True,
     delete: bool = True,
-    integer_fields: list[Annotated[str, 'field names']] | None = None,
-    array_fields: list[Annotated[str, 'field names']] | None = None,
+    integer_fields: Iterable[str] | None = None,
+    array_fields: Iterable[str] | None = None,
     method_access: Access | None = None,
     __methods__: bool = False,
 ) -> type | Callable:
@@ -81,6 +81,7 @@ def mongo_repository(
             cls=cls,
             add=add,
             get=get,
+            array_fields=array_fields,
         )
 
     if cls is None:

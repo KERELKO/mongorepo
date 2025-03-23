@@ -10,23 +10,7 @@ def implements[T: type](
 ) -> Callable[[T], T]:
     """Decorator that allows to implement methods of `base_cls`
 
-    ## [Not recommended] Simple Usage Example:
-
-    ```
-    class A:
-        def get_my_entity(self, id: str):
-            ...
-
-    @implements(A, get=A.get_my_entity)
-    class MongoRepo:
-        class Meta:
-            dto = SimpleDTO
-            collection = random_collection()
-
-    my_entity = MongoRepo().get_my_entity(id="10")
-
-    ```
-    ## [Recommended] Usage with `SpecificMethod` protocol example:
+    ## Usage example:
 
     ```
     class IRepo:
@@ -56,6 +40,6 @@ def implements[T: type](
     if not specific_methods:
         raise ValueError('No methods to implement')
 
-    def wrapper(base_cls: T) -> T:
-        return _handle_implements_specific_methods(base_cls, *specific_methods)
+    def wrapper(cls: T) -> T:
+        return _handle_implements_specific_methods(cls, *specific_methods)
     return wrapper

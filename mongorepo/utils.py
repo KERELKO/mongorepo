@@ -229,7 +229,7 @@ def _nested_convert_to_dto(dto_type: type[DTO], id_field: str | None = None) -> 
                             inner_wrapper(args[0], v, to_dto=True) for v in value  # type: ignore
                         ]
                     else:
-                        data[key] = value  # TODO: solve mypy error
+                        data[key] = value
                 else:
                     data[key] = value
             return dto_type(**data) if to_dto else data
@@ -245,7 +245,9 @@ def _nested_convert_to_dto(dto_type: type[DTO], id_field: str | None = None) -> 
     return outer_wrapper
 
 
-def _get_converter(dto_type: type[DTO], id_field: str | None = None) -> Callable:
+def _get_converter(
+    dto_type: type[DTO], id_field: str | None = None,
+) -> Callable[[type[DTO], dict[str, Any]], DTO]:
     """Returns proper converter based on type hints of the dto."""
     converter = _convert_to_dto
     r = _has_dataclass_fields(dto_type=dto_type)
