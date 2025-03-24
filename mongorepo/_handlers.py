@@ -1,11 +1,16 @@
 import asyncio
 from typing import Iterable
 
-from motor.motor_asyncio import AsyncIOMotorCollection
+from motor.motor_asyncio import (
+    AsyncIOMotorClientSession,
+    AsyncIOMotorCollection,
+)
+from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
 
 from mongorepo import exceptions
-from mongorepo._base import Access
+from mongorepo._base import Access, CollectionProvider
+from mongorepo._common import MongorepoDict
 from mongorepo._methods.impl import (
     AddBatchMethod,
     AddMethod,
@@ -44,8 +49,6 @@ from mongorepo.utils import (
     raise_exc,
 )
 
-from ._collections import COLLECTION_PROVIDER, CollectionProvider
-
 
 def _handle_mongo_repository(
     cls,
@@ -76,64 +79,91 @@ def _handle_mongo_repository(
         access=attributes['method_access'] if not method_access else method_access, cls=cls,
     )
 
-    if not hasattr(cls, COLLECTION_PROVIDER):
-        setattr(cls, COLLECTION_PROVIDER, CollectionProvider(collection))
-
     if index is not None and collection is not None:
         _create_index(index, collection)
 
     converter = _get_converter(dto, id_field)
 
+    if hasattr(cls, '__mongorepo__'):
+        __mongorepo__: MongorepoDict[ClientSession, Collection] = getattr(cls, '__mongorepo__')
+    else:
+        __mongorepo__ = MongorepoDict[ClientSession, Collection](
+            collection_provider=CollectionProvider(obj=cls, collection=collection), methods={},
+        )
+
     if add:
-        setattr(
-            cls, f'{prefix}add', AddMethod(dto, owner=cls, id_field=id_field, converter=converter),
-        )
+        key = f'{prefix}add'
+        add_method = AddMethod(dto, owner=cls, id_field=id_field, converter=converter)
+        __mongorepo__['methods'][key] = add_method
+        setattr(cls, key, __mongorepo__['methods'][key])
     if add_batch:
-        setattr(
-            cls,
-            f'{prefix}add_batch',
-            AddBatchMethod(dto, owner=cls, id_field=id_field, converter=converter),
-        )
+        key = f'{prefix}add_batch'
+        add_batch_method = AddBatchMethod(dto, cls, id_field=id_field, converter=converter)
+        __mongorepo__['methods'][key] = add_batch_method
+        setattr(cls, key, __mongorepo__['methods'][key])
     if get:
-        setattr(
-            cls, f'{prefix}get', GetMethod(dto, owner=cls, id_field=id_field, converter=converter),
-        )
+        key = f'{prefix}get'
+        get_method = GetMethod(dto, owner=cls, id_field=id_field, converter=converter)
+        __mongorepo__['methods'][key] = get_method
+        setattr(cls, key, __mongorepo__['methods'][key])
     if get_all:
-        setattr(
-            cls, f'{prefix}get_all', GetAllMethod(dto, cls, converter=converter),
-        )
+        key = f'{prefix}get_all'
+        get_all_method = GetAllMethod(dto, cls, converter=converter)
+        __mongorepo__['methods'][key] = get_all_method
+        setattr(cls, key, __mongorepo__['methods'][key])
     if get_list:
-        setattr(
-            cls, f'{prefix}get_list', GetListMethod(dto, cls, converter=converter),
-        )
+        key = f'{prefix}get_list'
+        get_list_method = GetListMethod(dto, cls, converter=converter)
+        __mongorepo__['methods'][key] = get_list_method
+        setattr(cls, key, __mongorepo__['methods'][key])
     if delete:
-        setattr(cls, f'{prefix}delete', DeleteMethod(dto, cls))
+        key = f'{prefix}delete'
+        delete_method = DeleteMethod(dto, cls)
+        __mongorepo__['methods'][key] = delete_method
+        setattr(cls, key, __mongorepo__['methods'][key])
     if update:
-        setattr(cls, f'{prefix}update', UpdateMethod(dto, cls, converter=converter))
+        key = f'{prefix}update'
+        update_method = UpdateMethod(dto, cls, converter=converter)
+        __mongorepo__['methods'][key] = update_method
+        setattr(cls, key, __mongorepo__['methods'][key])
 
     if list_fields:
         for field in list_fields:
             _check_valid_field_type(field, dto, list)
 
             append_method = AppendListMethod(dto_type=dto, owner=cls, field_name=field)
-            remove_method = RemoveListMethod(dto_type=dto, owner=cls, field_name=field)
-            pop_method = PopListMethod(dto_type=dto, owner=cls, field_name=field)
-            list_values_method = GetListValuesMethod(dto_type=dto, owner=cls, field_name=field)
+            __mongorepo__['methods'][k := f'{prefix}{field}__append'] = append_method
+            setattr(cls, k, __mongorepo__['methods'][k])
 
-            setattr(cls, f'{prefix}{field}__append', append_method)
-            setattr(cls, f'{prefix}{field}__remove', remove_method)
-            setattr(cls, f'{prefix}{field}__pop', pop_method)
-            setattr(cls, f'{prefix}{field}__list', list_values_method)
+            remove_method = RemoveListMethod(dto_type=dto, owner=cls, field_name=field)
+            __mongorepo__['methods'][k := f'{prefix}{field}__remove'] = remove_method
+            setattr(cls, k, __mongorepo__['methods'][k])
+
+            pop_method = PopListMethod(dto_type=dto, owner=cls, field_name=field)
+            __mongorepo__['methods'][k := f'{prefix}{field}__pop'] = pop_method
+            setattr(cls, k, __mongorepo__['methods'][k])
+
+            list_values_method = GetListValuesMethod(dto_type=dto, owner=cls, field_name=field)
+            __mongorepo__['methods'][k := f'{prefix}{field}__list'] = list_values_method
+            setattr(cls, k, __mongorepo__['methods'][k])
 
     if integer_fields:
         for field in integer_fields:
             _check_valid_field_type(field, dto, int)
 
-            increment_method = IncrementIntegerFieldMethod(dto, cls, field_name=field, weight=1)
-            decrement_method = IncrementIntegerFieldMethod(dto, cls, field_name=field, weight=-1)
+            increment_method = IncrementIntegerFieldMethod(
+                dto, cls, field_name=field, weight=1,
+            )
+            __mongorepo__['methods'][k := f'{prefix}incr__{field}'] = increment_method
+            setattr(cls, k, __mongorepo__['methods'][k])
 
-            setattr(cls, f'{prefix}incr__{field}', increment_method)
-            setattr(cls, f'{prefix}decr__{field}', decrement_method)
+            decrement_method = IncrementIntegerFieldMethod(
+                dto, cls, field_name=field, weight=-1,
+            )
+            __mongorepo__['methods'][k := f'{prefix}decr__{field}'] = decrement_method
+            setattr(cls, k, __mongorepo__['methods'][k])
+
+    cls.__mongorepo__ = __mongorepo__
 
     return cls
 
@@ -169,8 +199,12 @@ def _handle_async_mongo_repository(
         access=attributes['method_access'] if not method_access else method_access, cls=cls,
     )
 
-    if not hasattr(cls, COLLECTION_PROVIDER):
-        setattr(cls, COLLECTION_PROVIDER, CollectionProvider(collection))
+    if hasattr(cls, '__mongorepo__'):
+        __mongorepo__: MongorepoDict[AsyncIOMotorClientSession, AsyncIOMotorCollection] = getattr(cls, '__mongorepo__')  # noqa
+    else:
+        __mongorepo__ = MongorepoDict[AsyncIOMotorClientSession, AsyncIOMotorCollection](
+            collection_provider=CollectionProvider(obj=cls, collection=collection), methods={},
+        )
 
     if index is not None and collection is not None:
         asyncio.create_task(_create_index_async(index, collection))
@@ -178,49 +212,60 @@ def _handle_async_mongo_repository(
     converter = _get_converter(dto, id_field)
 
     if add:
-        setattr(
-            cls,
-            f'{prefix}add',
-            AddMethodAsync(dto, owner=cls, id_field=id_field, converter=converter),
-        )
+        key = f'{prefix}add'
+        add_method = AddMethodAsync(dto, owner=cls, id_field=id_field, converter=converter)
+        __mongorepo__['methods'][key] = add_method
+        setattr(cls, key, __mongorepo__['methods'][key])
     if add_batch:
-        setattr(
-            cls,
-            f'{prefix}add_batch',
-            AddBatchMethodAsync(dto, owner=cls, id_field=id_field, converter=converter),
-        )
+        key = f'{prefix}add_batch'
+        add_batch_method = AddBatchMethodAsync(dto, cls, id_field=id_field, converter=converter)
+        __mongorepo__['methods'][key] = add_batch_method
+        setattr(cls, key, __mongorepo__['methods'][key])
     if get:
-        setattr(
-            cls,
-            f'{prefix}get',
-            GetMethodAsync(dto, owner=cls, id_field=id_field, converter=converter),
-        )
+        key = f'{prefix}get'
+        get_method = GetMethodAsync(dto, owner=cls, id_field=id_field, converter=converter)
+        __mongorepo__['methods'][key] = get_method
+        setattr(cls, key, __mongorepo__['methods'][key])
     if get_all:
-        setattr(
-            cls, f'{prefix}get_all', GetAllMethodAsync(dto, cls, converter=converter),
-        )
+        key = f'{prefix}get_all'
+        get_all_method = GetAllMethodAsync(dto, cls, converter=converter)
+        __mongorepo__['methods'][key] = get_all_method
+        setattr(cls, key, __mongorepo__['methods'][key])
     if get_list:
-        setattr(
-            cls, f'{prefix}get_list', GetListMethodAsync(dto, cls, converter=converter),
-        )
+        key = f'{prefix}get_list'
+        get_list_method = GetListMethodAsync(dto, cls, converter=converter)
+        __mongorepo__['methods'][key] = get_list_method
+        setattr(cls, key, __mongorepo__['methods'][key])
     if delete:
-        setattr(cls, f'{prefix}delete', DeleteMethodAsync(dto, cls))
+        key = f'{prefix}delete'
+        delete_method = DeleteMethodAsync(dto, cls)
+        __mongorepo__['methods'][key] = delete_method
+        setattr(cls, key, __mongorepo__['methods'][key])
     if update:
-        setattr(cls, f'{prefix}update', UpdateMethodAsync(dto, cls, converter=converter))
+        key = f'{prefix}update'
+        update_method = UpdateMethodAsync(dto, cls, converter=converter)
+        __mongorepo__['methods'][key] = update_method
+        setattr(cls, key, __mongorepo__['methods'][key])
 
     if list_fields:
         for field in list_fields:
             _check_valid_field_type(field, dto, list)
 
             append_method = AppendListMethodAsync(dto_type=dto, owner=cls, field_name=field)
-            remove_method = RemoveListMethodAsync(dto_type=dto, owner=cls, field_name=field)
-            pop_method = PopListMethodAsync(dto_type=dto, owner=cls, field_name=field)
-            list_values_method = GetListValuesMethodAsync(dto_type=dto, owner=cls, field_name=field)
+            __mongorepo__['methods'][k := f'{prefix}{field}__append'] = append_method
+            setattr(cls, k, __mongorepo__['methods'][k])
 
-            setattr(cls, f'{prefix}{field}__append', append_method)
-            setattr(cls, f'{prefix}{field}__remove', remove_method)
-            setattr(cls, f'{prefix}{field}__pop', pop_method)
-            setattr(cls, f'{prefix}{field}__list', list_values_method)
+            remove_method = RemoveListMethodAsync(dto_type=dto, owner=cls, field_name=field)
+            __mongorepo__['methods'][k := f'{prefix}{field}__remove'] = remove_method
+            setattr(cls, k, __mongorepo__['methods'][k])
+
+            pop_method = PopListMethodAsync(dto_type=dto, owner=cls, field_name=field)
+            __mongorepo__['methods'][k := f'{prefix}{field}__pop'] = pop_method
+            setattr(cls, k, __mongorepo__['methods'][k])
+
+            list_values_method = GetListValuesMethodAsync(dto_type=dto, owner=cls, field_name=field)
+            __mongorepo__['methods'][k := f'{prefix}{field}__list'] = list_values_method
+            setattr(cls, k, __mongorepo__['methods'][k])
 
     if integer_fields:
         for field in integer_fields:
@@ -229,11 +274,15 @@ def _handle_async_mongo_repository(
             increment_method = IncrementIntegerFieldMethodAsync(
                 dto, cls, field_name=field, weight=1,
             )
+            __mongorepo__['methods'][k := f'{prefix}incr__{field}'] = increment_method
+            setattr(cls, k, __mongorepo__['methods'][k])
+
             decrement_method = IncrementIntegerFieldMethodAsync(
                 dto, cls, field_name=field, weight=-1,
             )
+            __mongorepo__['methods'][k := f'{prefix}decr__{field}'] = decrement_method
+            setattr(cls, k, __mongorepo__['methods'][k])
 
-            setattr(cls, f'{prefix}incr__{field}', increment_method)
-            setattr(cls, f'{prefix}decr__{field}', decrement_method)
+    cls.__mongorepo__ = __mongorepo__
 
     return cls

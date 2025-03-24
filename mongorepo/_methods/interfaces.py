@@ -1,9 +1,13 @@
 import typing as t
 
-from mongorepo._base import Dataclass
+from mongorepo._base import Dataclass, SessionType
 
 if t.TYPE_CHECKING:
     from pymongo.results import InsertManyResult, UpdateResult
+
+
+class MongorepoMethod(t.Protocol[SessionType]):
+    session: SessionType | None
 
 
 class IGetMethod[T: Dataclass](t.Protocol):

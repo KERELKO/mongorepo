@@ -1,7 +1,7 @@
 # mypy: disable-error-code="empty-body"
 from typing import AsyncGenerator
 
-from mongorepo import implements
+from mongorepo.implements import implements
 from mongorepo.implements.methods import (
     AddBatchMethod,
     AddMethod,

@@ -17,17 +17,17 @@ from ._base import DTO, Access, Index
 from .classes import BaseAsyncMongoRepository, BaseMongoRepository
 from .decorators import async_mongo_repository as async_repository
 from .decorators import mongo_repository as repository
-from .implements.decorator import implements
 from .implements.methods import Method
 from .queries import AggregationStage, Condition, Operation, UpdateModifier
+from .utils import use_collection
 
 __all__ = [
+    'use_collection',
     'Method',
     'UpdateModifier',
     'AggregationStage',
     'Operation',
     'Condition',
-    'implements',
     'BaseMongoRepository',
     'BaseAsyncMongoRepository',
     'repository',

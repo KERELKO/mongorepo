@@ -2,17 +2,17 @@ import inspect
 from typing import Any, Callable
 
 from mongorepo import exceptions
-from mongorepo._base import Dataclass, MethodAction
-from mongorepo._base import ParameterEnum as MongorepoParameter
-from mongorepo._collections import HasCollectionProvider
+from mongorepo._base import Dataclass
 from mongorepo.utils import _get_defaults
 
+from ._types import MethodAction
+from ._types import ParameterEnum as MongorepoParameter
 from ._utils import implements_mapper, initialize_callable_mongorepo_method
 from .methods import Method, SpecificFieldMethod, SpecificMethod
 
 
 def _substitute_specific_method(
-    cls: HasCollectionProvider,
+    cls,
     method: SpecificMethod | SpecificFieldMethod,
     dto_type: type[Dataclass],
     id_field: str | None = None,

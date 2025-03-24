@@ -1,6 +1,6 @@
 from typing import Iterable
 
-from mongorepo import implements
+from mongorepo.implements import implements
 from mongorepo.implements.methods import (
     AddBatchMethod,
     AddMethod,

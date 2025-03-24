@@ -1,7 +1,7 @@
 import inspect
 from typing import Any, Callable, Protocol
 
-from mongorepo._base import LParameter, MethodAction, ParameterEnum
+from ._types import LParameter, MethodAction, ParameterEnum
 
 
 class FieldAlias:

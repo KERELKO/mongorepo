@@ -3,8 +3,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Generic, Protocol
 
-from mongorepo import DTO, Access
-from mongorepo._collections import use_collection
+from mongorepo import DTO, Access, use_collection
 from mongorepo.classes import BaseMongoRepository
 from mongorepo.decorators import mongo_repository
 from tests.common import (

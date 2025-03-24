@@ -1,12 +1,16 @@
 import asyncio
-from typing import TYPE_CHECKING, Any, AsyncGenerator, Generator, Generic
+from typing import Any, AsyncGenerator, Generator, Generic
 
-from motor.motor_asyncio import AsyncIOMotorCollection
+from motor.motor_asyncio import (
+    AsyncIOMotorClientSession,
+    AsyncIOMotorCollection,
+)
+from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
+from pymongo.results import InsertManyResult
 
 from mongorepo import exceptions
 from mongorepo._base import DTO, Dataclass, Index, MetaAttributes
-from mongorepo._collections import COLLECTION_PROVIDER, CollectionProvider
 from mongorepo._methods.impl import (
     AddBatchMethod,
     AddMethod,
@@ -26,6 +30,7 @@ from mongorepo._methods.impl_async import (
     UpdateMethodAsync,
 )
 from mongorepo.utils import (
+    CollectionProvider,
     _create_index,
     _create_index_async,
     _get_converter,
@@ -33,8 +38,7 @@ from mongorepo.utils import (
     _get_meta_attributes,
 )
 
-if TYPE_CHECKING:
-    from pymongo.results import InsertManyResult
+from ._common import MongorepoDict
 
 
 class BaseMongoRepository(Generic[DTO]):
@@ -63,7 +67,10 @@ class BaseMongoRepository(Generic[DTO]):
 
     def __new__(cls, *args, **kwargs) -> 'BaseMongoRepository[DTO]':
         instance = super().__new__(cls)
-        dto_type = _get_dto_from_origin(cls)
+        try:
+            dto_type = _get_dto_from_origin(cls)
+        except exceptions.NoDTOTypeException:
+            dto_type = None
 
         try:
             meta: MetaAttributes[Collection] | None = _get_meta_attributes(cls)
@@ -71,11 +78,14 @@ class BaseMongoRepository(Generic[DTO]):
             meta = None
 
         id_field: str | None = meta['id_field'] if meta else None
+
+        if dto_type is None:
+            dto_type = meta['dto'] if meta else None
+            if not dto_type:
+                raise exceptions.NoDTOTypeException
+
         collection: Collection | None = meta['collection'] if meta else None
         index: Index | str | None = meta['index'] if meta else None
-
-        if not hasattr(cls, COLLECTION_PROVIDER):
-            setattr(cls, COLLECTION_PROVIDER, CollectionProvider(collection))
 
         if index is not None:
             if collection is None:
@@ -84,41 +94,46 @@ class BaseMongoRepository(Generic[DTO]):
                 )
             _create_index(index, collection=collection)
         converter = _get_converter(dto_type, id_field)
-        setattr(
-            instance,
-            '_mongorepo_add',
-            AddMethod(dto_type, cls, id_field=id_field, converter=converter),  # type: ignore
-        )
-        setattr(
-            instance,
-            '_mongorepo_add_batch',
-            AddBatchMethod(dto_type, cls, id_field=id_field, converter=converter),  # type: ignore
-        )
-        setattr(
-            instance,
-            '_mongorepo_get',
-            GetMethod(dto_type, cls, id_field=id_field, converter=converter),  # type: ignore
-        )
-        setattr(
-            instance,
-            '_mongorepo_get_list',
-            GetListMethod(dto_type, cls, id_field=id_field, converter=converter),  # type: ignore
-        )
-        setattr(
-            instance,
-            '_mongorepo_get_all',
-            GetAllMethod(dto_type, cls, id_field=id_field, converter=converter),  # type: ignore
-        )
-        setattr(
-            instance,
-            '_mongorepo_update',
-            UpdateMethod(dto_type, cls, id_field=id_field, converter=converter),  # type: ignore
-        )
-        setattr(
-            instance,
-            '_mongorepo_delete',
-            DeleteMethod(dto_type, cls, id_field=id_field, converter=converter),  # type: ignore
-        )
+
+        add_method = AddMethod(dto_type, cls, id_field=id_field, converter=converter)  # type: ignore  # noqa
+        add_batch_method = AddBatchMethod(dto_type, cls, id_field=id_field, converter=converter)  # type: ignore  # noqa
+        get_method = GetMethod(dto_type, cls, id_field=id_field, converter=converter)  # type: ignore  # noqa
+        get_list_method = GetListMethod(dto_type, cls, id_field=id_field, converter=converter)  # type: ignore  # noqa
+        get_all_method = GetAllMethod(dto_type, cls, id_field=id_field, converter=converter)  # type: ignore  # noqa
+        update_method = UpdateMethod(dto_type, cls, id_field=id_field, converter=converter)  # type: ignore  # noqa
+        delete_method = DeleteMethod(dto_type, cls, id_field=id_field, converter=converter)  # type: ignore  # noqa
+
+        if hasattr(cls, '__mongorepo__'):
+            __mongorepo__: MongorepoDict[ClientSession, Collection] = getattr(cls, '__mongorepo__')
+            __mongorepo__['methods']['add'] = add_method
+            __mongorepo__['methods']['add_batch'] = add_batch_method
+            __mongorepo__['methods']['get'] = get_method
+            __mongorepo__['methods']['get_list'] = get_list_method
+            __mongorepo__['methods']['get_all'] = get_all_method
+            __mongorepo__['methods']['update'] = update_method
+            __mongorepo__['methods']['delete'] = delete_method
+        else:
+            __mongorepo__ = MongorepoDict[ClientSession, Collection](
+                collection_provider=CollectionProvider(obj=cls, collection=collection),
+                methods={
+                    'add': add_method,
+                    'add_batch': add_batch_method,
+                    'get': get_method,
+                    'get_list': get_list_method,
+                    'get_all': get_all_method,
+                    'update': update_method,
+                    'delete': delete_method,
+                },
+            )
+            cls.__mongorepo__ = __mongorepo__
+
+        setattr(cls, '_mongorepo_add', __mongorepo__['methods']['add'])
+        setattr(cls, '_mongorepo_add_batch', __mongorepo__['methods']['add_batch'])
+        setattr(cls, '_mongorepo_get', __mongorepo__['methods']['get'])
+        setattr(cls, '_mongorepo_get_list', __mongorepo__['methods']['get_list'])
+        setattr(cls, '_mongorepo_get_all', __mongorepo__['methods']['get_all'])
+        setattr(cls, '_mongorepo_update', __mongorepo__['methods']['update'])
+        setattr(cls, '_mongorepo_delete', __mongorepo__['methods']['delete'])
 
         return instance
 
@@ -170,7 +185,10 @@ class BaseAsyncMongoRepository(Generic[DTO]):
 
     def __new__(cls, *args, **kwargs) -> 'BaseAsyncMongoRepository[DTO]':
         instance = super().__new__(cls)
-        dto_type = _get_dto_from_origin(cls)
+        try:
+            dto_type = _get_dto_from_origin(cls)
+        except exceptions.NoDTOTypeException:
+            dto_type = None
 
         try:
             meta: MetaAttributes[AsyncIOMotorCollection] | None = _get_meta_attributes(cls)
@@ -178,11 +196,14 @@ class BaseAsyncMongoRepository(Generic[DTO]):
             meta = None
 
         id_field: str | None = meta['id_field'] if meta else None
+
+        if dto_type is None:
+            dto_type = meta['dto'] if meta else None
+            if not dto_type:
+                raise exceptions.NoDTOTypeException
+
         collection: AsyncIOMotorCollection | None = meta['collection'] if meta else None
         index: Index | str | None = meta['index'] if meta else None
-
-        if not hasattr(cls, COLLECTION_PROVIDER):
-            setattr(cls, COLLECTION_PROVIDER, CollectionProvider(collection))
 
         if index is not None:
             if collection is None:
@@ -191,56 +212,51 @@ class BaseAsyncMongoRepository(Generic[DTO]):
                 )
             asyncio.create_task(_create_index_async(index, collection=collection))
         converter = _get_converter(dto_type, id_field)
-        setattr(
-            instance,
-            '_mongorepo_add',
-            AddMethodAsync(dto_type, cls, id_field=id_field, converter=converter),  # type: ignore
-        )
-        setattr(
-            instance,
-            '_mongorepo_add_batch',
-            AddBatchMethodAsync(
-                dto_type, cls, id_field=id_field, converter=converter,  # type: ignore
-            ),
-        )
-        setattr(
-            instance,
-            '_mongorepo_get',
-            GetMethodAsync(dto_type, cls, id_field=id_field, converter=converter),  # type: ignore
-        )
-        setattr(
-            instance,
-            '_mongorepo_get_list',
-            GetListMethodAsync(
-                dto_type, cls, id_field=id_field, converter=converter,  # type: ignore
-            ),
-        )
-        setattr(
-            instance,
-            '_mongorepo_get_all',
-            GetAllMethodAsync(
-                dto_type, cls, id_field=id_field, converter=converter,  # type: ignore
-            ),
-        )
-        setattr(
-            instance,
-            '_mongorepo_update',
-            UpdateMethodAsync(
-                dto_type, cls, id_field=id_field, converter=converter,  # type: ignore
-            ),
-        )
-        setattr(
-            instance,
-            '_mongorepo_delete',
-            DeleteMethodAsync(
-                dto_type, cls, id_field=id_field, converter=converter,  # type: ignore
-            ),
-        )
+
+        add_method = AddMethodAsync(dto_type, cls, id_field=id_field, converter=converter)  # type: ignore  # noqa
+        add_batch_method = AddBatchMethodAsync(dto_type, cls, id_field=id_field, converter=converter)  # type: ignore  # noqa
+        get_method = GetMethodAsync(dto_type, cls, id_field=id_field, converter=converter)  # type: ignore  # noqa
+        get_list_method = GetListMethodAsync(dto_type, cls, id_field=id_field, converter=converter)  # type: ignore  # noqa
+        get_all_method = GetAllMethodAsync(dto_type, cls, id_field=id_field, converter=converter)  # type: ignore  # noqa
+        update_method = UpdateMethodAsync(dto_type, cls, id_field=id_field, converter=converter)  # type: ignore  # noqa
+        delete_method = DeleteMethodAsync(dto_type, cls, id_field=id_field, converter=converter)  # type: ignore  # noqa
+
+        if hasattr(cls, '__mongorepo__'):
+            __mongorepo__: MongorepoDict[AsyncIOMotorClientSession, AsyncIOMotorCollection] = getattr(cls, '__mongorepo__')  # noqa
+            __mongorepo__['methods']['add'] = add_method
+            __mongorepo__['methods']['add_batch'] = add_batch_method
+            __mongorepo__['methods']['get'] = get_method
+            __mongorepo__['methods']['get_list'] = get_list_method
+            __mongorepo__['methods']['get_all'] = get_all_method
+            __mongorepo__['methods']['update'] = update_method
+            __mongorepo__['methods']['delete'] = delete_method
+        else:
+            __mongorepo__ = MongorepoDict[AsyncIOMotorClientSession, AsyncIOMotorCollection](
+                collection_provider=CollectionProvider(obj=cls, collection=collection),
+                methods={
+                    'add': add_method,
+                    'add_batch': add_batch_method,
+                    'get': get_method,
+                    'get_list': get_list_method,
+                    'get_all': get_all_method,
+                    'update': update_method,
+                    'delete': delete_method,
+                },
+            )
+            cls.__mongorepo__ = __mongorepo__
+
+        setattr(cls, '_mongorepo_add', __mongorepo__['methods']['add'])
+        setattr(cls, '_mongorepo_add_batch', __mongorepo__['methods']['add_batch'])
+        setattr(cls, '_mongorepo_get', __mongorepo__['methods']['get'])
+        setattr(cls, '_mongorepo_get_list', __mongorepo__['methods']['get_list'])
+        setattr(cls, '_mongorepo_get_all', __mongorepo__['methods']['get_all'])
+        setattr(cls, '_mongorepo_update', __mongorepo__['methods']['update'])
+        setattr(cls, '_mongorepo_delete', __mongorepo__['methods']['delete'])
 
         return instance
 
     async def get(self, **filters: Any) -> DTO | None:
-        return await self._mongorepo_get(**filters)  # type: ignore
+        return await self.__class__._mongorepo_get(**filters)  # type: ignore
 
     def get_all(self, **filters: Any) -> AsyncGenerator[DTO, None]:
         return self._mongorepo_get_all(**filters)  # type: ignore

@@ -3,8 +3,7 @@ from typing import Generic
 
 import pytest
 
-from mongorepo import DTO, Index
-from mongorepo._collections import use_collection
+from mongorepo import DTO, Index, use_collection
 from mongorepo.classes import BaseMongoRepository
 from mongorepo.exceptions import NoDTOTypeException
 from tests.common import ComplicatedDTO, DTOWithID, SimpleDTO, in_collection
@@ -103,9 +102,10 @@ def test_can_update_partially():
 def test_can_search_with_id():
 
     with in_collection(DTOWithID) as coll:
-        @use_collection(coll)
-        class TestMongoRepository(BaseMongoRepository[DTOWithID]):
-            ...
+        class TestMongoRepository(BaseMongoRepository):
+            class Meta:
+                dto = DTOWithID
+                collection = coll
 
         repo = TestMongoRepository()
 

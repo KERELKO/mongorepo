@@ -2,7 +2,6 @@ from typing import Callable
 
 from mongorepo import exceptions
 from mongorepo._base import Dataclass
-from mongorepo._collections import HasCollectionProvider
 from mongorepo._methods.impl import AddBatchMethod as CallableAddBatchMethod
 from mongorepo._methods.impl import AddMethod as CallableAddMethod
 from mongorepo._methods.impl import \
@@ -102,7 +101,7 @@ def implements_mapper(specific_method: SpecificMethod) -> type:
 
 def initialize_callable_mongorepo_method(
     mongorepo_method: type,
-    owner: HasCollectionProvider,
+    owner: type,
     dto_type: type[Dataclass],
     field_name: str | None = None,
     integer_weight: int | None = None,

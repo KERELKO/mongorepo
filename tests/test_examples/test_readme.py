@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 import pymongo
 from motor.motor_asyncio import AsyncIOMotorClient
 
-from mongorepo._collections import use_collection
+from mongorepo import use_collection
 from mongorepo.classes import BaseMongoRepository
 
 

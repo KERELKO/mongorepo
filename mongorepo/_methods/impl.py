@@ -7,7 +7,7 @@ from pymongo.collection import Collection
 from pymongo.results import InsertManyResult, UpdateResult
 
 from mongorepo._base import Dataclass
-from mongorepo._collections import HasCollectionProvider
+from mongorepo._common import HasMongorepoDict
 from mongorepo._modifiers.base import ModifierAfter, ModifierBefore
 from mongorepo.utils import _get_converter, _get_dataclass_fields
 
@@ -16,7 +16,7 @@ class AddMethod[T: Dataclass]:
     def __init__(
         self,
         dto_type: type[T],
-        owner: HasCollectionProvider,
+        owner: HasMongorepoDict[ClientSession, Collection],
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
         converter: t.Callable[[type[T], dict[str, t.Any]], T] | None = None,
         session: ClientSession | None = None,
@@ -33,7 +33,7 @@ class AddMethod[T: Dataclass]:
         self.kwargs = kwargs
 
     def __call__(self, dto: T) -> T:
-        collection: Collection = self.owner._mongorepo_collection_provider
+        collection: Collection[t.Any] = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
             modifier_before.modify(**{'dto': dto})
@@ -55,7 +55,7 @@ class AddBatchMethod[T: Dataclass]:
     def __init__(
         self,
         dto_type: type[T],
-        owner: HasCollectionProvider,
+        owner: HasMongorepoDict[ClientSession, Collection],
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
         converter: t.Callable[[type[T], dict[str, t.Any]], T] | None = None,
         session: ClientSession | None = None,
@@ -72,7 +72,7 @@ class AddBatchMethod[T: Dataclass]:
         self.kwargs = kwargs
 
     def __call__(self, dto_list: list[T]) -> InsertManyResult:
-        collection: Collection = self.owner._mongorepo_collection_provider
+        collection: Collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
             modifier_before.modify(**{'dto_list': dto_list})
@@ -97,7 +97,7 @@ class GetAllMethod[T: Dataclass]:
     def __init__(
         self,
         dto_type: type[T],
-        owner: HasCollectionProvider,
+        owner: HasMongorepoDict[ClientSession, Collection],
         modifiers: tuple[ModifierBefore, ...] = (),
         converter: t.Callable[[type[T], dict[str, t.Any]], T] | None = None,
         session: ClientSession | None = None,
@@ -112,7 +112,7 @@ class GetAllMethod[T: Dataclass]:
         self.kwargs = kwargs
 
     def __call__(self, **filters: t.Any) -> t.Generator[T, None, None]:
-        collection: Collection = self.owner._mongorepo_collection_provider
+        collection: Collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
             modifier_before.modify(**filters)
@@ -126,7 +126,7 @@ class GetListMethod[T: Dataclass]:
     def __init__(
         self,
         dto_type: type[T],
-        owner: HasCollectionProvider,
+        owner: HasMongorepoDict[ClientSession, Collection],
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
         converter: t.Callable[[type[T], dict[str, t.Any]], T] | None = None,
         session: ClientSession | None = None,
@@ -142,7 +142,7 @@ class GetListMethod[T: Dataclass]:
         self.kwargs = kwargs
 
     def __call__(self, offset: int = 0, limit: int = 20, **filters: t.Any) -> list[T]:
-        collection: Collection = self.owner._mongorepo_collection_provider
+        collection: Collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
             modifier_before.modify(**filters)
@@ -160,7 +160,7 @@ class GetMethod[T: Dataclass]:
     def __init__(
         self,
         dto_type: type[T],
-        owner: HasCollectionProvider,
+        owner: HasMongorepoDict[ClientSession, Collection],
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
         converter: t.Callable[[type[T], dict[str, t.Any]], T] | None = None,
         session: ClientSession | None = None,
@@ -177,7 +177,7 @@ class GetMethod[T: Dataclass]:
         self.kwargs = kwargs
 
     def __call__(self, **filters: t.Any) -> T | None:
-        collection: Collection = self.owner._mongorepo_collection_provider
+        collection: Collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
             modifier_before.modify(**filters)
@@ -195,7 +195,7 @@ class DeleteMethod[T: Dataclass]:
     def __init__(
         self,
         dto_type: type[T],
-        owner: HasCollectionProvider,
+        owner: HasMongorepoDict[ClientSession, Collection],
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
         session: ClientSession | None = None,
         **kwargs,
@@ -208,7 +208,7 @@ class DeleteMethod[T: Dataclass]:
         self.kwargs = kwargs
 
     def __call__(self, **filters: t.Any) -> bool:
-        collection: Collection = self.owner._mongorepo_collection_provider
+        collection: Collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
             modifier_before.modify(**filters)
@@ -225,7 +225,7 @@ class UpdateMethod[T: Dataclass]:
     def __init__(
         self,
         dto_type: type[T],
-        owner: HasCollectionProvider,
+        owner: HasMongorepoDict[ClientSession, Collection],
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
         converter: t.Callable[[type[T], dict[str, t.Any]], T] | None = None,
         session: ClientSession | None = None,
@@ -241,7 +241,7 @@ class UpdateMethod[T: Dataclass]:
         self.kwargs = kwargs
 
     def __call__(self, dto: T, **filters: t.Any) -> T | None:
-        collection: Collection = self.owner._mongorepo_collection_provider
+        collection: Collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
             modifier_before.modify(**filters)
@@ -265,7 +265,7 @@ class UpdateListFieldMethod[T: Dataclass]:
     def __init__(
         self,
         dto_type: type[T],
-        owner: HasCollectionProvider,
+        owner: HasMongorepoDict[ClientSession, Collection],
         field_name: str,
         action: t.Literal['$push', '$pull'],
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
@@ -287,7 +287,7 @@ class UpdateListFieldMethod[T: Dataclass]:
         self.kwargs = kwargs
 
     def __call__(self, value: t.Any, **filters: t.Any) -> UpdateResult:
-        collection: Collection = self.owner._mongorepo_collection_provider
+        collection: Collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
             modifier_before.modify(**filters)
@@ -308,7 +308,7 @@ class AppendListMethod[T: Dataclass](UpdateListFieldMethod[T]):
     def __init__(
         self,
         dto_type: type[T],
-        owner: HasCollectionProvider,
+        owner: HasMongorepoDict[ClientSession, Collection],
         field_name: str,
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
         session: ClientSession | None = None,
@@ -334,7 +334,7 @@ class RemoveListMethod[T: Dataclass](UpdateListFieldMethod[T]):
     def __init__(
         self,
         dto_type: type[T],
-        owner: HasCollectionProvider,
+        owner: HasMongorepoDict[ClientSession, Collection],
         field_name: str,
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
         session: ClientSession | None = None,
@@ -360,7 +360,7 @@ class GetListValuesMethod[T: Dataclass]:
     def __init__(
         self,
         dto_type: type[T],
-        owner: HasCollectionProvider,
+        owner: HasMongorepoDict[ClientSession, Collection],
         field_name: str,
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
         session: ClientSession | None = None,
@@ -380,7 +380,7 @@ class GetListValuesMethod[T: Dataclass]:
         self.kwargs = kwargs
 
     def __call__(self, offset: int, limit: int, **filters: t.Any) -> list[T] | list[t.Any] | None:
-        collection: Collection = self.owner._mongorepo_collection_provider
+        collection: Collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
             modifier_before.modify(**filters)
@@ -409,7 +409,7 @@ class PopListMethod[T: Dataclass]:
     def __init__(
         self,
         dto_type: type[T],
-        owner: HasCollectionProvider,
+        owner: HasMongorepoDict[ClientSession, Collection],
         field_name: str,
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
         session: ClientSession | None = None,
@@ -429,7 +429,7 @@ class PopListMethod[T: Dataclass]:
         self.kwargs = kwargs
 
     def __call__(self, **filters: t.Any) -> T | t.Any:
-        collection: Collection = self.owner._mongorepo_collection_provider
+        collection: Collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
             modifier_before.modify(**filters)
@@ -456,7 +456,7 @@ class IncrementIntegerFieldMethod[T: Dataclass]:
     def __init__(
         self,
         dto_type: type[T],
-        owner: HasCollectionProvider,
+        owner: HasMongorepoDict[ClientSession, Collection],
         field_name: str,
         weight: int = 1,
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
@@ -473,7 +473,7 @@ class IncrementIntegerFieldMethod[T: Dataclass]:
         self.kwargs = kwargs
 
     def __call__(self, weight: int | None = None, **filters) -> UpdateResult:
-        collection: Collection = self.owner._mongorepo_collection_provider
+        collection: Collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
             modifier_before.modify(**filters)

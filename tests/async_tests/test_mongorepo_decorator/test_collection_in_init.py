@@ -2,14 +2,13 @@ import pytest
 from motor.motor_asyncio import AsyncIOMotorCollection
 
 import mongorepo
-from mongorepo._collections import use_collection
 from tests.common import SimpleDTO, in_async_collection
 
 
 @pytest.mark.skip
 async def test_can_use_collection_in_init():
     async with in_async_collection(SimpleDTO) as collection:
-        @use_collection(collection)
+        @mongorepo.use_collection(collection)
         @mongorepo.async_repository()
         class Repository:
             class Meta:

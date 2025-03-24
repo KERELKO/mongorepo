@@ -1,4 +1,4 @@
-from mongorepo import implements
+from mongorepo.implements import implements
 from mongorepo.implements.methods import (
     AddMethod,
     ListAppendMethod,

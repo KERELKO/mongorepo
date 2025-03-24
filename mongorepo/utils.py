@@ -11,8 +11,8 @@ from pymongo.collection import Collection
 from mongorepo import exceptions
 from mongorepo._base import (
     DTO,
-    MONGOREPO_COLLECTION,
     Access,
+    CollectionProvider,
     Dataclass,
     Index,
     MetaAttributes,
@@ -22,15 +22,6 @@ from mongorepo._base import (
 def raise_exc(exc: Exception | type[Exception]) -> NoReturn:
     """Allows to write one-lined exceptions."""
     raise exc
-
-
-def _deprecated(msg: str):
-    def decorator(func: Callable):
-        def wrapper(*args, **kwargs):
-            warnings.warn(msg)
-            return func(*args, **kwargs)
-        return wrapper
-    return decorator
 
 
 def get_prefix(access: Access | None, cls: type | None = None) -> str:
@@ -57,25 +48,6 @@ def _get_meta(cls: type) -> type:
     if not isinstance(meta, type):
         raise exceptions.NoMetaException
     return meta
-
-
-@_deprecated('No sense to use it')
-def _get_collection_and_dto(cls: type, raise_exceptions: bool = True) -> dict[str, Any]:
-    """Collect `dto` and `collection` attributes from `Meta` class."""
-    attributes: dict[str, Any] = {}
-    meta = _get_meta(cls)
-
-    dto = meta.__dict__.get('dto', None)
-    if not dto and raise_exceptions:
-        raise exceptions.NoDTOTypeException
-    attributes['dto'] = dto
-
-    collection = meta.__dict__.get('collection', None)
-    if collection is None and raise_exceptions:
-        raise exceptions.NoCollectionException
-    attributes['collection'] = collection
-
-    return attributes
 
 
 def _get_meta_attributes(cls: type) -> MetaAttributes:
@@ -204,7 +176,7 @@ def _get_dto_from_origin(cls: type) -> type[Dataclass]:
     if dto is DTO:
         raise exceptions.NoDTOTypeException
     if not is_dataclass(dto):
-        raise exceptions.NotDataClass
+        raise exceptions.NoDTOTypeException
 
     return dto
 
@@ -307,17 +279,6 @@ def _get_dataclass_fields(
     return dataclass_fields
 
 
-def _get_collection_from_object(instance: Any) -> AsyncIOMotorCollection | Collection[Any]:
-    """Tries to get collection from object attributes."""
-    col: Any | None = getattr(instance, MONGOREPO_COLLECTION, None)
-    if not isinstance(col, (AsyncIOMotorCollection, Collection)):
-        raise exceptions.MongorepoException(
-            message='Invalid collection type: expected=AsyncIOMotorCollection | Collection, '
-            f'got={col.__class__.__name__}',
-        )
-    return col
-
-
 def _validate_method_annotations(method: Callable) -> None:
     if not method.__annotations__:
         raise exceptions.MongorepoException(message=f'No type hints for {method.__name__}()')
@@ -379,3 +340,37 @@ def _get_defaults(func: Callable) -> dict[str, Any]:
         if param.default is not inspect._empty:
             result[param.name] = param.default
     return result
+
+
+def use_collection[T](
+    collection: AsyncIOMotorCollection | Collection[Any],
+) -> Callable[[T], T]:
+    """
+    Simple decorator to make mongorepo use specific collection,
+    useful for dynamic look up of collection
+
+    ```
+    # 1. Valid
+    # @use_collection(my_collection)
+    @mongorepo.repository(add=True, get=True)
+    # 2. Valid
+    # @use_collection(my_collection)
+    class Repository:
+        class Meta:
+            dto = SimpleDTO
+
+    def provide_repository() -> Repository:
+        # 3. Valid
+        return use_collection(my_collection)(Repository)()
+
+    repo = provide_repository()
+    ```
+    """
+    def wrapper(cls: T) -> T:
+        provider = CollectionProvider(cls, collection)  # type: ignore
+        if (__mongorepo__ := getattr(cls, '__mongorepo__', None)) is not None:
+            __mongorepo__['collection_provider'] = provider  # type: ignore
+        else:
+            setattr(cls, '__mongorepo__', {'collection_provider': provider, 'methods': {}})
+        return cls
+    return wrapper

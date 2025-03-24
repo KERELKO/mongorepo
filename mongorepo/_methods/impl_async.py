@@ -9,7 +9,7 @@ from motor.motor_asyncio import (
 from pymongo.results import InsertManyResult, UpdateResult
 
 from mongorepo._base import Dataclass
-from mongorepo._collections import HasCollectionProvider
+from mongorepo._common import HasMongorepoDict
 from mongorepo._modifiers.base import ModifierAfter, ModifierBefore
 from mongorepo.utils import _get_converter, _get_dataclass_fields
 
@@ -18,7 +18,7 @@ class AddMethodAsync[T: Dataclass]:
     def __init__(
         self,
         dto_type: type[T],
-        owner: HasCollectionProvider,
+        owner: HasMongorepoDict[AsyncIOMotorClientSession, AsyncIOMotorCollection],
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
         converter: t.Callable[[type[T], dict[str, t.Any]], T] | None = None,
         session: AsyncIOMotorClientSession | None = None,
@@ -35,7 +35,7 @@ class AddMethodAsync[T: Dataclass]:
         self.kwargs = kwargs
 
     async def __call__(self, dto: T) -> T:
-        collection: AsyncIOMotorCollection = self.owner._mongorepo_collection_provider
+        collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
             modifier_before.modify(**{'dto': dto})
@@ -57,7 +57,7 @@ class AddBatchMethodAsync[T: Dataclass]:
     def __init__(
         self,
         dto_type: type[T],
-        owner: HasCollectionProvider,
+        owner: HasMongorepoDict[AsyncIOMotorClientSession, AsyncIOMotorCollection],
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
         converter: t.Callable[[type[T], dict[str, t.Any]], T] | None = None,
         session: AsyncIOMotorClientSession | None = None,
@@ -74,7 +74,7 @@ class AddBatchMethodAsync[T: Dataclass]:
         self.kwargs = kwargs
 
     async def __call__(self, dto_list: list[T]) -> InsertManyResult:
-        collection: AsyncIOMotorCollection = self.owner._mongorepo_collection_provider
+        collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
             modifier_before.modify(**{'dto_list': dto_list})
@@ -99,7 +99,7 @@ class GetAllMethodAsync[T: Dataclass]:
     def __init__(
         self,
         dto_type: type[T],
-        owner: HasCollectionProvider,
+        owner: HasMongorepoDict[AsyncIOMotorClientSession, AsyncIOMotorCollection],
         modifiers: tuple[ModifierBefore, ...] = (),
         converter: t.Callable[[type[T], dict[str, t.Any]], T] | None = None,
         session: AsyncIOMotorClientSession | None = None,
@@ -114,7 +114,7 @@ class GetAllMethodAsync[T: Dataclass]:
         self.kwargs = kwargs
 
     async def __call__(self, **filters: t.Any) -> t.AsyncGenerator[T, None]:
-        collection: AsyncIOMotorCollection = self.owner._mongorepo_collection_provider
+        collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
             modifier_before.modify(**filters)
@@ -128,7 +128,7 @@ class GetListMethodAsync[T: Dataclass]:
     def __init__(
         self,
         dto_type: type[T],
-        owner: HasCollectionProvider,
+        owner: HasMongorepoDict[AsyncIOMotorClientSession, AsyncIOMotorCollection],
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
         converter: t.Callable[[type[T], dict[str, t.Any]], T] | None = None,
         session: AsyncIOMotorClientSession | None = None,
@@ -144,7 +144,7 @@ class GetListMethodAsync[T: Dataclass]:
         self.kwargs = kwargs
 
     async def __call__(self, offset: int = 0, limit: int = 20, **filters: t.Any) -> list[T]:
-        collection: AsyncIOMotorCollection = self.owner._mongorepo_collection_provider
+        collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
             modifier_before.modify(**filters)
@@ -162,7 +162,7 @@ class GetMethodAsync[T: Dataclass]:
     def __init__(
         self,
         dto_type: type[T],
-        owner: HasCollectionProvider,
+        owner: HasMongorepoDict[AsyncIOMotorClientSession, AsyncIOMotorCollection],
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
         converter: t.Callable[[type[T], dict[str, t.Any]], T] | None = None,
         session: AsyncIOMotorClientSession | None = None,
@@ -179,7 +179,7 @@ class GetMethodAsync[T: Dataclass]:
         self.kwargs = kwargs
 
     async def __call__(self, **filters: t.Any) -> T | None:
-        collection: AsyncIOMotorCollection = self.owner._mongorepo_collection_provider
+        collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
             modifier_before.modify(**filters)
@@ -197,7 +197,7 @@ class DeleteMethodAsync[T: Dataclass]:
     def __init__(
         self,
         dto_type: type[T],
-        owner: HasCollectionProvider,
+        owner: HasMongorepoDict[AsyncIOMotorClientSession, AsyncIOMotorCollection],
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
         session: AsyncIOMotorClientSession | None = None,
         **kwargs,
@@ -210,7 +210,7 @@ class DeleteMethodAsync[T: Dataclass]:
         self.kwargs = kwargs
 
     async def __call__(self, **filters: t.Any) -> bool:
-        collection: AsyncIOMotorCollection = self.owner._mongorepo_collection_provider
+        collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
             modifier_before.modify(**filters)
@@ -227,7 +227,7 @@ class UpdateMethodAsync[T: Dataclass]:
     def __init__(
         self,
         dto_type: type[T],
-        owner: HasCollectionProvider,
+        owner: HasMongorepoDict[AsyncIOMotorClientSession, AsyncIOMotorCollection],
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
         converter: t.Callable[[type[T], dict[str, t.Any]], T] | None = None,
         session: AsyncIOMotorClientSession | None = None,
@@ -243,7 +243,7 @@ class UpdateMethodAsync[T: Dataclass]:
         self.kwargs = kwargs
 
     async def __call__(self, dto: T, **filters: t.Any) -> T | None:
-        collection: AsyncIOMotorCollection = self.owner._mongorepo_collection_provider
+        collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
             modifier_before.modify(**filters)
@@ -267,7 +267,7 @@ class UpdateListFieldMethodAsync[T: Dataclass]:
     def __init__(
         self,
         dto_type: type[T],
-        owner: HasCollectionProvider,
+        owner: HasMongorepoDict[AsyncIOMotorClientSession, AsyncIOMotorCollection],
         field_name: str,
         action: t.Literal['$push', '$pull'],
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
@@ -289,7 +289,7 @@ class UpdateListFieldMethodAsync[T: Dataclass]:
         self.kwargs = kwargs
 
     async def __call__(self, value: t.Any, **filters: t.Any) -> UpdateResult:
-        collection: AsyncIOMotorCollection = self.owner._mongorepo_collection_provider
+        collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
             modifier_before.modify(**filters)
@@ -310,7 +310,7 @@ class AppendListMethodAsync[T: Dataclass](UpdateListFieldMethodAsync[T]):
     def __init__(
         self,
         dto_type: type[T],
-        owner: HasCollectionProvider,
+        owner: HasMongorepoDict[AsyncIOMotorClientSession, AsyncIOMotorCollection],
         field_name: str,
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
         session: AsyncIOMotorClientSession | None = None,
@@ -336,7 +336,7 @@ class RemoveListMethodAsync[T: Dataclass](UpdateListFieldMethodAsync[T]):
     def __init__(
         self,
         dto_type: type[T],
-        owner: HasCollectionProvider,
+        owner: HasMongorepoDict[AsyncIOMotorClientSession, AsyncIOMotorCollection],
         field_name: str,
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
         session: AsyncIOMotorClientSession | None = None,
@@ -362,7 +362,7 @@ class GetListValuesMethodAsync[T: Dataclass]:
     def __init__(
         self,
         dto_type: type[T],
-        owner: HasCollectionProvider,
+        owner: HasMongorepoDict[AsyncIOMotorClientSession, AsyncIOMotorCollection],
         field_name: str,
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
         session: AsyncIOMotorClientSession | None = None,
@@ -384,7 +384,7 @@ class GetListValuesMethodAsync[T: Dataclass]:
     async def __call__(
         self, offset: int, limit: int, **filters: t.Any,
     ) -> list[T] | list[t.Any] | None:
-        collection: AsyncIOMotorCollection = self.owner._mongorepo_collection_provider
+        collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
             modifier_before.modify(**filters)
@@ -413,7 +413,7 @@ class PopListMethodAsync[T: Dataclass]:
     def __init__(
         self,
         dto_type: type[T],
-        owner: HasCollectionProvider,
+        owner: HasMongorepoDict[AsyncIOMotorClientSession, AsyncIOMotorCollection],
         field_name: str,
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
         session: AsyncIOMotorClientSession | None = None,
@@ -433,7 +433,7 @@ class PopListMethodAsync[T: Dataclass]:
         self.kwargs = kwargs
 
     async def __call__(self, **filters: t.Any) -> T | t.Any:
-        collection: AsyncIOMotorCollection = self.owner._mongorepo_collection_provider
+        collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
             modifier_before.modify(**filters)
@@ -460,7 +460,7 @@ class IncrementIntegerFieldMethodAsync[T: Dataclass]:
     def __init__(
         self,
         dto_type: type[T],
-        owner: HasCollectionProvider,
+        owner: HasMongorepoDict[AsyncIOMotorClientSession, AsyncIOMotorCollection],
         field_name: str,
         weight: int = 1,
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
@@ -477,7 +477,7 @@ class IncrementIntegerFieldMethodAsync[T: Dataclass]:
         self.kwargs = kwargs
 
     async def __call__(self, weight: int | None = None, **filters) -> UpdateResult:
-        collection: AsyncIOMotorCollection = self.owner._mongorepo_collection_provider
+        collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
             modifier_before.modify(**filters)
