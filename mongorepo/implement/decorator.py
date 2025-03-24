@@ -18,7 +18,6 @@ def implement[T: type](*specific_methods: SpecificMethod) -> Callable[[T], T]:
             ...
 
     @implement(
-        IRepo,
         GetMethod(IRepo.get, filters=['title']),
         AddMethod(IRepo.add, dto='model'),
     )

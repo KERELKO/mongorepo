@@ -1,36 +1,30 @@
 import inspect
 from typing import Any, Callable, Protocol
 
+from mongorepo.modifiers.base import ModifierAfter, ModifierBefore
+
 from ._types import LParameter, MethodAction, ParameterEnum
+
+Modifiers = list[ModifierBefore | ModifierAfter]
 
 
 class FieldAlias:
     """Class that allow to set alias for `dataclass` field
-    ### Example:
+    ### Usage example:
     ```
     @dataclass
     class User:
         name: str
 
-    alias = FieldAlias('name', 'username')
-    ```
-
-    ### Usage Example:
-    ```
-    @dataclass
-    class User:
-        name: str
+    #                 User.name = username
+    username_alias = FieldAlias('name', 'username')
 
     class UserRepository(ABC):
         @abstractmethod
         def get_user(self, username: str) -> User | None:
             ...
 
-    @implement(
-        UserRepository,
-        #                                                      User.name = username
-        GetMethod(UserRepository.get_user, filters=[ FieldAlias('name', 'username') ])
-    )
+    @implement(GetMethod(UserRepository.get_user, filters=[username_alias]))
     class MongoUserRepository:
         ...
 
@@ -102,6 +96,7 @@ class SpecificMethod(Protocol):
     source: Callable
     params: dict[str, LParameter]
     action: MethodAction
+    modifiers: Modifiers
 
     @property
     def is_async(self) -> bool:
@@ -162,7 +157,7 @@ class GetMethod(Method, _ManageMethodFiltersMixin):
         def get(self, id: str) -> User:
             ...
 
-    @implement(Repo, GetMethod(Repo.get, filters=['id']))
+    @implement(GetMethod(Repo.get, filters=['id']))
     class MongoRepo:
         class Meta:
             dto = User
@@ -174,9 +169,15 @@ class GetMethod(Method, _ManageMethodFiltersMixin):
 
     """
 
-    def __init__(self, source: Callable, filters: list[FieldAlias | str]) -> None:
+    def __init__(
+        self,
+        source: Callable,
+        filters: list[FieldAlias | str],
+        modifiers: Modifiers | None = None,
+    ) -> None:
         super().__init__(source, **self.manage_filters(filters))  # type: ignore
         self.action = MethodAction.GET
+        self.modifiers = modifiers or []
 
 
 class AddMethod(Method):
@@ -195,7 +196,7 @@ class AddMethod(Method):
         def add(self, user: User) -> User:
             ...
 
-    @implement(Repo, AddMethod(Repo.add, dto='user'))
+    @implement(AddMethod(Repo.add, dto='user'))
     class MongoRepo:
         class Meta:
             dto = User
@@ -207,9 +208,15 @@ class AddMethod(Method):
 
     """
 
-    def __init__(self, source: Callable, dto: str) -> None:
+    def __init__(
+        self,
+        source: Callable,
+        dto: str,
+        modifiers: Modifiers | None = None,
+    ) -> None:
         super().__init__(source, **{dto: 'dto'})  # type: ignore
         self.action = MethodAction.ADD
+        self.modifiers = modifiers or []
 
 
 class UpdateMethod(Method, _ManageMethodFiltersMixin):
@@ -233,10 +240,7 @@ class UpdateMethod(Method, _ManageMethodFiltersMixin):
         def update_user(self, id: str, update_model: UpdateUser) -> User:
             ...
 
-    @implement(
-        Repo,
-        UpdateMethod(Repo.update_user, filters=['id'], dto='update_model')
-    )
+    @implement(UpdateMethod(Repo.update_user, filters=['id'], dto='update_model'))
     class MongoRepo:
         class Meta:
             dto = User
@@ -264,14 +268,30 @@ class UpdateMethod(Method, _ManageMethodFiltersMixin):
     # in practice, together with `name` will be updated `id`
     updated_user = repo.update(id='1', UpdateUser(name='creator'))
     print(updated_user)  # User(id=None, name='creator')
+
+    # To avoid it use UpdateSkipModifier class
+    @implement(
+        UpdateMethod(modifiers=[UpdateSkipModifier(skip_if_value=None)], ...)
+    )
+    class MongoRepo: ...
+
+    updated_user = repo.update(id='1', UpdateUser(name='creator'))
+    print(updated_user)  # User(id='1', name='creator')
     ```
 
     """
-    def __init__(self, source: Callable, dto: str, filters: list[FieldAlias | str]) -> None:
+    def __init__(
+        self,
+        source: Callable,
+        dto: str,
+        filters: list[FieldAlias | str],
+        modifiers: Modifiers | None = None,
+    ) -> None:
         super().__init__(
             source, **{dto: 'dto'}, **self.manage_filters(filters),  # type: ignore
         )
         self.action = MethodAction.UPDATE
+        self.modifiers = modifiers or []
 
 
 class DeleteMethod(Method, _ManageMethodFiltersMixin):
@@ -286,7 +306,7 @@ class DeleteMethod(Method, _ManageMethodFiltersMixin):
         def remove_user(self, id: str) -> bool:
             ...
 
-    @implement(Repo, DeleteMethod(Repo.remove_user, filters=['id']))
+    @implement(DeleteMethod(Repo.remove_user, filters=['id']))
     class MongoRepo:
         class Meta:
             dto = User
@@ -297,9 +317,15 @@ class DeleteMethod(Method, _ManageMethodFiltersMixin):
     ```
 
     """
-    def __init__(self, source: Callable, filters: list[FieldAlias | str]) -> None:
+    def __init__(
+        self,
+        source: Callable,
+        filters: list[FieldAlias | str],
+        modifiers: Modifiers | None = None,
+    ) -> None:
         super().__init__(source, **self.manage_filters(filters))
         self.action = MethodAction.DELETE
+        self.modifiers = modifiers or []
 
 
 class GetListMethod(Method, _ManageMethodFiltersMixin):
@@ -314,10 +340,7 @@ class GetListMethod(Method, _ManageMethodFiltersMixin):
         def get_list_of_books(self, category: str) -> list[Book]:
             ...
 
-    @implement(
-        BookRepo,
-        GetListMethod(BookRepo.get_list_of_books, filters=['category'])
-    )
+    @implement(GetListMethod(BookRepo.get_list_of_books, filters=['category']))
     class MongoRepo:
         class Meta:
             dto = Book
@@ -335,12 +358,14 @@ class GetListMethod(Method, _ManageMethodFiltersMixin):
         filters: list[FieldAlias | str],
         offset: str,
         limit: str,
+        modifiers: Modifiers | None = None,
     ) -> None:
         super().__init__(
             source, **{offset: 'offset', limit: 'limit'},  # type: ignore
             **self.manage_filters(filters),
         )
         self.action = MethodAction.GET_LIST
+        self.modifiers = modifiers or []
 
 
 class GetAllMethod(Method, _ManageMethodFiltersMixin):
@@ -355,10 +380,7 @@ class GetAllMethod(Method, _ManageMethodFiltersMixin):
         def get_all_books(self) -> typing.Generator[Book, None]:
             ...
 
-    @implement(
-        BookRepo,
-        GetAllMethod(BookRepo.get_all, filters=[])
-    )
+    @implement(GetAllMethod(BookRepo.get_all, filters=[]))
     class MongoRepo:
         class Meta:
             dto = Book
@@ -370,9 +392,15 @@ class GetAllMethod(Method, _ManageMethodFiltersMixin):
     ```
     """
 
-    def __init__(self, source: Callable, filters: list[FieldAlias | str]) -> None:
+    def __init__(
+        self,
+        source: Callable,
+        filters: list[FieldAlias | str],
+        modifiers: Modifiers | None = None,
+    ) -> None:
         super().__init__(source, **self.manage_filters(filters))
         self.action = MethodAction.GET_ALL
+        self.modifiers = modifiers or []
 
 
 class AddBatchMethod(Method):
@@ -387,10 +415,7 @@ class AddBatchMethod(Method):
         def add_books(self, books: list[Book]) -> None:
             ...
 
-    @implement(
-        BookRepo,
-        AddBatchMethod(BookRepo.add_books, dto_list=['books'])
-    )
+    @implement(AddBatchMethod(BookRepo.add_books, dto_list=['books']))
     class MongoRepo:
         class Meta:
             dto = Book
@@ -404,9 +429,15 @@ class AddBatchMethod(Method):
     ```
     """
 
-    def __init__(self, source: Callable, dto_list: str) -> None:
+    def __init__(
+        self,
+        source: Callable,
+        dto_list: str,
+        modifiers: Modifiers | None = None,
+    ) -> None:
         super().__init__(source, **{dto_list: 'dto_list'})  # type: ignore
         self.action = MethodAction.ADD_BATCH
+        self.modifiers = modifiers or []
 
 
 class ListAppendMethod(Method, _ManageMethodFiltersMixin):
@@ -433,7 +464,6 @@ class ListAppendMethod(Method, _ManageMethodFiltersMixin):
             ...
 
     @implement(
-        CargoRepo,
         ListAppendMethod(
             CargoRepo.add_box_to_cargo,
             field_name='boxes',  # Cargo.boxes
@@ -455,13 +485,19 @@ class ListAppendMethod(Method, _ManageMethodFiltersMixin):
     """
 
     def __init__(
-        self, source: Callable, field_name: str, value: str, filters: list[FieldAlias | str],
+        self,
+        source: Callable,
+        field_name: str,
+        value: str,
+        filters: list[FieldAlias | str],
+        modifiers: Modifiers | None = None,
     ) -> None:
         super().__init__(
             source, **{value: 'value'}, **self.manage_filters(filters),  # type: ignore
         )
         self.field_name = field_name
         self.action = MethodAction.LIST_APPEND
+        self.modifiers = modifiers or []
 
 
 class ListPopMethod(Method, _ManageMethodFiltersMixin):
@@ -488,12 +524,12 @@ class ListPopMethod(Method, _ManageMethodFiltersMixin):
             ...
 
     @implement(
-        CargoRepo,
         ListPopMethod(
             CargoRepo.pop_box,
             field_name='boxes',  # Cargo.boxes
             filters=['id'],
-        )
+        ),
+        ...
     )
     class MongoRepo:
         class Meta:
@@ -510,12 +546,19 @@ class ListPopMethod(Method, _ManageMethodFiltersMixin):
 
     """
 
-    def __init__(self, source: Callable, field_name: str, filters: list[FieldAlias | str]) -> None:
+    def __init__(
+        self,
+        source: Callable,
+        field_name: str,
+        filters: list[FieldAlias | str],
+        modifiers: Modifiers | None = None,
+    ) -> None:
         super().__init__(
             source, **self.manage_filters(filters),
         )
         self.field_name = field_name
         self.action = MethodAction.LIST_POP
+        self.modifiers = modifiers or []
 
 
 class ListRemoveMethod(Method, _ManageMethodFiltersMixin):
@@ -544,13 +587,13 @@ class ListRemoveMethod(Method, _ManageMethodFiltersMixin):
             ...
 
     @implement(
-        CargoRepo,
         ListRemoveMethod(
             CargoRepo.pop_box,
             field_name='boxes',  # Cargo.boxes
             value='box'
             filters=['id'],
-        )
+        ),
+        ...
     )
     class MongoRepo:
         class Meta:
@@ -567,13 +610,19 @@ class ListRemoveMethod(Method, _ManageMethodFiltersMixin):
     """
 
     def __init__(
-        self, source: Callable, field_name: str, value: str, filters: list[FieldAlias | str],
+        self,
+        source: Callable,
+        field_name: str,
+        value: str,
+        filters: list[FieldAlias | str],
+        modifiers: Modifiers | None = None,
     ) -> None:
         super().__init__(
             source, **{value: 'value'}, **self.manage_filters(filters),  # type: ignore
         )
         self.field_name = field_name
         self.action = MethodAction.LIST_REMOVE
+        self.modifiers = modifiers or []
 
 
 class ListGetFieldValuesMethod(Method, _ManageMethodFiltersMixin):
@@ -602,13 +651,13 @@ class ListGetFieldValuesMethod(Method, _ManageMethodFiltersMixin):
             ...
 
     @implement(
-        CargoRepo,
         ListGetFieldValuesMethod(
             CargoRepo.get_cargo_boxes,
             field_name='boxes',  # Cargo.boxes
             filters=['id'],
             limit='limit',
-        )
+        ),
+        ...
     )
     class MongoRepo:
         class Meta:
@@ -631,6 +680,7 @@ class ListGetFieldValuesMethod(Method, _ManageMethodFiltersMixin):
         filters: list[FieldAlias | str],
         offset: str | None = None,
         limit: str | None = None,
+        modifiers: Modifiers | None = None,
     ) -> None:
         params: dict[str, Any] = {}
         if offset:
@@ -644,6 +694,7 @@ class ListGetFieldValuesMethod(Method, _ManageMethodFiltersMixin):
         )
         self.field_name = field_name
         self.action = MethodAction.LIST_FIELD_VALUES
+        self.modifiers = modifiers or []
 
 
 class IncrementIntegerFieldMethod(Method, _ManageMethodFiltersMixin):
@@ -667,12 +718,12 @@ class IncrementIntegerFieldMethod(Method, _ManageMethodFiltersMixin):
             ...
 
     @implement(
-        RecordRepo,
         IncrementIntegerFieldMethod(
             RecordRepo.increment_views,
             field_name='views',  # Record.views
             filters=['id'],
-        )
+        ),
+        ...
     )
     class MongoRepo:
         class Meta:
@@ -693,6 +744,7 @@ class IncrementIntegerFieldMethod(Method, _ManageMethodFiltersMixin):
         filters: list[FieldAlias | str],
         weight: str | None = None,
         default_weight_value: int = 1,
+        modifiers: Modifiers | None = None,
     ) -> None:
         params = {} if weight is None else {weight: 'weight'}
         super().__init__(
@@ -701,3 +753,4 @@ class IncrementIntegerFieldMethod(Method, _ManageMethodFiltersMixin):
         self.action = MethodAction.INTEGER_INCREMENT
         self.field_name = field_name
         self.integer_weight = default_weight_value
+        self.modifiers = modifiers or []

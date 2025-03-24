@@ -11,3 +11,4 @@ raw_tests.py
 test_not_implemented.py
 dist/
 test.py
+.mypy_cache/

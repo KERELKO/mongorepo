@@ -10,7 +10,7 @@ from pymongo.results import InsertManyResult, UpdateResult
 
 from mongorepo._base import Dataclass
 from mongorepo._common import HasMongorepoDict
-from mongorepo._modifiers.base import ModifierAfter, ModifierBefore
+from mongorepo.modifiers.base import ModifierAfter, ModifierBefore
 from mongorepo.utils import _get_converter, _get_dataclass_fields
 
 
@@ -38,7 +38,7 @@ class AddMethodAsync[T: Dataclass]:
         collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
-            modifier_before.modify(**{'dto': dto})
+            dto = modifier_before.modify(dto=dto)
 
         extra = {}
         object_id = ObjectId()
@@ -48,7 +48,7 @@ class AddMethodAsync[T: Dataclass]:
         await collection.insert_one({**asdict(dto), **extra}, session=self.session)
 
         for modifier_after in self.modifiers_after:
-            modifier_after.modify(dto)
+            dto = modifier_after.modify(dto)
 
         return dto
 
@@ -77,7 +77,7 @@ class AddBatchMethodAsync[T: Dataclass]:
         collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
-            modifier_before.modify(**{'dto_list': dto_list})
+            dto_list = modifier_before.modify(dto_list=dto_list)
 
         if self.id_field:
             batch: list[dict[str, t.Any]] = []
@@ -90,7 +90,7 @@ class AddBatchMethodAsync[T: Dataclass]:
             result = await collection.insert_many(asdict(d) for d in dto_list)
 
         for modifier_after in self.modifiers_after:
-            modifier_after.modify(result)
+            result = modifier_after.modify(result)
 
         return result
 
@@ -117,7 +117,7 @@ class GetAllMethodAsync[T: Dataclass]:
         collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
-            modifier_before.modify(**filters)
+            filters = modifier_before.modify(**filters)
 
         cursor = collection.find(filters)
         async for dct in cursor:
@@ -147,13 +147,15 @@ class GetListMethodAsync[T: Dataclass]:
         collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
-            modifier_before.modify(**filters)
+            offset, limit, filters = modifier_before.modify(
+                offset, limit, **filters,
+            )
 
         cursor = collection.find(filter=filters).skip(offset).limit(limit)
         result = [self.converter(self.dto_type, doc) async for doc in cursor]
 
         for modifier_after in self.modifiers_after:
-            modifier_after.modify(result)
+            result = modifier_after.modify(result)
 
         return result
 
@@ -182,13 +184,13 @@ class GetMethodAsync[T: Dataclass]:
         collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
-            modifier_before.modify(**filters)
+            filters = modifier_before.modify(**filters)
 
         result = await collection.find_one(filters)
         dto = self.converter(self.dto_type, result) if result else None
 
         for modifier_after in self.modifiers_after:
-            modifier_after.modify(dto)
+            dto = modifier_after.modify(dto)
 
         return dto
 
@@ -213,12 +215,12 @@ class DeleteMethodAsync[T: Dataclass]:
         collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
-            modifier_before.modify(**filters)
+            filters = modifier_before.modify(**filters)
 
         deleted = await collection.find_one_and_delete(filters, session=self.session)
 
         for modifier_after in self.modifiers_after:
-            modifier_after.modify(deleted)
+            deleted = modifier_after.modify(deleted)
 
         return True if deleted else False
 
@@ -230,13 +232,12 @@ class UpdateMethodAsync[T: Dataclass]:
         owner: HasMongorepoDict[AsyncIOMotorClientSession, AsyncIOMotorCollection],
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
         converter: t.Callable[[type[T], dict[str, t.Any]], T] | None = None,
-        session: AsyncIOMotorClientSession | None = None,
         id_field: str | None = None,
         **kwargs,
     ) -> None:
         self.dto_type = dto_type
         self.owner = owner
-        self.session = session
+        self.session: AsyncIOMotorClientSession | None = None
         self.modifiers_after = [m for m in modifiers if isinstance(m, ModifierAfter)]
         self.modifiers_before = [m for m in modifiers if isinstance(m, ModifierBefore)]
         self.converter = converter or _get_converter(dto_type, id_field)
@@ -246,7 +247,7 @@ class UpdateMethodAsync[T: Dataclass]:
         collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
-            modifier_before.modify(**filters)
+            dto, filters = modifier_before.modify(dto=dto, **filters)
 
         data: dict[str, dict[str, t.Any]] = {'$set': {}}
         for field, value in asdict(dto).items():
@@ -258,7 +259,7 @@ class UpdateMethodAsync[T: Dataclass]:
         result = self.converter(self.dto_type, updated_document) if updated_document else None
 
         for modifier_after in self.modifiers_after:
-            modifier_after.modify(result)
+            result = modifier_after.modify(result)
 
         return result
 
@@ -292,16 +293,18 @@ class UpdateListFieldMethodAsync[T: Dataclass]:
         collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
-            modifier_before.modify(**filters)
+            value, filters = modifier_before.modify(value, **filters)
 
         value = value if not is_dataclass(self.field_type) else asdict(value)
 
         res = await collection.update_one(
-            filter=filters, update={self.action: {self.field_name: value}}, session=self.session,
+            filter=filters,
+            update={self.action: {self.field_name: value}},
+            session=self.session,
         )
 
         for modifier_aftert in self.modifiers_after:
-            modifier_aftert.modify(res)
+            res = modifier_aftert.modify(res)
 
         return res
 
@@ -387,7 +390,9 @@ class GetListValuesMethodAsync[T: Dataclass]:
         collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
-            modifier_before.modify(**filters)
+            offset, limit, filters = modifier_before.modify(
+                offset, limit, **filters,
+            )
 
         document = await collection.find_one(
             filters, {self.field_name: {'$slice': [offset, limit]}},
@@ -404,7 +409,7 @@ class GetListValuesMethodAsync[T: Dataclass]:
             result = document[self.field_name]
 
         for modifier_aftert in self.modifiers_after:
-            modifier_aftert.modify(result)
+            result = modifier_aftert.modify(result)
 
         return result
 
@@ -436,7 +441,7 @@ class PopListMethodAsync[T: Dataclass]:
         collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
-            modifier_before.modify(**filters)
+            filters = modifier_before.modify(**filters)
 
         document = await collection.find_one_and_update(
             filter=filters, update={'$pop': {self.field_name: 1}},
@@ -451,7 +456,7 @@ class PopListMethodAsync[T: Dataclass]:
             result = document[self.field_name][-1]
 
         for modifier_aftert in self.modifiers_after:
-            modifier_aftert.modify(result)
+            result = modifier_aftert.modify(result)
 
         return result
 
@@ -480,7 +485,7 @@ class IncrementIntegerFieldMethodAsync[T: Dataclass]:
         collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
-            modifier_before.modify(**filters)
+            weight, filters = modifier_before.modify(weight, **filters)
 
         w = weight if weight is not None else self.weight
         result = await collection.update_one(
@@ -488,6 +493,6 @@ class IncrementIntegerFieldMethodAsync[T: Dataclass]:
         )
 
         for modifier_aftert in self.modifiers_after:
-            modifier_aftert.modify(result)
+            result = modifier_aftert.modify(result)
 
         return result

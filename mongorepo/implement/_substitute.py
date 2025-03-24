@@ -36,6 +36,7 @@ def _substitute_specific_method(
         id_field=id_field,
         field_name=field_name,
         integer_weight=integer_weight,
+        modifiers=method.modifiers,
     )
 
     def func(self, *args, **kwargs) -> Any:

@@ -4,6 +4,7 @@ Simple lib for python &amp; mongodb, provides auto repository factory based on D
 ## Example with **BaseMongoRepository**
 ```python
 from mongorepo.classes import BaseMongoRepository
+from mongorepo import use_collection
 
 
 def mongo_client(mongo_uri: str = 'mongodb://mongodb:27017/') -> pymongo.MongoClient:
@@ -17,11 +18,12 @@ class UserDTO:
     password: str = ''
 
 
+@use_collection(mongo_client().users_db.users)
 class SimpleMongoRepository(BaseMongoRepository[UserDTO]):
     ...
 
 
-repo = SimpleMongoRepository(collection=mongo_client().users_db.users)
+repo = SimpleMongoRepository()
 
 new_user = UserDTO(username='admin', password='1234')
 repo.add(new_user)
@@ -71,6 +73,7 @@ print(user.skills)  # ['c++', 'java', 'rust', 'c']
 ```py
 from mongorepo.implement import implement
 from mongorepo.implement.methods import GetMethod, AddMethod
+from mongorepo import use_collection
 
 
 def async_mongo_client(mongo_uri: str = 'mongodb://mongodb:27017/') -> AsyncIOMotorClient:
@@ -99,14 +102,13 @@ class MessageRepository(typing.Protocol):
 
 
 @implement(
-    MessageRepository,
     GetMethod(MessageRepository.get_message, filters=['id']),
     AddMethod(MessageRepository.add_message, dto='message')
 )
+@use_collection(async_mongo_client().messages_db.messages)
 class MongoMessageRepository:
     class Meta:
         dto = Message
-        collection = async_mongo_client().messages_db.messages
 
 
 repo: MessageRepository = MongoMessageRepository()

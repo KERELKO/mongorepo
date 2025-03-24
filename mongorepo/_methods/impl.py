@@ -8,7 +8,7 @@ from pymongo.results import InsertManyResult, UpdateResult
 
 from mongorepo._base import Dataclass
 from mongorepo._common import HasMongorepoDict
-from mongorepo._modifiers.base import ModifierAfter, ModifierBefore
+from mongorepo.modifiers.base import ModifierAfter, ModifierBefore
 from mongorepo.utils import _get_converter, _get_dataclass_fields
 
 
@@ -36,7 +36,7 @@ class AddMethod[T: Dataclass]:
         collection: Collection[t.Any] = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
-            modifier_before.modify(**{'dto': dto})
+            dto = modifier_before.modify(dto)
 
         extra = {}
         object_id = ObjectId()
@@ -46,7 +46,7 @@ class AddMethod[T: Dataclass]:
         collection.insert_one({**asdict(dto), **extra}, session=self.session)
 
         for modifier_after in self.modifiers_after:
-            modifier_after.modify(dto)
+            dto = modifier_after.modify(dto)
 
         return dto
 
@@ -75,7 +75,7 @@ class AddBatchMethod[T: Dataclass]:
         collection: Collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
-            modifier_before.modify(**{'dto_list': dto_list})
+            dto_list = modifier_before.modify(dto_list)
 
         if self.id_field:
             batch: list[dict[str, t.Any]] = []
@@ -88,7 +88,7 @@ class AddBatchMethod[T: Dataclass]:
             result = collection.insert_many(asdict(d) for d in dto_list)
 
         for modifier_after in self.modifiers_after:
-            modifier_after.modify(result)
+            result = modifier_after.modify(result)
 
         return result
 
@@ -115,7 +115,7 @@ class GetAllMethod[T: Dataclass]:
         collection: Collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
-            modifier_before.modify(**filters)
+            filters = modifier_before.modify(**filters)
 
         cursor = collection.find(filters)
         for dct in cursor:
@@ -145,13 +145,13 @@ class GetListMethod[T: Dataclass]:
         collection: Collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
-            modifier_before.modify(**filters)
+            offset, limit, filters = modifier_before.modify(offset, limit, **filters)
 
         cursor = collection.find(filter=filters).skip(offset).limit(limit)
         result = [self.converter(self.dto_type, doc) for doc in cursor]
 
         for modifier_after in self.modifiers_after:
-            modifier_after.modify(result)
+            result = modifier_after.modify(result)
 
         return result
 
@@ -180,13 +180,13 @@ class GetMethod[T: Dataclass]:
         collection: Collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
-            modifier_before.modify(**filters)
+            filters = modifier_before.modify(**filters)
 
         result = collection.find_one(filters)
         dto = self.converter(self.dto_type, result) if result else None
 
         for modifier_after in self.modifiers_after:
-            modifier_after.modify(dto)
+            dto = modifier_after.modify(dto)
 
         return dto
 
@@ -211,12 +211,12 @@ class DeleteMethod[T: Dataclass]:
         collection: Collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
-            modifier_before.modify(**filters)
+            filters = modifier_before.modify(**filters)
 
         deleted = collection.find_one_and_delete(filters, session=self.session)
 
         for modifier_after in self.modifiers_after:
-            modifier_after.modify(deleted)
+            deleted = modifier_after.modify(deleted)
 
         return True if deleted else False
 
@@ -244,7 +244,7 @@ class UpdateMethod[T: Dataclass]:
         collection: Collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
-            modifier_before.modify(**filters)
+            dto, filters = modifier_before.modify(dto, **filters)
 
         data: dict[str, dict[str, t.Any]] = {'$set': {}}
         for field, value in asdict(dto).items():
@@ -256,7 +256,7 @@ class UpdateMethod[T: Dataclass]:
         result = self.converter(self.dto_type, updated_document) if updated_document else None
 
         for modifier_after in self.modifiers_after:
-            modifier_after.modify(result)
+            result = modifier_after.modify(result)
 
         return result
 
@@ -290,7 +290,7 @@ class UpdateListFieldMethod[T: Dataclass]:
         collection: Collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
-            modifier_before.modify(**filters)
+            value, filters = modifier_before.modify(value, **filters)
 
         value = value if not is_dataclass(self.field_type) else asdict(value)
 
@@ -299,7 +299,7 @@ class UpdateListFieldMethod[T: Dataclass]:
         )
 
         for modifier_aftert in self.modifiers_after:
-            modifier_aftert.modify(res)
+            res = modifier_aftert.modify(res)
 
         return res
 
@@ -383,7 +383,7 @@ class GetListValuesMethod[T: Dataclass]:
         collection: Collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
-            modifier_before.modify(**filters)
+            offset, limit, filters = modifier_before.modify(offset, limit, **filters)
 
         document = collection.find_one(
             filters, {self.field_name: {'$slice': [offset, limit]}},
@@ -400,7 +400,7 @@ class GetListValuesMethod[T: Dataclass]:
             result = document[self.field_name]
 
         for modifier_aftert in self.modifiers_after:
-            modifier_aftert.modify(result)
+            result = modifier_aftert.modify(result)
 
         return result
 
@@ -432,7 +432,7 @@ class PopListMethod[T: Dataclass]:
         collection: Collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
-            modifier_before.modify(**filters)
+            filters = modifier_before.modify(**filters)
 
         document = collection.find_one_and_update(
             filter=filters, update={'$pop': {self.field_name: 1}},
@@ -447,7 +447,7 @@ class PopListMethod[T: Dataclass]:
             result = document[self.field_name][-1]
 
         for modifier_aftert in self.modifiers_after:
-            modifier_aftert.modify(result)
+            result = modifier_aftert.modify(result)
 
         return result
 
@@ -476,7 +476,7 @@ class IncrementIntegerFieldMethod[T: Dataclass]:
         collection: Collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
-            modifier_before.modify(**filters)
+            weight, filters = modifier_before.modify(weight, **filters)
 
         w = weight if weight is not None else self.weight
         result = collection.update_one(
@@ -484,6 +484,6 @@ class IncrementIntegerFieldMethod[T: Dataclass]:
         )
 
         for modifier_aftert in self.modifiers_after:
-            modifier_aftert.modify(result)
+            result = modifier_aftert.modify(result)
 
         return result
