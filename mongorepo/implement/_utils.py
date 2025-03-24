@@ -43,7 +43,7 @@ from mongorepo._methods.impl_async import \
     RemoveListMethodAsync as CallableRemoveListMethodAsync
 from mongorepo._methods.impl_async import \
     UpdateMethodAsync as CallableUpdateMethodAsync
-from mongorepo.implements.methods import (
+from mongorepo.implement.methods import (
     AddBatchMethod,
     AddMethod,
     DeleteMethod,
@@ -60,8 +60,8 @@ from mongorepo.implements.methods import (
 )
 
 
-def implements_mapper(specific_method: SpecificMethod) -> type:
-    """Map implements method to mongorepo implementation."""
+def implement_mapper(specific_method: SpecificMethod) -> type:
+    """Map implement method to mongorepo implementation."""
     s = specific_method
     match specific_method.__class__.__name__:
         case GetMethod.__name__:

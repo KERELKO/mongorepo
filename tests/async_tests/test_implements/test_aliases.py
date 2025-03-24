@@ -1,14 +1,10 @@
 # mypy: disable-error-code="empty-body"
 from typing import AsyncGenerator
 
-from mongorepo.implements import implements
-from mongorepo.implements.methods import (
-    AddBatchMethod,
-    AddMethod,
-    DeleteMethod,
-)
-from mongorepo.implements.methods import FieldAlias as FA
-from mongorepo.implements.methods import (
+from mongorepo.implement import implement
+from mongorepo.implement.methods import AddBatchMethod, AddMethod, DeleteMethod
+from mongorepo.implement.methods import FieldAlias as FA
+from mongorepo.implement.methods import (
     GetAllMethod,
     GetListMethod,
     GetMethod,
@@ -29,8 +25,8 @@ from tests.common import (
 
 
 async def test_field_alias_with_crud_protocol_methods():
-    """Test `@implements` decorator with classes that implement
-    `SpecificMethod` protocol."""
+    """Test `@implement` decorator with classes that implement `SpecificMethod`
+    protocol."""
 
     async with in_async_collection(NestedListDTO) as c:
         class IRepo:
@@ -59,8 +55,7 @@ async def test_field_alias_with_crud_protocol_methods():
 
         title_alias = FA('title', 'dto_title')
 
-        @implements(
-            IRepo,
+        @implement(
             AddMethod(IRepo.add, dto='model'),
             GetMethod(IRepo.get, filters=[title_alias]),
             UpdateMethod(IRepo.update, dto='model', filters=[title_alias]),
@@ -110,7 +105,7 @@ async def test_field_alias_with_crud_protocol_methods():
         assert none is None
 
 
-async def test_implements_list_methods_with_specific_method_protocol():
+async def test_implement_list_methods_with_specific_method_protocol():
 
     class IRepo:
         async def add(self, dto: NestedListDTO) -> None:
@@ -134,8 +129,7 @@ async def test_implements_list_methods_with_specific_method_protocol():
 
     async with in_async_collection(NestedListDTO) as c:
 
-        @implements(
-            IRepo,
+        @implement(
             AddMethod(IRepo.add, dto='dto'),
             ListGetFieldValuesMethod(
                 source=IRepo.get_simple_dto_list_by_title, field_name='dtos',
@@ -179,7 +173,7 @@ async def test_implements_list_methods_with_specific_method_protocol():
         assert True
 
 
-async def test_implements_integer_methods_with_specific_method_protocol() -> None:
+async def test_implement_integer_methods_with_specific_method_protocol() -> None:
     class IRepo:
         async def get(self, mix_id: str) -> MixDTO | None:
             ...
@@ -194,8 +188,7 @@ async def test_implements_integer_methods_with_specific_method_protocol() -> Non
             ...
 
     async with in_async_collection(MixDTO) as coll:
-        @implements(
-            IRepo,
+        @implement(
             AddMethod(IRepo.add, dto='dto'),
             GetMethod(IRepo.get, filters=[f := FA('id', 'mix_id')]),
             IncrementIntegerFieldMethod(

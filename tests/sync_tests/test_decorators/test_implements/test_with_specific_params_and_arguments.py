@@ -1,5 +1,5 @@
-from mongorepo.implements import implements
-from mongorepo.implements.methods import (
+from mongorepo.implement import implement
+from mongorepo.implement.methods import (
     AddMethod,
     ListAppendMethod,
     ListGetFieldValuesMethod,
@@ -33,8 +33,7 @@ def test_can_change_order_of_repo_parameters_and_passed_arguments():
         def remove_dto_by_title(self, dto: SimpleDTO, title: str) -> None:
             ...
 
-    @implements(
-        IRepo,
+    @implement(
         AddMethod(IRepo.add, dto='dto'),
         ListGetFieldValuesMethod(
             IRepo.get_simple_dto_list_by_title,

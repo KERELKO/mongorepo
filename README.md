@@ -67,10 +67,10 @@ user = await repo.get(id='289083')
 print(user.skills)  # ['c++', 'java', 'rust', 'c']
 ```
 
-## Example with **implements** decorator
+## Example with **implement** decorator
 ```py
-from mongorepo.implements import implements
-from mongorepo.implements.methods import GetMethod, AddMethod
+from mongorepo.implement import implement
+from mongorepo.implement.methods import GetMethod, AddMethod
 
 
 def async_mongo_client(mongo_uri: str = 'mongodb://mongodb:27017/') -> AsyncIOMotorClient:
@@ -98,7 +98,7 @@ class MessageRepository(typing.Protocol):
         ...
 
 
-@implements(
+@implement(
     MessageRepository,
     GetMethod(MessageRepository.get_message, filters=['id']),
     AddMethod(MessageRepository.add_message, dto='message')

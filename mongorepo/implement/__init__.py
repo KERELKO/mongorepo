@@ -1,4 +1,4 @@
-from .decorator import implements
+from .decorator import implement
 from .methods import (
     AddBatchMethod,
     AddMethod,
@@ -14,7 +14,7 @@ from .methods import (
 
 __all__ = [
     'FieldAlias',
-    'implements',
+    'implement',
     'AddBatchMethod',
     'AddMethod',
     'DeleteMethod',

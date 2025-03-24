@@ -65,10 +65,10 @@ async def test_async_repository():
     print(user.skills)  # ['c++', 'java', 'rust', 'c']
 
 
-# example with implements decorator
-async def test_async_implements_decorator():
-    from mongorepo.implements import implements
-    from mongorepo.implements.methods import AddMethod, GetMethod
+# example with implement decorator
+async def test_async_implement_decorator():
+    from mongorepo.implement import implement
+    from mongorepo.implement.methods import AddMethod, GetMethod
 
     def async_mongo_client(mongo_uri: str = 'mongodb://mongodb:27017/') -> AsyncIOMotorClient:
         async_client = AsyncIOMotorClient(mongo_uri)
@@ -91,8 +91,7 @@ async def test_async_implements_decorator():
         async def get_message(self, id: str) -> Message | None:
             ...
 
-    @implements(
-        MessageRepository,
+    @implement(
         GetMethod(MessageRepository.get_message, filters=['id']),
         AddMethod(MessageRepository.add_message, dto='message'),
     )

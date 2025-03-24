@@ -7,7 +7,7 @@ from mongorepo.utils import _get_defaults
 
 from ._types import MethodAction
 from ._types import ParameterEnum as MongorepoParameter
-from ._utils import implements_mapper, initialize_callable_mongorepo_method
+from ._utils import implement_mapper, initialize_callable_mongorepo_method
 from .methods import Method, SpecificFieldMethod, SpecificMethod
 
 
@@ -28,7 +28,7 @@ def _substitute_specific_method(
     if hasattr(method, 'integer_weight'):
         integer_weight = method.integer_weight  # type: ignore
 
-    mapped_method = implements_mapper(method)
+    mapped_method = implement_mapper(method)
     callable_mongorepo_method = initialize_callable_mongorepo_method(
         mongorepo_method=mapped_method,
         dto_type=dto_type,

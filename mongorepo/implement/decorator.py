@@ -1,13 +1,10 @@
 from typing import Callable
 
-from ._handlers import _handle_implements_specific_methods
+from ._handlers import _handle_implement_specific_methods
 from .methods import SpecificMethod
 
 
-def implements[T: type](
-    base_cls: type,
-    *specific_methods: SpecificMethod,
-) -> Callable[[T], T]:
+def implement[T: type](*specific_methods: SpecificMethod) -> Callable[[T], T]:
     """Decorator that allows to implement methods of `base_cls`
 
     ## Usage example:
@@ -20,7 +17,7 @@ def implements[T: type](
         async def add(self, model: SomeDataclass) -> SomeDataclass:
             ...
 
-    @implements(
+    @implement(
         IRepo,
         GetMethod(IRepo.get, filters=['title']),
         AddMethod(IRepo.add, dto='model'),
@@ -41,5 +38,5 @@ def implements[T: type](
         raise ValueError('No methods to implement')
 
     def wrapper(cls: T) -> T:
-        return _handle_implements_specific_methods(cls, *specific_methods)
+        return _handle_implement_specific_methods(cls, *specific_methods)
     return wrapper

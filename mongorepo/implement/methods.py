@@ -26,7 +26,7 @@ class FieldAlias:
         def get_user(self, username: str) -> User | None:
             ...
 
-    @implements(
+    @implement(
         UserRepository,
         #                                                      User.name = username
         GetMethod(UserRepository.get_user, filters=[ FieldAlias('name', 'username') ])
@@ -82,20 +82,20 @@ class SpecificMethod(Protocol):
     ### Implementations::
 
         | import from               | class
-        mongorepo.implements.methods.GetMethod
-        mongorepo.implements.methods.GetListMethod
-        mongorepo.implements.methods.GetAllMethod
-        mongorepo.implements.methods.AddMethod
-        mongorepo.implements.methods.AddBatchMethod
-        mongorepo.implements.methods.UpdateMethod
-        mongorepo.implements.methods.DeleteMethod
+        mongorepo.implement.methods.GetMethod
+        mongorepo.implement.methods.GetListMethod
+        mongorepo.implement.methods.GetAllMethod
+        mongorepo.implement.methods.AddMethod
+        mongorepo.implement.methods.AddBatchMethod
+        mongorepo.implement.methods.UpdateMethod
+        mongorepo.implement.methods.DeleteMethod
 
-        mongorepo.implements.methods.IncrementIntegerFieldMethod
+        mongorepo.implement.methods.IncrementIntegerFieldMethod
 
-        mongorepo.implements.methods.ListAppendMethod
-        mongorepo.implements.methods.ListPopMethod
-        mongorepo.implements.methods.ListRemoveMethod
-        mongorepo.implements.methods.ListGetFieldValuesMethod
+        mongorepo.implement.methods.ListAppendMethod
+        mongorepo.implement.methods.ListPopMethod
+        mongorepo.implement.methods.ListRemoveMethod
+        mongorepo.implement.methods.ListGetFieldValuesMethod
 
     """
     name: str
@@ -162,7 +162,7 @@ class GetMethod(Method, _ManageMethodFiltersMixin):
         def get(self, id: str) -> User:
             ...
 
-    @implements(Repo, GetMethod(Repo.get, filters=['id']))
+    @implement(Repo, GetMethod(Repo.get, filters=['id']))
     class MongoRepo:
         class Meta:
             dto = User
@@ -195,7 +195,7 @@ class AddMethod(Method):
         def add(self, user: User) -> User:
             ...
 
-    @implements(Repo, AddMethod(Repo.add, dto='user'))
+    @implement(Repo, AddMethod(Repo.add, dto='user'))
     class MongoRepo:
         class Meta:
             dto = User
@@ -233,7 +233,7 @@ class UpdateMethod(Method, _ManageMethodFiltersMixin):
         def update_user(self, id: str, update_model: UpdateUser) -> User:
             ...
 
-    @implements(
+    @implement(
         Repo,
         UpdateMethod(Repo.update_user, filters=['id'], dto='update_model')
     )
@@ -286,7 +286,7 @@ class DeleteMethod(Method, _ManageMethodFiltersMixin):
         def remove_user(self, id: str) -> bool:
             ...
 
-    @implements(Repo, DeleteMethod(Repo.remove_user, filters=['id']))
+    @implement(Repo, DeleteMethod(Repo.remove_user, filters=['id']))
     class MongoRepo:
         class Meta:
             dto = User
@@ -314,7 +314,7 @@ class GetListMethod(Method, _ManageMethodFiltersMixin):
         def get_list_of_books(self, category: str) -> list[Book]:
             ...
 
-    @implements(
+    @implement(
         BookRepo,
         GetListMethod(BookRepo.get_list_of_books, filters=['category'])
     )
@@ -355,7 +355,7 @@ class GetAllMethod(Method, _ManageMethodFiltersMixin):
         def get_all_books(self) -> typing.Generator[Book, None]:
             ...
 
-    @implements(
+    @implement(
         BookRepo,
         GetAllMethod(BookRepo.get_all, filters=[])
     )
@@ -387,7 +387,7 @@ class AddBatchMethod(Method):
         def add_books(self, books: list[Book]) -> None:
             ...
 
-    @implements(
+    @implement(
         BookRepo,
         AddBatchMethod(BookRepo.add_books, dto_list=['books'])
     )
@@ -432,7 +432,7 @@ class ListAppendMethod(Method, _ManageMethodFiltersMixin):
         def add_box_to_cargo(self, id: str, box: Box) -> None:
             ...
 
-    @implements(
+    @implement(
         CargoRepo,
         ListAppendMethod(
             CargoRepo.add_box_to_cargo,
@@ -487,7 +487,7 @@ class ListPopMethod(Method, _ManageMethodFiltersMixin):
         def pop_box(self, id: str) -> Box:  # or raises mongorepo.exceptions.NotFoundException
             ...
 
-    @implements(
+    @implement(
         CargoRepo,
         ListPopMethod(
             CargoRepo.pop_box,
@@ -543,7 +543,7 @@ class ListRemoveMethod(Method, _ManageMethodFiltersMixin):
         ) -> Box:  # or raises mongorepo.exceptions.NotFoundException
             ...
 
-    @implements(
+    @implement(
         CargoRepo,
         ListRemoveMethod(
             CargoRepo.pop_box,
@@ -601,7 +601,7 @@ class ListGetFieldValuesMethod(Method, _ManageMethodFiltersMixin):
         ) -> list[Box]:  # or raises mongorepo.exceptions.NotFoundException
             ...
 
-    @implements(
+    @implement(
         CargoRepo,
         ListGetFieldValuesMethod(
             CargoRepo.get_cargo_boxes,
@@ -666,7 +666,7 @@ class IncrementIntegerFieldMethod(Method, _ManageMethodFiltersMixin):
         ) -> None:  # or raises mongorepo.exceptions.NotFoundException
             ...
 
-    @implements(
+    @implement(
         RecordRepo,
         IncrementIntegerFieldMethod(
             RecordRepo.increment_views,

@@ -7,7 +7,7 @@ from ._substitute import _substitute_specific_method
 from .methods import SpecificMethod
 
 
-def _handle_implements_specific_methods[T: type](cls: T, *specific_methods: SpecificMethod) -> T:
+def _handle_implement_specific_methods[T: type](cls: T, *specific_methods: SpecificMethod) -> T:
     attrs = _get_meta_attributes(cls)
     dto_type = attrs['dto']
     if not dto_type:

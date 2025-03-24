@@ -1,4 +1,4 @@
-from mongorepo.implements import AddMethod, implements
+from mongorepo.implement import AddMethod, implement
 from tests.common import SimpleDTO, in_async_collection
 
 
@@ -8,7 +8,7 @@ async def test_can_use_slots():
             ...
 
     async with in_async_collection(SimpleDTO) as coll:
-        @implements(IRepo, AddMethod(IRepo.add, dto='simple'))
+        @implement(AddMethod(IRepo.add, dto='simple'))
         class Repo:
             class Meta:
                 dto = SimpleDTO
