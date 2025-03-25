@@ -1,10 +1,11 @@
-# type: ignore
+# type: ignore[reportAttributeAccessIssue]
 import typing
 from dataclasses import dataclass, field
 
 import pymongo
 from motor.motor_asyncio import AsyncIOMotorClient
 
+from mongorepo import use_collection
 from mongorepo.classes import BaseMongoRepository
 
 
@@ -19,10 +20,11 @@ def test_sync_base_mongo_repository():
         username: str = ''
         password: str = ''
 
+    @use_collection(collection=mongo_client().users_db.users)
     class SimpleMongoRepository(BaseMongoRepository[UserDTO]):
         ...
 
-    repo = SimpleMongoRepository(collection=mongo_client().users_db.users)
+    repo = SimpleMongoRepository()
 
     new_user = UserDTO(username='admin', password='1234')
     repo.add(new_user)
@@ -45,7 +47,7 @@ async def test_async_repository():
         name: str
         skills: list[str] = field(default_factory=list)
 
-    @mongorepo.async_repository(array_fields=['skills'])
+    @mongorepo.async_repository(list_fields=['skills'])
     class MongoRepository:
         class Meta:
             dto = Person
@@ -63,10 +65,10 @@ async def test_async_repository():
     print(user.skills)  # ['c++', 'java', 'rust', 'c']
 
 
-# example with implements decorator
-async def test_async_implements_decorator():
-    from mongorepo.implements import implements
-    from mongorepo.implements.methods import AddMethod, GetMethod
+# example with implement decorator
+async def test_async_implement_decorator():
+    from mongorepo.implement import implement
+    from mongorepo.implement.methods import AddMethod, GetMethod
 
     def async_mongo_client(mongo_uri: str = 'mongodb://mongodb:27017/') -> AsyncIOMotorClient:
         async_client = AsyncIOMotorClient(mongo_uri)
@@ -89,8 +91,7 @@ async def test_async_implements_decorator():
         async def get_message(self, id: str) -> Message | None:
             ...
 
-    @implements(
-        MessageRepository,
+    @implement(
         GetMethod(MessageRepository.get_message, filters=['id']),
         AddMethod(MessageRepository.add_message, dto='message'),
     )

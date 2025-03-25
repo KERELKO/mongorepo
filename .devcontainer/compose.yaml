@@ -16,10 +16,29 @@ services:
   mongodb:
     container_name: mongo-main
     image: mongo:6-jammy
-    ports:
-      - 27017:27017
     volumes:
       - ../data:/data/db
+    command: --replSet rs0
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: attachment-api-local-dev
+
+  mongo-init:
+    image: mongo:6-jammy
+    restart: "no"
+    depends_on:
+      - mongodb
+    command: >
+      mongosh --host mongodb:27017 --eval
+      '
+      rs.initiate( {
+        _id : "rs0",
+        members: [
+            { _id: 0, host: "mongodb:27017" }
+        ]
+      })
+      '
 
   mongo-express:
     image: mongo-express
