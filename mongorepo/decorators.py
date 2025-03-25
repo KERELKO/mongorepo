@@ -19,7 +19,6 @@ def mongo_repository(
     integer_fields: Iterable[str] | None = None,
     list_fields: Iterable[str] | None = None,
     method_access: Access | None = None,
-    __methods__: bool = False,
 ) -> type | Callable:
     """## Decorator for MongoDB repositories
 
@@ -92,7 +91,6 @@ def mongo_repository(
             integer_fields=integer_fields,
             list_fields=list_fields,
             method_access=method_access,
-            __methods__=__methods__,
         )
 
     if cls is None:
@@ -113,7 +111,6 @@ def async_mongo_repository(
     integer_fields: list[str] | None = None,
     list_fields: list[str] | None = None,
     method_access: Access | None = None,
-    __methods__: bool = False,
 ) -> type | Callable:
     """## Async MongoDB repository decorator
 
@@ -186,7 +183,6 @@ def async_mongo_repository(
             integer_fields=integer_fields,
             list_fields=list_fields,
             method_access=method_access,
-            __methods__=__methods__,
         )
 
     if cls is None:

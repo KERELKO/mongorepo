@@ -24,7 +24,7 @@ def _handle_implement_specific_methods[T: type](cls: T, *specific_methods: Speci
 
     for method in specific_methods:
         implemented_method = _substitute_specific_method(
-            cls,  # type: ignore
+            cls,
             method=method,
             dto_type=dto_type,
             id_field=id_field,

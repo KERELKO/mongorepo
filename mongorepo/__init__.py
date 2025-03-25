@@ -1,27 +1,19 @@
-"""Library for generating repositories for `MongoDB`,
-* public API available in this module for example:
-```
-@mongorepo.repository
-class A:
-    ...
-```
-### Or
-use `mongorepo.decorators` or `mongorepo.classes`.
-
-Lib also has async support, so
-you can use the same classes and decorators located in `mongorepo.asyncio`
-
-"""
 from . import decorators, exceptions
 from ._base import DTO, Access, Index
+from ._common import remove_session, session_context, use_session
 from .classes import BaseAsyncMongoRepository, BaseMongoRepository
 from .decorators import async_mongo_repository as async_repository
 from .decorators import mongo_repository as repository
 from .queries import AggregationStage, Condition, Operation, UpdateModifier
+from .utils import _get_converter as get_converter
 from .utils import use_collection
 
 __all__ = [
+    'get_converter',
     'use_collection',
+    'use_session',
+    'remove_session',
+    'session_context',
     'UpdateModifier',
     'AggregationStage',
     'Operation',

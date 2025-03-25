@@ -11,7 +11,7 @@ from pymongo.results import InsertManyResult, UpdateResult
 from mongorepo._base import Dataclass
 from mongorepo._common import HasMongorepoDict
 from mongorepo.modifiers.base import ModifierAfter, ModifierBefore
-from mongorepo.utils import _get_converter, _get_dataclass_fields
+from mongorepo.utils import _get_converter, get_dataclass_type_hints
 
 
 class AddMethodAsync[T: Dataclass]:
@@ -278,9 +278,11 @@ class UpdateListFieldMethodAsync[T: Dataclass]:
     ) -> None:
         self.dto_type = dto_type
         self.field_name = field_name
-        self.field_type = _get_dataclass_fields(
-            dto_type=dto_type, only_dto_types=True,
-        ).get(field_name, None)
+        fields = get_dataclass_type_hints(dto_type)
+        self.field_type = fields.get(field_name, None)
+        self.field_converter = None
+        if is_dataclass(self.field_type):
+            self.field_converter = _get_converter(fields[field_name])
         self.owner = owner
         self.action = action
         self.session = session
@@ -373,12 +375,12 @@ class GetListValuesMethodAsync[T: Dataclass]:
     ) -> None:
         self.dto_type = dto_type
         self.field_name = field_name
-        dataclass_fields = _get_dataclass_fields(dto_type=dto_type, only_dto_types=True)
-        self.field_type = dataclass_fields.get(field_name, None)
+        fields = get_dataclass_type_hints(dto_type)
+        self.field_type = fields.get(field_name, None)
         self.owner = owner
         self.field_converter = None
         if is_dataclass(self.field_type):
-            self.field_converter = _get_converter(dataclass_fields[field_name])  # type: ignore
+            self.field_converter = _get_converter(fields[field_name])
         self.session = session
         self.modifiers_after = [m for m in modifiers if isinstance(m, ModifierAfter)]
         self.modifiers_before = [m for m in modifiers if isinstance(m, ModifierBefore)]
@@ -427,11 +429,11 @@ class PopListMethodAsync[T: Dataclass]:
         self.dto_type = dto_type
         self.field_name = field_name
         self.owner = owner
-        dataclass_fields = _get_dataclass_fields(dto_type=dto_type, only_dto_types=True)
-        self.field_type = dataclass_fields.get(field_name, None)
+        fields = get_dataclass_type_hints(dto_type)
+        self.field_type = fields.get(field_name, None)
         self.field_converter = None
         if is_dataclass(self.field_type):
-            self.field_converter = _get_converter(dataclass_fields[field_name])  # type: ignore
+            self.field_converter = _get_converter(fields[field_name])
         self.session = session
         self.modifiers_after = [m for m in modifiers if isinstance(m, ModifierAfter)]
         self.modifiers_before = [m for m in modifiers if isinstance(m, ModifierBefore)]

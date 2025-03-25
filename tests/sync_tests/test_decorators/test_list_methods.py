@@ -2,9 +2,7 @@
 from dataclasses import dataclass, field
 from typing import List
 
-import pytest
-
-from mongorepo import Access, exceptions
+from mongorepo import Access
 from mongorepo.decorators import mongo_repository
 from tests.common import (
     ComplicatedDTO,
@@ -128,14 +126,13 @@ def test_list_with_different_type_hints_decorator():
     _ = TestA2()
     _ = TestA3()
 
-    with pytest.raises(exceptions.TypeHintException):
-        @mongo_repository(list_fields=['types'])
-        class TestA4:
-            class Meta:
-                dto = A4
-                collection = cl
+    @mongo_repository(list_fields=['types'])
+    class TestA4:
+        class Meta:
+            dto = A4
+            collection = cl
 
-        _ = TestA4
+    _ = TestA4
 
     assert True
 
