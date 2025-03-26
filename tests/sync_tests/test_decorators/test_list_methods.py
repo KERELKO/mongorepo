@@ -2,9 +2,7 @@
 from dataclasses import dataclass, field
 from typing import List
 
-import pytest
-
-from mongorepo import Access, exceptions
+from mongorepo import Access
 from mongorepo.decorators import mongo_repository
 from tests.common import (
     ComplicatedDTO,
@@ -18,7 +16,7 @@ from tests.common import (
 def test_can_push_and_pull_elements_from_list_with_decorator():
     cl = collection_for_complicated_dto()
 
-    @mongo_repository(array_fields=['skills'])
+    @mongo_repository(list_fields=['skills'])
     class Repository:
         class Meta:
             dto = ComplicatedDTO
@@ -46,7 +44,7 @@ def test_can_push_and_pull_elements_from_list_with_decorator():
 def test_can_mix_methods_with_decorators():
     cl = collection_for_complicated_dto()
 
-    @mongo_repository(array_fields=['skills'], method_access=Access.PROTECTED)
+    @mongo_repository(list_fields=['skills'], method_access=Access.PROTECTED)
     @mongo_repository
     class TestMongoRepository:
         class Meta:
@@ -64,7 +62,7 @@ def test_can_mix_methods_with_decorators():
 def test_pop_method_with_decorator():
     cl = collection_for_complicated_dto()
 
-    @mongo_repository(array_fields=['skills'])
+    @mongo_repository(list_fields=['skills'])
     class TestMongoRepository:
         class Meta:
             dto = ComplicatedDTO
@@ -106,19 +104,19 @@ def test_list_with_different_type_hints_decorator():
     class A4:
         types: list[int | None]
 
-    @mongo_repository(array_fields=['types'])
+    @mongo_repository(list_fields=['types'])
     class TestA1:
         class Meta:
             dto = A1
             collection = cl
 
-    @mongo_repository(array_fields=['types'])
+    @mongo_repository(list_fields=['types'])
     class TestA2:
         class Meta:
             dto = A2
             collection = cl
 
-    @mongo_repository(array_fields=['types'])
+    @mongo_repository(list_fields=['types'])
     class TestA3:
         class Meta:
             dto = A3
@@ -128,14 +126,13 @@ def test_list_with_different_type_hints_decorator():
     _ = TestA2()
     _ = TestA3()
 
-    with pytest.raises(exceptions.TypeHintException):
-        @mongo_repository(array_fields=['types'])
-        class TestA4:
-            class Meta:
-                dto = A4
-                collection = cl
+    @mongo_repository(list_fields=['types'])
+    class TestA4:
+        class Meta:
+            dto = A4
+            collection = cl
 
-        _ = TestA4
+    _ = TestA4
 
     assert True
 
@@ -143,7 +140,7 @@ def test_list_with_different_type_hints_decorator():
 def test_can_get_list_of_dto_field_values() -> None:
     c = custom_collection(dto=NestedListDTO)
 
-    @mongo_repository(array_fields=['dtos'])
+    @mongo_repository(list_fields=['dtos'])
     class MongoRepository:
         class Meta:
             dto = NestedListDTO

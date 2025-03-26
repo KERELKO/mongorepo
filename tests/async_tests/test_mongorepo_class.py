@@ -2,15 +2,14 @@
 import asyncio
 import random
 
-from mongorepo import Index
-from mongorepo.asyncio.classes import AsyncBasedMongoRepository
+from mongorepo import BaseAsyncMongoRepository, Index
 from tests.common import SimpleDTO, collection_for_simple_dto
 
 
 async def test_all_methods_with_inherited_repo():
     cl = collection_for_simple_dto(async_client=True)
 
-    class TestMongoRepository(AsyncBasedMongoRepository[SimpleDTO]):
+    class TestMongoRepository(BaseAsyncMongoRepository[SimpleDTO]):
         class Meta:
             index = Index(field='y', name='async_index_y', unique=True)
             collection = cl

@@ -1,25 +1,33 @@
 import inspect
+import types
 import warnings
 from dataclasses import is_dataclass
-from types import UnionType
+from functools import partial
 from typing import (
     Any,
     Callable,
     NoReturn,
-    Optional,
-    TypeVar,
     get_args,
     get_origin,
+    get_type_hints,
 )
 
 import pymongo
+from motor.motor_asyncio import AsyncIOMotorCollection
 from pymongo.collection import Collection
 
 from mongorepo import exceptions
-from mongorepo._base import DTO, Access, Index
+from mongorepo._base import (
+    DTO,
+    Access,
+    CollectionProvider,
+    Dataclass,
+    Index,
+    MetaAttributes,
+)
 
 
-def raise_exc(exc: Exception) -> NoReturn:
+def raise_exc(exc: Exception | type[Exception]) -> NoReturn:
     """Allows to write one-lined exceptions."""
     raise exc
 
@@ -39,50 +47,9 @@ def get_prefix(access: Access | None, cls: type | None = None) -> str:
     return prefix
 
 
-def _get_collection_and_dto(cls: type, raise_exceptions: bool = True) -> dict[str, Any]:
-    """Collect `dto` and `collection` attributes from `Meta` class."""
-    attributes: dict[str, Any] = {}
-    meta = _get_meta(cls)
-
-    dto = meta.__dict__.get('dto', None)
-    if not dto and raise_exceptions:
-        raise exceptions.NoDTOTypeException
-    attributes['dto'] = dto
-
-    collection = meta.__dict__.get('collection', None)
-    if collection is None and raise_exceptions:
-        raise exceptions.NoCollectionException
-    attributes['collection'] = collection
-
-    return attributes
-
-
-def _get_meta_attributes(cls, raise_exceptions: bool = True) -> dict[str, Any]:
-    """Collect all available attributes from `Meta` class."""
-    attributes: dict[str, Any] = _get_collection_and_dto(
-        cls=cls, raise_exceptions=raise_exceptions,
-    )
-    meta = _get_meta(cls)
-
-    index: Index | str | None = getattr(meta, 'index', None)
-    attributes['index'] = index
-
-    method_access: Access | None = getattr(meta, 'method_access', None)
-    attributes['method_access'] = method_access
-
-    substitute: dict[str, str] | None = getattr(meta, 'substitute', None)
-    if substitute is not None:
-        warnings.warn("'substitute' dictionary is deprecated, please pass arguments in other place")
-    attributes['substitute'] = substitute
-
-    id_field: str | None = getattr(meta, 'id_field', None)
-    attributes['id_field'] = id_field
-
-    return attributes
-
-
-def _get_meta(cls: type) -> Any:
-    """Tries to get `Meta` class for the class or raises an exception."""
+def _get_meta(cls: type) -> type:
+    """Tries to get `Meta` class for the class or raises `NoMetaException`
+    exception."""
     meta = cls.__dict__.get('Meta', None)
     if not meta:
         raise exceptions.NoMetaException
@@ -91,40 +58,58 @@ def _get_meta(cls: type) -> Any:
     return meta
 
 
-def _get_validated_type_hint(hint: Any, get_type: bool = False) -> Any:
-    args = get_args(hint)
-    if len(args) > 2:
-        raise exceptions.TypeHintException(message=f'Too many arguments for type hint: {hint}')
-    if len(args) == 2 and get_origin(hint) is not dict:
-        if type(None) not in args:
-            raise exceptions.TypeHintException(message=f'"|" allowed only with NoneType {hint}')
-    for arg in args:
-        if get_origin(arg) is list:
-            raise exceptions.TypeHintException(
-                message=f'List must have only one argument as type hint {hint}:{arg}',
-            )
-        if type(arg) is UnionType or type(hint) is Optional:
-            raise exceptions.TypeHintException(message=f'Invalid type hint {hint}:{arg}')
-        elif is_dataclass(hint):
-            _get_dto_type_hints(hint)
-    if get_type:
-        if get_origin(hint) is list:
-            return get_origin(hint)
-        if args:
-            for arg in args:
-                if type(arg) is not None:
-                    return get_origin(arg)
-    return hint
+def _get_meta_attributes(cls: type) -> MetaAttributes:
+    """Collect all available attributes from `Meta` class."""
+    meta = _get_meta(cls)
+
+    dto_type: type[Dataclass] | None = getattr(meta, 'dto', None)
+
+    collection: AsyncIOMotorCollection | Collection[Any] | None = getattr(meta, 'collection', None)
+
+    index: Index | str | None = getattr(meta, 'index', None)
+
+    method_access: Access | None = getattr(meta, 'method_access', None)
+
+    substitute: dict[str, str] | None = getattr(meta, 'substitute', None)
+    if substitute is not None:
+        warnings.warn("'substitute' dictionary is deprecated, please pass arguments in other place")
+
+    id_field: str | None = getattr(meta, 'id_field', None)
+
+    return MetaAttributes(
+        dto=dto_type,
+        collection=collection,  # type: ignore
+        index=index,
+        method_access=method_access,
+        substitute=substitute,
+        id_field=id_field,
+    )
 
 
-def _get_dto_type_hints(dto: type[DTO] | DTO, get_types: bool = True) -> dict[str, Any]:
-    """Returns dictionary of fields' type hints for a dataclass or dataclass
-    instance."""
-    default_values = {}
-    for field_name, value in dto.__annotations__.items():
-        hint = _get_validated_type_hint(value, get_type=get_types)
-        default_values[field_name] = hint if get_types else value
-    return default_values
+def get_first_arg(type_hint) -> Any:
+    first_list_arg = get_args(type_hint)[0]
+    if type(first_list_arg) is types.UnionType:
+        first_list_arg = get_args(first_list_arg)[0]
+    elif type(first_list_arg) is types.GenericAlias:
+        first_list_arg = get_origin(first_list_arg)
+    return first_list_arg
+
+
+def get_dataclass_type_hints(dataclass: type[Dataclass]) -> dict[str, Any]:
+    type_hints: dict[str, Any] = {}
+
+    for field_name, hint in get_type_hints(dataclass).items():
+        if is_dataclass(hint):
+            type_hints[field_name] = hint
+        elif (org := get_origin(hint)) is list:
+            first_left_arg = get_first_arg(hint)
+            type_hints[field_name] = first_left_arg
+        elif org is types.UnionType:
+            type_hints[field_name] = get_args(hint)[0]
+        else:
+            type_hints[field_name] = hint
+
+    return type_hints
 
 
 def _create_index(index: Index | str, collection: Collection) -> None:
@@ -147,7 +132,29 @@ def _create_index(index: Index | str, collection: Collection) -> None:
     )
 
 
-def _get_dto_from_origin(cls: type) -> Any:
+async def _create_index_async(index: Index | str, collection: AsyncIOMotorCollection) -> None:
+    """### Creates an index for the collection
+
+    * index parameter can be string or mongorepo.Index
+    * If index is string, create standard mongodb index
+    * If it's `mongorepo.Index` creates index with user's settings
+
+    """
+    if isinstance(index, str):
+        await collection.create_index(index)
+        return
+    index_name = f'index_{index.field}'
+    if index.name:
+        index_name = index.name
+    direction = pymongo.DESCENDING if index.desc else pymongo.ASCENDING
+    await collection.create_index(
+        [(index.field, direction)],
+        name=index_name,
+        unique=index.unique,
+    )
+
+
+def _get_dto_from_origin(cls: type) -> type[Dataclass]:
     """
     Tries to get `dto` from origin of the class or raises an exception
 
@@ -167,7 +174,7 @@ def _get_dto_from_origin(cls: type) -> Any:
     if dto is DTO:
         raise exceptions.NoDTOTypeException
     if not is_dataclass(dto):
-        raise exceptions.NotDataClass
+        raise exceptions.NoDTOTypeException
 
     return dto
 
@@ -189,142 +196,111 @@ def _convert_to_dto_with_id(
     return wrapper
 
 
-def _nested_convert_to_dto(dto_type: type[DTO], id_field: str | None = None) -> Callable:
-    def outer_wrapper(dto_type: type[DTO], dct: dict[str, Any]) -> DTO:
-        def inner_wrapper(
-            dto_type: type[DTO], dct: dict[str, Any], to_dto: bool = False,
-        ) -> dict[str, Any] | DTO:
-            data = {}
-            type_hints = _get_dto_type_hints(dto_type, get_types=False)
-            for key, value in dct.items():
-                if is_dataclass(type_hints.get(key, None)):
-                    data[key] = inner_wrapper(type_hints.get(key, None), value, to_dto=True)
-                elif get_origin(type_hints.get(key, None)) is list and isinstance(value, list):
-                    args = get_args(type_hints.get(key, None))
-                    if is_dataclass(args[0]):
-                        data[key] = [
-                            inner_wrapper(args[0], v, to_dto=True) for v in value  # type: ignore
-                        ]
-                    else:
-                        data[key] = value  # TODO: solve mypy error
-                else:
-                    data[key] = value
-            return dto_type(**data) if to_dto else data
+def _nested_convert_to_dto[T: Dataclass](
+    dataclass_type: type[T], data: dict[str, Any], id_field: str | None = None,
+) -> T:
+    def convert(
+        data: dict[str, Any], dataclass_type: type[T], as_dataclass: bool = True,
+    ) -> dict[str, Any] | T:
+        type_hints = get_dataclass_type_hints(dataclass_type)
+        result = {}
+        for key, value in data.items():
+            is_dtcls = is_dataclass(h := type_hints[key])
 
-        data = {}
-        if id_field is not None:
-            data[id_field] = str(dct.pop('_id'))
-        else:
-            dct.pop('_id') if dct.get('_id', None) else ...
-        data.update(inner_wrapper(dto_type, dct))  # type: ignore
-        return dto_type(**data)
+            if is_dtcls and isinstance(value, list):
+                result[key] = [convert(v, h, True) for v in value]
+            elif is_dtcls:
+                result[key] = convert(value, h, True)  # type: ignore
+            else:
+                result[key] = value
 
-    return outer_wrapper
+        return dataclass_type(**result) if as_dataclass else result
+
+    result = {}
+    if id_field is not None:
+        result[id_field] = str(data.pop('_id'))
+    else:
+        data.pop('_id') if data.get('_id', None) else ...
+
+    result.update(convert(data, dataclass_type, False))  # type: ignore[arg-type]
+    return dataclass_type(**result)
 
 
-def _get_converter(dto_type: type[DTO], id_field: str | None = None) -> Callable:
-    """Returns proper converter based on type hints of the dto."""
-    converter = _convert_to_dto
+def _get_converter(
+    dto_type: type[DTO], id_field: str | None = None,
+) -> Callable[[type[DTO], dict[str, Any]], DTO]:
+    """Returns proper dataclass converter based on type hints of the dataclas.
+
+    ## Usage example::
+
+        from mongorepo import get_converter
+
+        @dataclass
+        class User:
+            id: str
+            username: str
+            friends: list['User'] = field(default_factory=list)
+
+        to_user = functools.partial(get_converter(User), User)  # just not to pass User every time
+
+        dct = {
+            'id': '1',
+            'username': 'admin',
+            'friends': [
+                {'id': 2, 'username': 'bob', 'friends': []},
+                {'id': 3, 'username': 'destroyer', 'friends': [
+                        {'id': 4, 'username': 'top_1', 'friends': []}
+                    ]
+                }
+            ]
+        }
+        user = to_user(dct)
+
+        pprint.pprint(user)
+        # User(id='1',
+        #     username='admin',
+        #     friends=[User(id=2, username='bob', friends=[]),
+        #             User(id=3,
+        #                 username='destroyer',
+        #                 friends=[User(id=4, username='top_1', friends=[])])])
+
+    """
+
+    converter: Callable[[type[DTO], dict[str, Any]], DTO] | partial = _convert_to_dto
     r = _has_dataclass_fields(dto_type=dto_type)
     if r:
-        converter = _nested_convert_to_dto(dto_type, id_field)
+        converter = partial(_nested_convert_to_dto, id_field=id_field)
     elif id_field is not None:
         converter = _convert_to_dto_with_id(id_field=id_field)
     return converter
 
 
 def _has_dataclass_fields(dto_type: type[DTO]) -> bool:
-    type_hints = _get_dto_type_hints(dto_type, get_types=False)
-    for value in type_hints.values():
-        if is_dataclass(value):
+    type_hints = get_dataclass_type_hints(dto_type)
+    for v in type_hints.values():
+        if is_dataclass(v):
             return True
-        elif get_origin(value) is list:
-            args = get_args(value)
-            if is_dataclass(args[0]):
-                return True
     return False
 
 
-def _get_dataclass_fields(
-    dto_type: type[DTO],
-    only_dto_types: bool = False,
-) -> dict[str, type[DTO]]:
-    """Returns dictionary of fields which has dataclasses as type hints or as
-    arguments.
-
-    `only_types=True` to get only dto types, instead of `{"example":
-    list[ExampleDTO]}` get `{"example": ExampleDTO}`
-
-    """
-    dataclass_fields = {}
-    type_hints = _get_dto_type_hints(dto_type, get_types=False)
-    for key, value in type_hints.items():
-        if is_dataclass(value):
-            dataclass_fields[key] = value
-        elif get_origin(value) is list:
-            args = get_args(value)
-            if is_dataclass(args[0]):
-                dataclass_fields[key] = args[0] if only_dto_types else value
-    return dataclass_fields
-
-
-def _validate_method_annotations(method: Callable) -> None:
-    if not method.__annotations__:
-        raise exceptions.MongoRepoException(message=f'No type hints for {method.__name__}()')
-    if 'return' not in method.__annotations__:
-        raise exceptions.MongoRepoException(
-            message=f'return type is not specified for "{method}" method',
-        )
-    params = inspect.signature(method).parameters
-    if list(params)[0] != 'self':
-        raise exceptions.MongoRepoException(
-            message=f'First parameter must be self: "{method}" method',
-        )
-    for param, type_hint in params.items():
-        if param == 'self':
-            continue
-        if type_hint == inspect._empty and type_hint.kind not in [
-            inspect.Parameter.VAR_KEYWORD, inspect.Parameter.VAR_POSITIONAL,
-        ]:
-            raise exceptions.MongoRepoException(
-                message=f'Parameter "{param}" does not have type hint',
-            )
-        if type_hint is Any:
-            raise exceptions.MongoRepoException(
-                message=f'Parameter "{param}" cannot be typing.Any, use specific type',
-            )
-
-
-def _replace_typevars(func: Callable, typevar: Any) -> None:
-    for param, anno in func.__annotations__.items():
-        if isinstance(anno, TypeVar):
-            func.__annotations__[param] = typevar
-
-
 def _check_valid_field_type(field_name: str, dto_type: type[DTO], data_type: type) -> None:
-    dto_fields = _get_dto_type_hints(dto_type)
-    if field_name not in dto_fields:
-        raise exceptions.MongoRepoException(
+    field = dto_type.__annotations__.get(field_name, None)
+    if field is None:
+        raise exceptions.MongorepoException(
             message=f'{dto_type} does not have field "{field_name}"',
         )
-    if dto_fields[field_name] is not data_type:
-        raise exceptions.MongoRepoException(
-            message=f'Invalid type of the field "{field_name}", expected: {data_type}',
-        )
-
-
-def _set__methods__(cls: type) -> None:
-    def __methods__(cls) -> str:
-        methods = []
-        for name in dir(cls):
-            if name == '__methods__':
-                continue
-            member = getattr(cls, name)
-            if inspect.isfunction(member) or inspect.ismethod(member):
-                methods.append(f"{name}{inspect.signature(member)}")
-        return "\n".join(methods)
-
-    setattr(cls, '__methods__', property(__methods__))
+    org = get_origin(field)
+    if field == data_type or org is data_type:
+        return
+    elif type(org) is types.UnionType:
+        union_args = get_args(org)
+        if union_args[0] != data_type:
+            raise exceptions.MongorepoException(
+                message=f'Invalid type of the field "{field_name}", expected: {data_type}',
+            )
+    raise exceptions.MongorepoException(
+        message=f'Invalid type of the field "{field_name}", expected: {data_type}',
+    )
 
 
 def _get_defaults(func: Callable) -> dict[str, Any]:
@@ -335,3 +311,37 @@ def _get_defaults(func: Callable) -> dict[str, Any]:
         if param.default is not inspect._empty:
             result[param.name] = param.default
     return result
+
+
+def use_collection[T](
+    collection: AsyncIOMotorCollection | Collection[Any],
+) -> Callable[[T], T]:
+    """
+    Simple decorator to make mongorepo use specific collection,
+    useful for dynamic look up of collection
+
+    ```
+    # 1. Valid
+    # @use_collection(my_collection)
+    @mongorepo.repository(add=True, get=True)
+    # 2. Valid
+    # @use_collection(my_collection)
+    class Repository:
+        class Meta:
+            dto = SimpleDTO
+
+    def provide_repository() -> Repository:
+        # 3. Valid
+        return use_collection(my_collection)(Repository)()
+
+    repo = provide_repository()
+    ```
+    """
+    def wrapper(cls: T) -> T:
+        provider = CollectionProvider(cls, collection)  # type: ignore
+        if (__mongorepo__ := getattr(cls, '__mongorepo__', None)) is not None:
+            __mongorepo__['collection_provider'] = provider  # type: ignore
+        else:
+            setattr(cls, '__mongorepo__', {'collection_provider': provider, 'methods': {}})
+        return cls
+    return wrapper
