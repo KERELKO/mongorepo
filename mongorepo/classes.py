@@ -42,27 +42,60 @@ from ._common import MongorepoDict
 
 
 class BaseMongoRepository(Generic[DTO]):
-    """
-    ## Base MongoDB repository class
-    #### Extends child classes with various methods:
+    """## Base MongoDB Repository
 
-    ```
-    add(self, dto: DTO) -> DTO
-    get(self, **filters) -> DTO | None
-    get_all(self, **filters) -> Iterable[DTO]
-    update(self, dto: DTO, **filters) -> DTO
-    delete(self, **filters) -> bool
+    This class provides a foundation for creating synchronous repositories using MongoDB.
+    It dynamically extends child classes with various CRUD operations and integrates
+    with MongoDB collections.
+
+    ### Features:
+    - **Automatic method injection**: Methods like `add`, `get`, `update`, and `delete`
+      are dynamically attached.
+    - **Index creation**: Supports indexing using `mongorepo.Index` or a simple field name.
+    - **DTO-based operations**: Ensures type safety with a provided Data Transfer Object (DTO).
+    - **Meta class support**: The child class can define a `Meta` class with:
+      - `dto`: A dataclass representing the document structure.
+      - `collection`: An instance of `Collection` representing the MongoDB collection.
+      - `index` (optional): Defines an index for efficient querying.
+
+    ### Required:
+    - **Collection**: Provide a collection of type `Collection` either in the `Meta` class or
+      with the `mongorepo.use_collection` decorator.
+    - **DTO**: Provide the DTO type in Generic
+      (e.g. `class Repo(BaseMongoRepository[MyDataclass])`) or in the `Meta` class.
+
+    ### Available Methods:
+    - `add(self, dto: DTO) -> DTO`
+    - `add_batch(self, dto_list: list[DTO]) -> InsertManyResult`
+    - `get(self, **filters) -> DTO | None`
+    - `get_all(self, **filters) -> Iterable[DTO]`
+    - `get_list(self, offset: int = 0, limit: int = 20, **filters) -> list[DTO]`
+    - `update(self, dto: DTO, **filters) -> DTO | None`
+    - `delete(self, **filters) -> bool`
+
+    ### Usage Example:
+    ```python
+    # @use_collection(db["users"])
+    class UserRepository(BaseMongoRepository[UserDTO]):
+        class Meta:
+            # dto = UserDTO
+            collection = db["users"]
+            index = mongorepo.Index(field="username")
+
+    repo = UserRepository()
+
+    # Adding a user
+    user = repo.add(UserDTO(username="john_doe"))
+
+    # Retrieving a user
+    retrieved_user = repo.get(username="john_doe")
     ```
 
-    #### Provide DTO type in type hints, example:
+    Raises:
+        - `NoDTOTypeException`: If no DTO type is provided in the `Meta` class or in generic.
+        - `NoCollectionException`: If an index is specified but no collection is provided
+          in the `Meta` class.
 
-    ```
-    class DummyMongoRepository(BaseMongoRepository[UserDTO]):
-        ...
-    ```
-
-    * If you want to create an index use `mongorepo.Index`
-      or just a name of the field to put index on
     """
 
     def __new__(cls, *args, **kwargs) -> 'BaseMongoRepository[DTO]':
@@ -160,27 +193,61 @@ class BaseMongoRepository(Generic[DTO]):
 
 
 class BaseAsyncMongoRepository(Generic[DTO]):
-    """
-    ## Base MongoDB repository class
-    #### Extends child classes with various methods:
+    """## Base Asynchronous MongoDB Repository
 
-    ```
-    add(self, dto: DTO) -> DTO
-    get(self, **filters) -> DTO | None
-    get_all(self, **filters) -> Iterable[DTO]
-    update(self, dto: DTO, **filters) -> DTO
-    delete(self, **filters) -> bool
+    This class provides a foundation for creating asynchronous repositories using MongoDB.
+    It dynamically extends child classes with various CRUD
+    operations and integrates with MongoDB collections.
+
+    ### Features:
+    - **Automatic method injection**: Methods like `add`, `get`, `update`, and `delete`
+    are dynamically attached.
+    - **Asynchronous support**: Utilizes `AsyncIOMotorCollection` for non-blocking
+    database operations.
+    - **Index creation**: Supports indexing using `mongorepo.Index` or a simple field name.
+    - **DTO-based operations**: Ensures type safety with a provided Data Transfer Object (DTO).
+    - **Meta class support**: The child class can define a `Meta` class with:
+      - `dto`: A dataclass representing the document structure.
+      - `collection`: An instance of `AsyncIOMotorCollection` representing the MongoDB collection.
+      - `index` (optional): Defines an index for efficient querying.
+    ### Required:
+    - **Collection**: provide collection of type `AsyncIOMotorCollection` either in `Meta` class or
+    with `mongorepo.use_collection` decorator
+    - **DTO**: provide DTO type in Generic
+    (e.g. `class Repo(BaseAsyncMongoRepository[MyDataclass])`) or in `Meta` class
+
+    ### Available Methods:
+    - `add(self, dto: DTO) -> DTO`
+    - `add_batch(self, dto_list: list[DTO]) -> InsertManyResult`
+    - `get(self, **filters) -> DTO | None`
+    - `get_all(self, **filters) -> AsyncGenerator[DTO, None]`
+    - `get_list(self, offset: int = 0, limit: int = 20, **filters) -> list[DTO]`
+    - `update(self, dto: DTO, **filters) -> DTO | None`
+    - `delete(self, **filters) -> bool`
+
+    ### Usage Example:
+    ```python
+    # @use_collection(db["users"])
+    class UserRepository(BaseAsyncMongoRepository[UserDTO]):
+        class Meta:
+            # dto = UserDTO
+            collection = db["users"]
+            index = mongorepo.Index(field="username")
+
+    repo = UserRepository()
+
+    # Adding a user
+    user = await repo.add(UserDTO(username="john_doe"))
+
+    # Retrieving a user
+    retrieved_user = await repo.get(username="john_doe")
     ```
 
-    #### Provide DTO type in type hints, example:
+    Raises:
+        - `NoDTOTypeException`: If no DTO type is provided in the `Meta` class or in generic.
+        - `NoCollectionException`: If an index is specified but no collection is provided
+        in `Meta` class.
 
-    ```
-    class DummyMongoRepository(BaseMongoRepository[UserDTO]):
-        ...
-    ```
-
-    * If you want to create an index use `mongorepo.Index`
-      or just a name of the field to put index on
     """
 
     def __new__(cls, *args, **kwargs) -> 'BaseAsyncMongoRepository[DTO]':

@@ -20,46 +20,42 @@ def mongo_repository(
     list_fields: Iterable[str] | None = None,
     method_access: Access | None = None,
 ) -> type | Callable:
-    """## Decorator for MongoDB repositories
+    """Decorator for creating a synchronous MongoDB repository.
 
-    * decorated class must provide `Meta` class inside
-    with variables "dto"(represent simple dataclass) and
-    `collection` (represent mongo collection of type `Collection` from `pymongo` library)
+    This decorator enhances a class with common repository methods for handling
+    MongoDB collections using `pymongo`'s `Collection`.
 
-    * You can also provide `index` field that can be just a string name of the field
-    which you want to make index field or it can be instance of `mongorepo.Index`
-    with extended settings
+    ## Requirements:
+    The decorated class must define a nested `Meta` class with:
+    - `dto`: A dataclass representing the document schema.
+    - `collection`: An instance of `Collection` from `pymongo`.
+    - `index` (optional): Either:
+      - A string representing the indexed field.
+      - An instance of `mongorepo.Index` for advanced indexing options.
+    - `method_access` (optional): Specifies the access level for repository methods
+      using `mongorepo.Access`.
 
-    * You can use `method_access` to make all methods
-    private, protected or public (use `mongorepo.Access`)
+    ## Parameters:
+    - `add` (bool): Enables the `add` method to insert a document (default: True).
+    - `add_batch` (bool): Enables batch insertion of multiple documents (default: True).
+    - `get` (bool): Enables retrieval of a single document by filters (default: True).
+    - `get_list` (bool): Enables retrieval of multiple documents with pagination (default: True).
+    - `get_all` (bool): Enables retrieval of all documents (default: True).
+    - `update` (bool): Enables document updates (default: True).
+    - `delete` (bool): Enables document deletion (default: True).
+    - `integer_fields` (Iterable[str], optional): Fields that support atomic increment/decrement:
+      - `increment_{field}`: Increments the field.
+      - `decrement_{field}`: Decrements the field.
+    - `list_fields` (Iterable[str], optional): Fields treated as lists, enabling:
+      - `{field}__append`: Appends an item to the list.
+      - `{field}__remove`: Removes an item from the list.
+      - `{field}__pop`: Pops an item from the list.
+      - `{field}__list`: Retrieves the list field values.
+    - `method_access` (`mongorepo.Access`, optional): Defines method access level
+      (`PUBLIC`, `PROTECTED`, `PRIVATE`).
 
-    * Add `list_fields` to params to extend repository with methods
-    that related to list fields in your dto type
-
-    {field}__pop, {field}__list, {field}__remove, {field__append}
-
-    * Add `integer_fields` to params to extend repository with methods
-    that related to integer fields in your dto type
-
-    increment_{field}, decrement_{field}
-
-    * __methods__: if `True` set class property `__methods__`
-    that list all available methods including `mongorepo` methods, can be useful
-    if you want to debug or see the signature of generated methods
-
-    ### Example of __methods__ property
-    ```
-    @mongorepo_repository(get_list=True, update=True, __methods__=True)
-    class A:
-        ...
-    print(A().__methods__)
-    # get_list(self, offset: int = 0, limit: int = 20, **filters: Any) -> list[~DTO]
-    # update(self, dto: ~DTO, **filters: Any) -> Optional[~DTO]
-    ```
-
-    ## Decorator usage example
-
-    ```
+    ## Example Usage:
+    ```python
     @mongo_repository(delete=False)
     class MongoRepository:
         class Meta:
@@ -68,12 +64,11 @@ def mongo_repository(
             index = mongorepo.Index(field="name")
             method_access = mongorepo.Access.PUBLIC
 
-    r = MongoRepository()
+    repo = MongoRepository()
 
-    r.add(UserDTO(username="admin"))
+    repo.add(UserDTO(username="admin"))
 
-    admin = r.get(username="admin")  # UserDTO(username="admin")
-
+    admin = repo.get(username="admin")  # UserDTO(username="admin")
     ```
 
     """
@@ -112,47 +107,43 @@ def async_mongo_repository(
     list_fields: list[str] | None = None,
     method_access: Access | None = None,
 ) -> type | Callable:
-    """## Async MongoDB repository decorator
+    """Decorator for creating an asynchronous MongoDB repository.
 
-    * decorated class must provide `Meta` class inside
-    with variables "dto"(dataclass interface) and
-    `collection` (motor collection: `AsyncIOMotorCollection`).
+    This decorator enhances a class with common repository methods for handling
+    MongoDB collections using `motor`'s `AsyncIOMotorCollection`.
 
-    * You can also provide `index` field that can be just a string name of the field
-    which you want to make index field or it can be instance of `mongorepo.Index`
-    with extended settings
+    ## Requirements:
+    The decorated class must define a nested `Meta` class with:
+    - `dto`: A dataclass representing the document schema.
+    - `collection`: An instance of `AsyncIOMotorCollection`.
+    - `index` (optional): Either:
+      - A string representing the indexed field.
+      - An instance of `mongorepo.Index` for advanced indexing options.
+    - `method_access` (optional): Specifies the access level for repository methods
+      using `mongorepo.Access`.
 
-    * You can use `method_access` to make all methods
-    private, protected or public (use `mongorepo.Access`)
+    ## Parameters:
+    - `add` (bool): Enables the `add` method to insert a document (default: True).
+    - `add_batch` (bool): Enables batch insertion of multiple documents (default: True).
+    - `get` (bool): Enables retrieval of a single document by filters (default: True).
+    - `get_list` (bool): Enables retrieval of multiple documents with pagination (default: True).
+    - `get_all` (bool): Enables retrieval of all documents (default: True).
+    - `update` (bool): Enables document updates (default: True).
+    - `delete` (bool): Enables document deletion (default: True).
+    - `integer_fields` (list[str], optional): Fields that support atomic increment/decrement:
+      - `incr__{field}`: Increments the field.
+      - `decr__{field}`: Decrements the field.
+    - `list_fields` (list[str], optional): Fields treated as lists, enabling:
+      - `{field}__append`: Appends an item to the list.
+      - `{field}__remove`: Removes an item from the list.
+      - `{field}__pop`: Pops an item from the list.
+      - `{field}__list`: Retrieves the list field values.
+    - `method_access` (`mongorepo.Access`, optional): Defines method access level
+      (`PUBLIC`, `PROTECTED`, `PRIVATE`).
 
-    * Add `array_fields` to params to extend repository with methods
-    that related to list fields in your dto type
-
-    {field}__pop, {field}__list, {field}__remove, {field__append}
-
-    * Add `integer_fields` to params to extend repository with methods
-    that related to integer fields in your dto type
-
-    incr__{field}, decr__{field}
-
-    * __methods__: if `True` set class property `__methods__`
-    that list all available methods including `mongorepo` methods, can be useful
-    if you want to debug or see the signature of generated methods
-
-    ### Example of __methods__ property
-    ```
-    @async_mongorepo_repository(get_list=True, update=True, __methods__=True)
-    class A:
-        ...
-    print(A().__methods__)
-    >>> get_list(self, offset: int = 0, limit: int = 20) -> list[~DTO]
-    >>> update(self, dto: ~DTO, **filters: Any) -> Optional[~DTO]
-    ```
-
-    ## Decorator usage example
-
-    ```
-    @async_mongo_repository(get_all=True)
+    ## Example Usage:
+    ```python
+    @async_mongo_repository(get_all=True, update=True)
     class MongoRepository:
         class Meta:
             dto = ExampleDTO
@@ -160,16 +151,14 @@ def async_mongo_repository(
             index = mongorepo.Index(field="id_field")
             method_access = mongorepo.Access.PUBLIC
 
-    r = MongoRepository()
+    repo = MongoRepository()
 
-    await r.add(ExampleDTO(key="value"))
+    await repo.add(ExampleDTO(key="value"))
 
-    example = await repo.get(key="value")  # ExampleDTO(key="value")
-
+    example = await repo.get(key="value")  # Returns ExampleDTO(key="value")
     ```
 
     """
-
     def wrapper(cls) -> type:
         return _handle_async_mongo_repository(
             cls=cls,

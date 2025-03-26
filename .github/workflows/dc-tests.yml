@@ -4,9 +4,13 @@ on:
   push:
     branches:
       - '**'
+    paths:
+      - '**/mongorepo/**'
   pull_request:
     branches:
       - '**'
+    paths:
+      - '**/mongorepo/**'
 
 jobs:
   test:
