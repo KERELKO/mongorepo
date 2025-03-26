@@ -1,4 +1,4 @@
-name: dc-tests
+name: pypi-publish
 
 on:
   push:
@@ -14,6 +14,7 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3

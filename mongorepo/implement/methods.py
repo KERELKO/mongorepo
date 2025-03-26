@@ -142,18 +142,24 @@ class Method:
 
 
 class GetMethod(Method, _ManageMethodFiltersMixin):
-    """
-    ### Class that represents mongorepo `get` method
-    * supports `async`, `await` syntax
-    ## Usage example
+    """Represents the `get` method in a Mongo repository.
 
-    ```
+    This method retrieves a single document from the database using specified filters.
+    Supports both synchronous and asynchronous execution.
+
+    ### Features
+    * Support modifiers
+    (:class:`mongorepo.modifiers.ModifierBefore`, :class:`mongorepo.modifiers.ModifierAfter`)
+    * Support :class:`FieldAlias`
+    * Support asynchronous functions
+
+    ## Usage Example:
+    ```python
     @dataclass
     class User:
         id: str
 
     class Repo(typing.Protocol):
-        # this method can be also asynchronous
         def get(self, id: str) -> User:
             ...
 
@@ -181,18 +187,23 @@ class GetMethod(Method, _ManageMethodFiltersMixin):
 
 
 class AddMethod(Method):
-    """
-    ### Class that represents mongorepo `add` method
-    * supports `async`, `await` syntax
-    ## Usage example
+    """Represents the `add` method in a Mongo repository.
 
-    ```
+    This method inserts a new document into the database.
+    Supports both synchronous and asynchronous execution.
+
+    ### Features
+    * Support modifiers
+    (:class:`mongorepo.modifiers.ModifierBefore`, :class:`mongorepo.modifiers.ModifierAfter`)
+    * Support asynchronous functions
+
+    ## Usage Example:
+    ```python
     @dataclass
     class User:
         name: str
 
     class Repo(typing.Protocol):
-        # this method can be also asynchronous
         def add(self, user: User) -> User:
             ...
 
@@ -220,11 +231,15 @@ class AddMethod(Method):
 
 
 class UpdateMethod(Method, _ManageMethodFiltersMixin):
-    """
-    ### Class that represents mongorepo `update` method
-    * supports `async`, `await` syntax
-    ## Usage example
+    """Class that represents mongorepo `update` method.
 
+    ### Features
+    * Support modifiers
+    (:class:`mongorepo.modifiers.ModifierBefore`, :class:`mongorepo.modifiers.ModifierAfter`)
+    * Support :class:`FieldAlias`
+    * Support asynchronous functions
+
+    ## Usage example:
     ```
     @dataclass
     class User:
@@ -269,7 +284,8 @@ class UpdateMethod(Method, _ManageMethodFiltersMixin):
     updated_user = repo.update(id='1', UpdateUser(name='creator'))
     print(updated_user)  # User(id=None, name='creator')
 
-    # To avoid it use UpdateSkipModifier class
+    # To avoid this use UpdateSkipModifier
+    # (from mongorepo.modifiers import UpdateSkipModifier) class
     @implement(
         UpdateMethod(modifiers=[UpdateSkipModifier(skip_if_value=None)], ...)
     )
@@ -295,10 +311,14 @@ class UpdateMethod(Method, _ManageMethodFiltersMixin):
 
 
 class DeleteMethod(Method, _ManageMethodFiltersMixin):
-    """
-    ### Class that represents mongorepo `delete` method
-    * supports `async`, `await` syntax
-    ## Usage example
+    """Class that represents mongorepo `delete` method.
+
+    ### Features
+    * Support modifiers
+    (:class:`mongorepo.modifiers.ModifierBefore`, :class:`mongorepo.modifiers.ModifierAfter`)
+    * Support :class:`FieldAlias`
+    * Support asynchronous functions
+    ## Usage example:
 
     ```
     class Repo(typing.Protocol):
@@ -313,7 +333,7 @@ class DeleteMethod(Method, _ManageMethodFiltersMixin):
             collection = mongo_client().users.users_collection
 
     repo = MongoRepo()
-    deleted: bool = repo.remove_user(id='1')
+    deleted: bool = repo.remove_user(id='1')  # True
     ```
 
     """
@@ -329,11 +349,14 @@ class DeleteMethod(Method, _ManageMethodFiltersMixin):
 
 
 class GetListMethod(Method, _ManageMethodFiltersMixin):
-    """
-    ### Class that represents mongorepo `get_list` method
-    * supports `async`, `await` syntax
-    ## Usage example
+    """Class that represents mongorepo `get_list` method.
 
+    ### Features
+    * Support modifiers
+    (:class:`mongorepo.modifiers.ModifierBefore`, :class:`mongorepo.modifiers.ModifierAfter`)
+    * Support :class:`FieldAlias`
+    * Support asynchronous functions
+    ## Usage example:
     ```
     class BookRepo(typing.Protocol):
         # this method can be also asynchronous
@@ -369,18 +392,27 @@ class GetListMethod(Method, _ManageMethodFiltersMixin):
 
 
 class GetAllMethod(Method, _ManageMethodFiltersMixin):
-    """
-    ### Class that represents mongorepo `get_all` method
-    * supports `async`, `await` syntax
-    ## Usage example
+    """Class that represents mongorepo `get_all` method.
 
+    ### Features
+    * Support modifiers
+    (:class:`mongorepo.modifiers.ModifierBefore`, :class:`mongorepo.modifiers.ModifierAfter`)
+    * Support :class:`FieldAlias`
+    * Support asynchronous functions
+
+    ## Usage example:
     ```
     class BookRepo(typing.Protocol):
-        # this method can be also asynchronous
-        def get_all_books(self) -> typing.Generator[Book, None]:
+        def get_all_books(self) -> typing.Generator[Book, None, None]:
             ...
 
-    @implement(GetAllMethod(BookRepo.get_all, filters=[]))
+        async def get_all_books_async(self, category: str) -> typing.AsyncGenerator[Book, None]:
+            ...
+
+    @implement(
+        GetAllMethod(BookRepo.get_all_books, filters=[]),
+        GetAllMethod(BookRepo.get_all_books_async, filters=['category'])
+    )
     class MongoRepo:
         class Meta:
             dto = Book
@@ -389,7 +421,11 @@ class GetAllMethod(Method, _ManageMethodFiltersMixin):
     repo = MongoRepo()
     books = repo.get_all_books()
     print(next(books))  # Book(title='...', category='fiction')
+
+    async for book in repo.get_all_books_async(category='fiction'):
+        print(book)  # Book(title='...', category='fiction')
     ```
+
     """
 
     def __init__(
@@ -404,11 +440,14 @@ class GetAllMethod(Method, _ManageMethodFiltersMixin):
 
 
 class AddBatchMethod(Method):
-    """
-    ### Class that represents mongorepo `add_batch` method
-    * supports `async`, `await` syntax
-    ## Usage example
+    """Class that represents mongorepo `add_batch` method.
 
+    ### Features
+    * Support modifiers
+    (:class:`mongorepo.modifiers.ModifierBefore`, :class:`mongorepo.modifiers.ModifierAfter`)
+    * Support asynchronous functions
+
+    ## Usage example:
     ```
     class BookRepo(typing.Protocol):
         # this method can be also asynchronous
@@ -427,6 +466,7 @@ class AddBatchMethod(Method):
         Book(title='2', category='romance'),
     ])
     ```
+
     """
 
     def __init__(
@@ -441,12 +481,16 @@ class AddBatchMethod(Method):
 
 
 class ListAppendMethod(Method, _ManageMethodFiltersMixin):
-    """### Class that represents mongorepo `list_append` method
+    """Class that represents `list.append()` as mongorepo method.
 
-    * supports `async`, `await` syntax
-    * works this dataclasses and standard types (e.g. str, int, etc.)
-    ## Usage example
+    ### Features
+    * Support modifiers
+    (:class:`mongorepo.modifiers.ModifierBefore`, :class:`mongorepo.modifiers.ModifierAfter`)
+    * Support :class:`FieldAlias`
+    * Support asynchronous functions
+    * Works with dataclass types and standard types (e.g. str, int, etc.)
 
+    ## Usage example:
     ```
 
     @dataclass
@@ -469,7 +513,8 @@ class ListAppendMethod(Method, _ManageMethodFiltersMixin):
             field_name='boxes',  # Cargo.boxes
             filters=['id'],
             value='box'
-        )
+        ),
+        ...
     )
     class MongoRepo:
         class Meta:
@@ -501,12 +546,16 @@ class ListAppendMethod(Method, _ManageMethodFiltersMixin):
 
 
 class ListPopMethod(Method, _ManageMethodFiltersMixin):
-    """### Class that represents mongorepo `list_pop` method
+    """Class that represents `list.pop()` as mongorepo method.
 
-    * supports `async`, `await` syntax
-    * works this dataclasses and standard types (e.g. str, int, etc.)
-    ## Usage example
+    ### Features
+    * Support modifiers
+    (:class:`mongorepo.modifiers.ModifierBefore`, :class:`mongorepo.modifiers.ModifierAfter`)
+    * Support :class:`FieldAlias`
+    * Support asynchronous functions
+    * Works with dataclass types and standard types (e.g. str, int, etc.)
 
+    ## Usage example:
     ```
 
     @dataclass
@@ -562,12 +611,16 @@ class ListPopMethod(Method, _ManageMethodFiltersMixin):
 
 
 class ListRemoveMethod(Method, _ManageMethodFiltersMixin):
-    """### Class that represents mongorepo `list_remove` method
+    """Class that represents `list.remove()` as mongorepo method.
 
-    * supports `async`, `await` syntax
-    * works this dataclasses and standard types (e.g. str, int, etc.)
-    ## Usage example
+    ### Features
+    * Support modifiers
+    (:class:`mongorepo.modifiers.ModifierBefore`, :class:`mongorepo.modifiers.ModifierAfter`)
+    * Support :class:`FieldAlias`
+    * Support asynchronous functions
+    * Works with dataclass types and standard types (e.g. str, int, etc.)
 
+    ## Usage example:
     ```
 
     @dataclass
@@ -583,7 +636,7 @@ class ListRemoveMethod(Method, _ManageMethodFiltersMixin):
         # this method can be also asynchronous
         def remove_box(
             self, id: str, box: Box,
-        ) -> Box:  # or raises mongorepo.exceptions.NotFoundException
+        ) -> Box:
             ...
 
     @implement(
@@ -606,6 +659,9 @@ class ListRemoveMethod(Method, _ManageMethodFiltersMixin):
     repo.remove_box(id='1', box=Box(weight=5))
     print(repo.get(id='id'))  # Cargo(id='1', boxes=[])
     ```
+    ## Note
+    By default mongorepo return `InsertResult` as execution result of this method, if you want
+    to return `Box` as in the exampple above you need to write custom modifier
 
     """
 
@@ -626,12 +682,16 @@ class ListRemoveMethod(Method, _ManageMethodFiltersMixin):
 
 
 class ListGetFieldValuesMethod(Method, _ManageMethodFiltersMixin):
-    """### Class that represents mongorepo `list_field_values` method
+    """Class that represents `list[offset:limit]` as mongorepo method.
 
-    * supports `async`, `await` syntax
-    * works this dataclasses and standard types (e.g. str, int, etc.)
-    ## Usage example
+    ### Features
+    * Support modifiers
+    (:class:`mongorepo.modifiers.ModifierBefore`, :class:`mongorepo.modifiers.ModifierAfter`)
+    * Support :class:`FieldAlias`
+    * Support asynchronous functions
+    * Works with dataclass types and standard types (e.g. str, int, etc.)
 
+    ## Usage example:
     ```
 
     @dataclass
@@ -647,7 +707,7 @@ class ListGetFieldValuesMethod(Method, _ManageMethodFiltersMixin):
         # this method can be also asynchronous
         def get_cargo_boxes(
             self, id: str, limit: int = 5,
-        ) -> list[Box]:  # or raises mongorepo.exceptions.NotFoundException
+        ) -> list[Box]:
             ...
 
     @implement(
@@ -656,6 +716,7 @@ class ListGetFieldValuesMethod(Method, _ManageMethodFiltersMixin):
             field_name='boxes',  # Cargo.boxes
             filters=['id'],
             limit='limit',
+            # offset='...',
         ),
         ...
     )
@@ -698,11 +759,15 @@ class ListGetFieldValuesMethod(Method, _ManageMethodFiltersMixin):
 
 
 class IncrementIntegerFieldMethod(Method, _ManageMethodFiltersMixin):
-    """
-    ### Class that represents mongorepo `integer_increment` method
-    * supports `async`, `await` syntax
-    ## Usage example
+    """Class that represents incrementation of MongoDB integer field.
 
+    ### Features
+    * Support modifiers
+    (:class:`mongorepo.modifiers.ModifierBefore`, :class:`mongorepo.modifiers.ModifierAfter`)
+    * Support :class:`FieldAlias`
+    * Support asynchronous functions
+
+    ## Usage example:
     ```
 
     @dataclass
@@ -714,7 +779,7 @@ class IncrementIntegerFieldMethod(Method, _ManageMethodFiltersMixin):
         # this method can be also asynchronous
         def increment_views(
             self, id: str,
-        ) -> None:  # or raises mongorepo.exceptions.NotFoundException
+        ) -> None:
             ...
 
     @implement(
@@ -735,6 +800,7 @@ class IncrementIntegerFieldMethod(Method, _ManageMethodFiltersMixin):
     repo.increment_views(id='1')
     print(repo.get(id='1'))  # Record(id='1', views=1001)
     ```
+
     """
 
     def __init__(

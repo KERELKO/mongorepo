@@ -85,9 +85,11 @@ class AddBatchMethodAsync[T: Dataclass]:
                 object_id = ObjectId()
                 dto.__dict__[self.id_field] = str(object_id)
                 batch.append({**asdict(dto), '_id': object_id})
-            result = await collection.insert_many(batch)
+            result = await collection.insert_many(batch, session=self.session)
         else:
-            result = await collection.insert_many(asdict(d) for d in dto_list)
+            result = await collection.insert_many(
+                [asdict(d) for d in dto_list], session=self.session,
+            )
 
         for modifier_after in self.modifiers_after:
             result = modifier_after.modify(result)
@@ -253,7 +255,7 @@ class UpdateMethodAsync[T: Dataclass]:
         for field, value in asdict(dto).items():
             data['$set'][field] = value
         updated_document: dict[str, t.Any] | None = await collection.find_one_and_update(
-            filter=filters, update=data, return_document=True,
+            filter=filters, update=data, return_document=True, session=self.session,
         )
 
         result = self.converter(self.dto_type, updated_document) if updated_document else None
@@ -446,7 +448,7 @@ class PopListMethodAsync[T: Dataclass]:
             filters = modifier_before.modify(**filters)
 
         document = await collection.find_one_and_update(
-            filter=filters, update={'$pop': {self.field_name: 1}},
+            filter=filters, update={'$pop': {self.field_name: 1}}, session=self.session,
         )
         if document is None:
             result = None
@@ -491,7 +493,7 @@ class IncrementIntegerFieldMethodAsync[T: Dataclass]:
 
         w = weight if weight is not None else self.weight
         result = await collection.update_one(
-            filter=filters, update={'$inc': {self.field_name: w}},
+            filter=filters, update={'$inc': {self.field_name: w}}, session=self.session,
         )
 
         for modifier_aftert in self.modifiers_after:
