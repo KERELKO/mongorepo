@@ -2,13 +2,8 @@ name: pypi-publish
 
 on:
   push:
-    branches:
-      - main
-  workflow_run:
-    workflows:
-      - dc-tests
-    types:
-      - completed
+    tags:
+      - "v*"
 
 jobs:
   publish:

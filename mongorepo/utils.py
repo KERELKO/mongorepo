@@ -47,7 +47,7 @@ def get_prefix(access: Access | None, cls: type | None = None) -> str:
     return prefix
 
 
-def _get_meta(cls: type) -> type:
+def _get_meta(cls) -> type:
     """Tries to get `Meta` class for the class or raises `NoMetaException`
     exception."""
     meta = cls.__dict__.get('Meta', None)
@@ -360,4 +360,71 @@ def use_collection[T](
         else:
             setattr(cls, '__mongorepo__', {'collection_provider': provider, 'methods': {}})
         return cls
+    return wrapper
+
+
+def set_meta_attrs[T](
+    index: Index | str | None = None,
+    dto_type: type[Dataclass] | None = None,
+    method_access: Access | None = None,
+    id_field: str | None = None,
+    collection: AsyncIOMotorCollection | Collection | None = None,
+) -> Callable[[T], T]:
+    """
+    Decorator that simulate work of `Meta` class inside of any mongorepo repository
+    Usage example::
+
+        # 1.
+        @mongorepo.repository
+        @mongorepo.use_collection(coll)
+        @set_meta_attrs(dto_type=SimpleDTO)
+        class FirstRepository:
+            ...
+
+        # 2.
+        @implement(AddMethod(IRepo.add, dto='simple'), GetMethod(IRepo.get, filters=['x']))
+        @mongorepo.set_meta_attrs(dto_type=SimpleDTO, collection=coll)
+        class SecondRepository:
+            ...
+
+        # 3.
+        @mongorepo.set_meta_attrs(
+            id_field='x', index='x', dto_type=ComplicatedDTO, collection=coll,
+        )
+        class ThirdRepository(mongorepo.BaseMongoRepository):
+            ...
+
+    """
+    if (
+        index is None
+        and dto_type is None
+        and method_access is None
+        and id_field is None
+    ):
+        raise ValueError('Provide at least one of the parameters')
+
+    def wrapper(cls: T) -> T:
+        try:
+            meta = _get_meta(cls)
+        except exceptions.NoMetaException:
+            meta = type('Meta', (), {})
+            setattr(cls, 'Meta', meta)
+
+        if index is not None:
+            setattr(meta, 'index', index)
+
+        if dto_type is not None:
+            setattr(meta, 'dto', dto_type)
+
+        if id_field is not None:
+            setattr(meta, 'id_field', id_field)
+
+        if method_access is not None:
+            setattr(meta, 'method_access', method_access)
+
+        if collection is not None:
+            setattr(meta, 'collection', collection)
+
+        return cls
+
     return wrapper
