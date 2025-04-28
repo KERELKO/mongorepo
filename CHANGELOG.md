@@ -27,3 +27,7 @@
 ## 3.0.1
   - Improved docstrings
   - Session now can be bonded to any method
+
+## 3.1.1
+### Added
+  - Add __set_meta_attrs__ decorator
