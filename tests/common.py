@@ -5,7 +5,6 @@ from dataclasses import dataclass, field
 from typing import Any, AsyncGenerator, Generator
 
 import pymongo
-import pymongo.collation
 import pymongo.collection
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection
 

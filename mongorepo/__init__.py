@@ -6,9 +6,10 @@ from .decorators import async_mongo_repository as async_repository
 from .decorators import mongo_repository as repository
 from .queries import AggregationStage, Condition, Operation, UpdateModifier
 from .utils import _get_converter as get_converter
-from .utils import use_collection
+from .utils import set_meta_attrs, use_collection
 
 __all__ = [
+    'set_meta_attrs',
     'get_converter',
     'use_collection',
     'use_session',

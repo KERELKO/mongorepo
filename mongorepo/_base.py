@@ -72,33 +72,3 @@ class CollectionProvider(Generic[CollectionType]):
                 return self.collection
         # If no collection raise exception
         raise exceptions.NoCollectionException('Collection cannot be found', with_meta=False)
-
-
-class CollectionProviderDescriptor(Generic[CollectionType]):
-    """Descriptor to get mongo collection."""
-
-    def __init__(self, collection: CollectionType | None = None):
-        self.collection: CollectionType | None = collection
-
-    def __get__(self, obj: object, owner: type) -> CollectionType:
-        # First check if collection already provided
-        if self.collection is not None:
-            return self.collection
-
-        # Check if collection present in object attributes
-        if (__mongorepo__ := getattr(obj, '__mongorepo__', None)) is not None:
-            collection: CollectionType = __mongorepo__['collection_provider'].collection
-            if collection is not None:
-                self.collection = collection
-                return collection
-
-        # Check if collection in Meta class
-        meta = obj.__dict__.get('Meta', None)
-        if meta is not None:
-            if (c := getattr(meta, 'collection', None)) is not None:
-                if not isinstance(c, (AsyncIOMotorCollection, Collection)):
-                    raise exceptions.NoCollectionException
-                self.collection = cast(CollectionType, c)
-                return self.collection
-        # If no collection raise exception
-        raise exceptions.NoCollectionException('Collection cannot be found', with_meta=False)
