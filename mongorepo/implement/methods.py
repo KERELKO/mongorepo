@@ -59,15 +59,16 @@ class FieldAlias:
         return self.name
 
 
-class _ManageMethodFiltersMixin:
-    @staticmethod
-    def manage_filters(filters: list[str | FieldAlias]) -> dict[str | ParameterEnum, Any]:
-        params = {f: ParameterEnum.FILTER for f in filters if isinstance(f, str)}
-        aliases = {
-            ParameterEnum.FILTER_ALIAS: dict.fromkeys(a.aliases, a.name)
-            for a in filters if isinstance(a, FieldAlias)
-        }
-        return {**params, **aliases}  # type: ignore
+def _manage_filters(filters: list[str | FieldAlias]) -> dict[str | ParameterEnum, Any]:
+    params = {f: ParameterEnum.FILTER for f in filters if isinstance(f, str)}
+    aliases = {
+        ParameterEnum.FILTER_ALIAS: {
+            alias: fa.name
+            for fa in filters if isinstance(fa, FieldAlias)
+            for alias in fa.aliases
+        },
+    }
+    return {**params, **aliases}  # type: ignore
 
 
 class SpecificMethod(Protocol):
@@ -141,7 +142,7 @@ class Method:
         return inspect.iscoroutinefunction(self.source)
 
 
-class GetMethod(Method, _ManageMethodFiltersMixin):
+class GetMethod(Method):
     """Represents the `get` method in a Mongo repository.
 
     This method retrieves a single document from the database using specified filters.
@@ -181,7 +182,7 @@ class GetMethod(Method, _ManageMethodFiltersMixin):
         filters: list[FieldAlias | str],
         modifiers: Modifiers | None = None,
     ) -> None:
-        super().__init__(source, **self.manage_filters(filters))  # type: ignore
+        super().__init__(source, **_manage_filters(filters))  # type: ignore
         self.action = MethodAction.GET
         self.modifiers = modifiers or []
 
@@ -230,7 +231,7 @@ class AddMethod(Method):
         self.modifiers = modifiers or []
 
 
-class UpdateMethod(Method, _ManageMethodFiltersMixin):
+class UpdateMethod(Method):
     """Class that represents mongorepo `update` method.
 
     ### Features
@@ -304,13 +305,13 @@ class UpdateMethod(Method, _ManageMethodFiltersMixin):
         modifiers: Modifiers | None = None,
     ) -> None:
         super().__init__(
-            source, **{dto: 'dto'}, **self.manage_filters(filters),  # type: ignore
+            source, **{dto: 'dto'}, **_manage_filters(filters),  # type: ignore
         )
         self.action = MethodAction.UPDATE
         self.modifiers = modifiers or []
 
 
-class DeleteMethod(Method, _ManageMethodFiltersMixin):
+class DeleteMethod(Method):
     """Class that represents mongorepo `delete` method.
 
     ### Features
@@ -343,12 +344,12 @@ class DeleteMethod(Method, _ManageMethodFiltersMixin):
         filters: list[FieldAlias | str],
         modifiers: Modifiers | None = None,
     ) -> None:
-        super().__init__(source, **self.manage_filters(filters))
+        super().__init__(source, **_manage_filters(filters))
         self.action = MethodAction.DELETE
         self.modifiers = modifiers or []
 
 
-class GetListMethod(Method, _ManageMethodFiltersMixin):
+class GetListMethod(Method):
     """Class that represents mongorepo `get_list` method.
 
     ### Features
@@ -385,13 +386,13 @@ class GetListMethod(Method, _ManageMethodFiltersMixin):
     ) -> None:
         super().__init__(
             source, **{offset: 'offset', limit: 'limit'},  # type: ignore
-            **self.manage_filters(filters),
+            **_manage_filters(filters),
         )
         self.action = MethodAction.GET_LIST
         self.modifiers = modifiers or []
 
 
-class GetAllMethod(Method, _ManageMethodFiltersMixin):
+class GetAllMethod(Method):
     """Class that represents mongorepo `get_all` method.
 
     ### Features
@@ -434,7 +435,7 @@ class GetAllMethod(Method, _ManageMethodFiltersMixin):
         filters: list[FieldAlias | str],
         modifiers: Modifiers | None = None,
     ) -> None:
-        super().__init__(source, **self.manage_filters(filters))
+        super().__init__(source, **_manage_filters(filters))
         self.action = MethodAction.GET_ALL
         self.modifiers = modifiers or []
 
@@ -480,7 +481,7 @@ class AddBatchMethod(Method):
         self.modifiers = modifiers or []
 
 
-class ListAppendMethod(Method, _ManageMethodFiltersMixin):
+class ListAppendMethod(Method):
     """Class that represents `list.append()` as mongorepo method.
 
     ### Features
@@ -538,14 +539,14 @@ class ListAppendMethod(Method, _ManageMethodFiltersMixin):
         modifiers: Modifiers | None = None,
     ) -> None:
         super().__init__(
-            source, **{value: 'value'}, **self.manage_filters(filters),  # type: ignore
+            source, **{value: 'value'}, **_manage_filters(filters),  # type: ignore
         )
         self.field_name = field_name
         self.action = MethodAction.LIST_APPEND
         self.modifiers = modifiers or []
 
 
-class ListPopMethod(Method, _ManageMethodFiltersMixin):
+class ListPopMethod(Method):
     """Class that represents `list.pop()` as mongorepo method.
 
     ### Features
@@ -603,14 +604,14 @@ class ListPopMethod(Method, _ManageMethodFiltersMixin):
         modifiers: Modifiers | None = None,
     ) -> None:
         super().__init__(
-            source, **self.manage_filters(filters),
+            source, **_manage_filters(filters),
         )
         self.field_name = field_name
         self.action = MethodAction.LIST_POP
         self.modifiers = modifiers or []
 
 
-class ListRemoveMethod(Method, _ManageMethodFiltersMixin):
+class ListRemoveMethod(Method):
     """Class that represents `list.remove()` as mongorepo method.
 
     ### Features
@@ -674,14 +675,14 @@ class ListRemoveMethod(Method, _ManageMethodFiltersMixin):
         modifiers: Modifiers | None = None,
     ) -> None:
         super().__init__(
-            source, **{value: 'value'}, **self.manage_filters(filters),  # type: ignore
+            source, **{value: 'value'}, **_manage_filters(filters),  # type: ignore
         )
         self.field_name = field_name
         self.action = MethodAction.LIST_REMOVE
         self.modifiers = modifiers or []
 
 
-class ListGetFieldValuesMethod(Method, _ManageMethodFiltersMixin):
+class ListGetFieldValuesMethod(Method):
     """Class that represents `list[offset:limit]` as mongorepo method.
 
     ### Features
@@ -751,14 +752,14 @@ class ListGetFieldValuesMethod(Method, _ManageMethodFiltersMixin):
         super().__init__(
             source,
             **params,
-            **self.manage_filters(filters),
+            **_manage_filters(filters),
         )
         self.field_name = field_name
         self.action = MethodAction.LIST_FIELD_VALUES
         self.modifiers = modifiers or []
 
 
-class IncrementIntegerFieldMethod(Method, _ManageMethodFiltersMixin):
+class IncrementIntegerFieldMethod(Method):
     """Class that represents incrementation of MongoDB integer field.
 
     ### Features
@@ -814,7 +815,7 @@ class IncrementIntegerFieldMethod(Method, _ManageMethodFiltersMixin):
     ) -> None:
         params = {} if weight is None else {weight: 'weight'}
         super().__init__(
-            source, **params, **self.manage_filters(filters),  # type: ignore
+            source, **params, **_manage_filters(filters),  # type: ignore
         )
         self.action = MethodAction.INTEGER_INCREMENT
         self.field_name = field_name
