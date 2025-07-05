@@ -31,3 +31,9 @@
 ## 3.1.1
 ### Added
   - Add __set_meta_attrs__ decorator
+
+## 3.1.2
+### Changed
+  - Now, when an invalid dataclass field name is passed to specific methods __(filters and aliases)__, a `FieldDoesNotExist` exception will be raised.
+### Fixed
+  - Fixed bug where multiple alises do not work on specific method filters
