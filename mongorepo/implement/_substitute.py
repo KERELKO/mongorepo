@@ -7,7 +7,11 @@ from mongorepo.utils import _get_defaults
 
 from ._types import MethodAction
 from ._types import ParameterEnum as MongorepoParameter
-from ._utils import implement_mapper, initialize_callable_mongorepo_method
+from ._utils import (
+    implement_mapper,
+    initialize_callable_mongorepo_method,
+    validate_input_parameters,
+)
 from .methods import Method, SpecificFieldMethod, SpecificMethod
 
 
@@ -20,6 +24,7 @@ def _substitute_specific_method(
     integer_weight: int | None = None,
     **kwargs,
 ) -> Callable:
+    validate_input_parameters(method, dto_type)
     is_async = inspect.iscoroutinefunction(method.source)
 
     if hasattr(method, 'field_name'):
@@ -99,8 +104,10 @@ def _manage_custom_params(
             )
 
     for key, value in source_params_map.items():
+        # Check for filter
         if method.params.get(key, None) == MongorepoParameter.FILTER:
             filters[key] = value
+        # Check alias
         elif (dto_field := aliases.get(key, None)) is not None:
             filters[dto_field] = value
         else:

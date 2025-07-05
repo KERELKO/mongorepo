@@ -47,6 +47,7 @@ from mongorepo.implement.methods import (
     AddBatchMethod,
     AddMethod,
     DeleteMethod,
+    FieldAlias,
     GetAllMethod,
     GetListMethod,
     GetMethod,
@@ -55,9 +56,13 @@ from mongorepo.implement.methods import (
     ListGetFieldValuesMethod,
     ListPopMethod,
     ListRemoveMethod,
+    ParameterEnum,
+    SpecificFieldMethod,
     SpecificMethod,
     UpdateMethod,
 )
+
+from .exceptions import FieldDoesNotExist
 
 
 def implement_mapper(specific_method: SpecificMethod) -> type:
@@ -162,3 +167,35 @@ def initialize_callable_mongorepo_method(
     raise exceptions.MongorepoException(
         f'Cannot initialize {mcls}: {mcls} is not implemented',
     )
+
+
+def field_exists(field_name: str | FieldAlias, dto: Dataclass | type[Dataclass]) -> bool:
+    """Checks whether `field_name` is a field in `dto`"""
+    for dto_field_name in dto.__dataclass_fields__.keys():
+        if isinstance(field_name, str) and field_name == dto_field_name:
+            return True
+        elif isinstance(field_name, FieldAlias) and field_name.name == dto_field_name:
+            return True
+    return False
+
+
+def validate_input_parameters(
+    specific_method: SpecificMethod | SpecificFieldMethod, dataclass: type[Dataclass],
+):
+    for param_name, value in specific_method.params.items():
+        # Validate name of field passed as filter
+        if value == ParameterEnum.FILTER.value and field_exists(param_name, dataclass) is False:
+            raise FieldDoesNotExist(
+                param_name,
+                correct_fields=list(dataclass.__dataclass_fields__.keys()),
+                dto=dataclass.__name__,
+            )
+        # Validate name of field passed as filter alias
+        elif param_name == ParameterEnum.FILTER_ALIAS.value:
+            for field in value.values():  # type: ignore
+                if field_exists(field, dataclass) is False:
+                    raise FieldDoesNotExist(
+                        field,
+                        correct_fields=list(dataclass.__dataclass_fields__.keys()),
+                        dto=dataclass.__name__,
+                    )
