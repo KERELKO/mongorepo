@@ -62,8 +62,11 @@ class FieldAlias:
 def _manage_filters(filters: list[str | FieldAlias]) -> dict[str | ParameterEnum, Any]:
     params = {f: ParameterEnum.FILTER for f in filters if isinstance(f, str)}
     aliases = {
-        ParameterEnum.FILTER_ALIAS: dict.fromkeys(a.aliases, a.name)
-        for a in filters if isinstance(a, FieldAlias)
+        ParameterEnum.FILTER_ALIAS: {
+            alias: fa.name
+            for fa in filters if isinstance(fa, FieldAlias)
+            for alias in fa.aliases
+        },
     }
     return {**params, **aliases}  # type: ignore
 

@@ -3,7 +3,6 @@ from typing import Protocol, cast
 
 import pytest
 
-from mongorepo.exceptions import MongorepoException
 from mongorepo.implement import AddMethod, GetMethod, implement
 from mongorepo.implement.exceptions import FieldDoesNotExist
 from mongorepo.implement.methods import FieldAlias
@@ -52,7 +51,7 @@ def test_can_identify_incorrect_named_field_with_alias():
             ...
 
     with in_collection(Car) as c:
-        with pytest.raises(MongorepoException):
+        with pytest.raises(FieldDoesNotExist):
             @implement(
                 AddMethod(Repo.add, dto='car'),
                 GetMethod(Repo.get_valid, filters=[FieldAlias('model', '__model__'), 'year']),

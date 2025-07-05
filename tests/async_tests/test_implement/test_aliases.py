@@ -226,3 +226,36 @@ async def test_implement_integer_methods_with_specific_method_protocol() -> None
     updated_dto = await repo.get(mix_id='1')
     assert updated_dto is not None
     assert updated_dto.year == 2029
+
+
+async def test_implement_with_specific_method_with_multiple_aliases():
+    class IRepo:
+        async def get(self, mix_id: str, mix_name: str) -> MixDTO | None:
+            ...
+
+        async def add(self, dto: MixDTO) -> None:
+            ...
+
+    async with in_async_collection(MixDTO) as coll:
+        @implement(
+            AddMethod(IRepo.add, dto='dto'),
+            GetMethod(IRepo.get, filters=[FA('id', 'mix_id', '_mix_id_'), FA('name', 'mix_name')]),
+        )
+        class MongoRepo:
+            class Meta:
+                dto = MixDTO
+                collection = coll
+
+    repo: IRepo = MongoRepo()  # type: ignore
+    dto = MixDTO(
+        id='1',
+        name='box',
+        year=2025,
+        main_box=Box('box_1', 'toy'),
+        records=[1, 2, 3],
+        boxs=[Box('box_list_1', 'car'), Box('box_list_2', 'table')],
+    )
+    await repo.add(dto=dto)
+
+    updated_dto = await repo.get(mix_id='1', mix_name='box')
+    assert updated_dto is not None
