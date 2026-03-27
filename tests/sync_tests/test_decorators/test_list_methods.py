@@ -5,88 +5,81 @@ from typing import List
 from mongorepo import Access
 from mongorepo.decorators import mongo_repository
 from tests.common import (
-    ComplicatedDTO,
-    NestedListDTO,
-    SimpleDTO,
-    collection_for_complicated_dto,
+    MultiFieldEntity,
+    NestedListEntity,
+    SimpleEntity,
     custom_collection,
+    in_collection,
 )
 
 
 def test_can_push_and_pull_elements_from_list_with_decorator():
-    cl = collection_for_complicated_dto()
 
-    @mongo_repository(list_fields=['skills'])
-    class Repository:
-        class Meta:
-            dto = ComplicatedDTO
-            collection = cl
+    with in_collection(MultiFieldEntity) as cl:
+        @mongo_repository(list_fields=['skills'])
+        class Repository:
+            class Meta:
+                entity = MultiFieldEntity
+                collection = cl
 
-    repo = Repository()
+        repo = Repository()
 
-    assert hasattr(repo, 'skills__append') and hasattr(repo, 'skills__remove')
+        assert hasattr(repo, 'skills__append') and hasattr(repo, 'skills__remove')
 
-    repo.add(ComplicatedDTO(x='me', skills=['python', 'java']))
+        repo.add(MultiFieldEntity(x='me', skills=['python', 'java']))
 
-    repo.skills__append(value='c++', x='me')
+        repo.skills__append(value='c++', x='me')
 
-    repo.skills__remove(value='python', x='me')
+        repo.skills__remove(value='python', x='me')
 
-    dto: ComplicatedDTO | None = repo.get(x='me')
-    assert dto is not None
+        entity: MultiFieldEntity | None = repo.get(x='me')
+        assert entity is not None
 
-    assert 'python' not in dto.skills
-    assert 'c++' in dto.skills
-
-    cl.drop()
+        assert 'python' not in entity.skills
+        assert 'c++' in entity.skills
 
 
 def test_can_mix_methods_with_decorators():
-    cl = collection_for_complicated_dto()
 
-    @mongo_repository(list_fields=['skills'], method_access=Access.PROTECTED)
-    @mongo_repository
-    class TestMongoRepository:
-        class Meta:
-            dto = ComplicatedDTO
-            collection = cl
+    with in_collection(MultiFieldEntity) as cl:
+        @mongo_repository(list_fields=['skills'], method_access=Access.PROTECTED)
+        @mongo_repository
+        class TestMongoRepository:
+            class Meta:
+                entity = MultiFieldEntity
+                collection = cl
 
-    r = TestMongoRepository()
+        r = TestMongoRepository()
 
-    assert hasattr(r, 'get')
-    assert hasattr(r, '_skills__remove')
-
-    cl.drop()
+        assert hasattr(r, 'get')
+        assert hasattr(r, '_skills__remove')
 
 
 def test_pop_method_with_decorator():
-    cl = collection_for_complicated_dto()
 
-    @mongo_repository(list_fields=['skills'])
-    class TestMongoRepository:
-        class Meta:
-            dto = ComplicatedDTO
-            collection = cl
+    with in_collection(MultiFieldEntity) as cl:
+        @mongo_repository(list_fields=['skills'])
+        class TestMongoRepository:
+            class Meta:
+                entity = MultiFieldEntity
+                collection = cl
 
-    r = TestMongoRepository()
-    assert hasattr(r, 'skills__pop')
-    r.add(ComplicatedDTO(x='List', skills=['java', 'c#', 'lua', 'c++', 'c']))
+        r = TestMongoRepository()
+        assert hasattr(r, 'skills__pop')
+        r.add(MultiFieldEntity(x='List', skills=['java', 'c#', 'lua', 'c++', 'c']))
 
-    r.skills__pop(x='List')
+        r.skills__pop(x='List')
 
-    dto = r.get(x='List')
+        entity = r.get(x='List')
 
-    assert 'c' not in dto.skills
+        assert 'c' not in entity.skills
 
-    cpp = r.skills__pop(x='List')
+        cpp = r.skills__pop(x='List')
 
-    assert cpp == 'c++'
-
-    cl.drop()
+        assert cpp == 'c++'
 
 
 def test_list_with_different_type_hints_decorator():
-    cl = collection_for_complicated_dto()
 
     @dataclass
     class A1:
@@ -104,22 +97,25 @@ def test_list_with_different_type_hints_decorator():
     class A4:
         types: list[int | None]
 
+    cl = custom_collection(A1)
+
     @mongo_repository(list_fields=['types'])
     class TestA1:
         class Meta:
-            dto = A1
+            entity = A1
             collection = cl
+
 
     @mongo_repository(list_fields=['types'])
     class TestA2:
         class Meta:
-            dto = A2
+            entity = A2
             collection = cl
 
     @mongo_repository(list_fields=['types'])
     class TestA3:
         class Meta:
-            dto = A3
+            entity = A3
             collection = cl
 
     _ = TestA1()
@@ -129,34 +125,35 @@ def test_list_with_different_type_hints_decorator():
     @mongo_repository(list_fields=['types'])
     class TestA4:
         class Meta:
-            dto = A4
+            entity = A4
             collection = cl
 
     _ = TestA4
 
+    cl.drop()
     assert True
 
 
 def test_can_get_list_of_dto_field_values() -> None:
-    c = custom_collection(dto=NestedListDTO)
+    c = custom_collection(NestedListEntity)
 
     @mongo_repository(list_fields=['dtos'])
     class MongoRepository:
         class Meta:
-            dto = NestedListDTO
+            entity = NestedListEntity
             collection = c
 
     repo = MongoRepository()
 
     repo.add(
-        NestedListDTO(
+        NestedListEntity(
             title='Test',
             dtos=[
-                SimpleDTO(x='1', y=1),
-                SimpleDTO(x='2', y=2),
-                SimpleDTO(x='3', y=3),
-                SimpleDTO(x='4', y=4),
-                SimpleDTO(x='5', y=5),
+                SimpleEntity(x='1', y=1),
+                SimpleEntity(x='2', y=2),
+                SimpleEntity(x='3', y=3),
+                SimpleEntity(x='4', y=4),
+                SimpleEntity(x='5', y=5),
             ],
         ),
     )
@@ -174,7 +171,7 @@ def test_can_get_list_of_dto_field_values() -> None:
 
     assert dto_slice[0].x == '3'
 
-    last: SimpleDTO | None = repo.dtos__pop(title='Test')
+    last: SimpleEntity | None = repo.dtos__pop(title='Test')
     assert last
     assert last.y == 5
 

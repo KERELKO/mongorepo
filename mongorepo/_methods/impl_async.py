@@ -17,7 +17,7 @@ from mongorepo.utils import _get_converter, get_dataclass_type_hints
 class AddMethodAsync[T: Dataclass]:
     def __init__(
         self,
-        dto_type: type[T],
+        entity_type: type[T],
         owner: HasMongorepoDict[AsyncIOMotorClientSession, AsyncIOMotorCollection],
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
         converter: t.Callable[[type[T], dict[str, t.Any]], T] | None = None,
@@ -25,38 +25,38 @@ class AddMethodAsync[T: Dataclass]:
         id_field: str | None = None,
         **kwargs,
     ) -> None:
-        self.dto_type = dto_type
+        self.entity_type = entity_type
         self.owner = owner
         self.session = session
         self.modifiers_after = [m for m in modifiers if isinstance(m, ModifierAfter)]
         self.modifiers_before = [m for m in modifiers if isinstance(m, ModifierBefore)]
-        self.converter = converter or _get_converter(dto_type, id_field)
+        self.converter = converter or _get_converter(entity_type, id_field)
         self.id_field = id_field
         self.kwargs = kwargs
 
-    async def __call__(self, dto: T) -> T:
+    async def __call__(self, entity: T) -> T:
         collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
-            dto = modifier_before.modify(dto=dto)
+            entity = modifier_before.modify(entity=entity)
 
         extra = {}
         object_id = ObjectId()
         if self.id_field:
-            dto.__dict__[self.id_field] = str(object_id)
+            entity.__dict__[self.id_field] = str(object_id)
             extra['_id'] = object_id
-        await collection.insert_one({**asdict(dto), **extra}, session=self.session)
+        await collection.insert_one({**asdict(entity), **extra}, session=self.session)
 
         for modifier_after in self.modifiers_after:
-            dto = modifier_after.modify(dto)
+            entity = modifier_after.modify(entity)
 
-        return dto
+        return entity
 
 
 class AddBatchMethodAsync[T: Dataclass]:
     def __init__(
         self,
-        dto_type: type[T],
+        entity_type: type[T],
         owner: HasMongorepoDict[AsyncIOMotorClientSession, AsyncIOMotorCollection],
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
         converter: t.Callable[[type[T], dict[str, t.Any]], T] | None = None,
@@ -64,12 +64,12 @@ class AddBatchMethodAsync[T: Dataclass]:
         id_field: str | None = None,
         **kwargs,
     ) -> None:
-        self.dto_type = dto_type
+        self.entity_type = entity_type
         self.owner = owner
         self.session = session
         self.modifiers_after = [m for m in modifiers if isinstance(m, ModifierAfter)]
         self.modifiers_before = [m for m in modifiers if isinstance(m, ModifierBefore)]
-        self.converter = converter or _get_converter(dto_type, id_field)
+        self.converter = converter or _get_converter(entity_type, id_field)
         self.id_field = id_field
         self.kwargs = kwargs
 
@@ -81,10 +81,10 @@ class AddBatchMethodAsync[T: Dataclass]:
 
         if self.id_field:
             batch: list[dict[str, t.Any]] = []
-            for dto in dto_list:
+            for entity in dto_list:
                 object_id = ObjectId()
-                dto.__dict__[self.id_field] = str(object_id)
-                batch.append({**asdict(dto), '_id': object_id})
+                entity.__dict__[self.id_field] = str(object_id)
+                batch.append({**asdict(entity), '_id': object_id})
             result = await collection.insert_many(batch, session=self.session)
         else:
             result = await collection.insert_many(
@@ -100,7 +100,7 @@ class AddBatchMethodAsync[T: Dataclass]:
 class GetAllMethodAsync[T: Dataclass]:
     def __init__(
         self,
-        dto_type: type[T],
+        entity_type: type[T],
         owner: HasMongorepoDict[AsyncIOMotorClientSession, AsyncIOMotorCollection],
         modifiers: tuple[ModifierBefore, ...] = (),
         converter: t.Callable[[type[T], dict[str, t.Any]], T] | None = None,
@@ -108,11 +108,11 @@ class GetAllMethodAsync[T: Dataclass]:
         id_field: str | None = None,
         **kwargs,
     ) -> None:
-        self.dto_type = dto_type
+        self.entity_type = entity_type
         self.owner = owner
         self.session = session
         self.modifiers_before = [m for m in modifiers if isinstance(m, ModifierBefore)]
-        self.converter = converter or _get_converter(dto_type, id_field)
+        self.converter = converter or _get_converter(entity_type, id_field)
         self.kwargs = kwargs
 
     async def __call__(self, **filters: t.Any) -> t.AsyncGenerator[T, None]:
@@ -123,13 +123,13 @@ class GetAllMethodAsync[T: Dataclass]:
 
         cursor = collection.find(filters)
         async for dct in cursor:
-            yield self.converter(self.dto_type, dct)
+            yield self.converter(self.entity_type, dct)
 
 
 class GetListMethodAsync[T: Dataclass]:
     def __init__(
         self,
-        dto_type: type[T],
+        entity_type: type[T],
         owner: HasMongorepoDict[AsyncIOMotorClientSession, AsyncIOMotorCollection],
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
         converter: t.Callable[[type[T], dict[str, t.Any]], T] | None = None,
@@ -137,12 +137,12 @@ class GetListMethodAsync[T: Dataclass]:
         id_field: str | None = None,
         **kwargs,
     ) -> None:
-        self.dto_type = dto_type
+        self.entity_type = entity_type
         self.owner = owner
         self.session = session
         self.modifiers_after = [m for m in modifiers if isinstance(m, ModifierAfter)]
         self.modifiers_before = [m for m in modifiers if isinstance(m, ModifierBefore)]
-        self.converter = converter or _get_converter(dto_type, id_field)
+        self.converter = converter or _get_converter(entity_type, id_field)
         self.kwargs = kwargs
 
     async def __call__(self, offset: int = 0, limit: int = 20, **filters: t.Any) -> list[T]:
@@ -154,7 +154,7 @@ class GetListMethodAsync[T: Dataclass]:
             )
 
         cursor = collection.find(filter=filters).skip(offset).limit(limit)
-        result = [self.converter(self.dto_type, doc) async for doc in cursor]
+        result = [self.converter(self.entity_type, doc) async for doc in cursor]
 
         for modifier_after in self.modifiers_after:
             result = modifier_after.modify(result)
@@ -165,7 +165,7 @@ class GetListMethodAsync[T: Dataclass]:
 class GetMethodAsync[T: Dataclass]:
     def __init__(
         self,
-        dto_type: type[T],
+        entity_type: type[T],
         owner: HasMongorepoDict[AsyncIOMotorClientSession, AsyncIOMotorCollection],
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
         converter: t.Callable[[type[T], dict[str, t.Any]], T] | None = None,
@@ -173,12 +173,12 @@ class GetMethodAsync[T: Dataclass]:
         id_field: str | None = None,
         **kwargs,
     ) -> None:
-        self.dto_type = dto_type
+        self.entity_type = entity_type
         self.owner = owner
         self.session = session
         self.modifiers_after = [m for m in modifiers if isinstance(m, ModifierAfter)]
         self.modifiers_before = [m for m in modifiers if isinstance(m, ModifierBefore)]
-        self.converter = converter or _get_converter(dto_type, id_field)
+        self.converter = converter or _get_converter(entity_type, id_field)
         self.id_field = id_field
         self.kwargs = kwargs
 
@@ -189,24 +189,24 @@ class GetMethodAsync[T: Dataclass]:
             filters = modifier_before.modify(**filters)
 
         result = await collection.find_one(filters)
-        dto = self.converter(self.dto_type, result) if result else None
+        entity = self.converter(self.entity_type, result) if result else None
 
         for modifier_after in self.modifiers_after:
-            dto = modifier_after.modify(dto)
+            entity = modifier_after.modify(entity)
 
-        return dto
+        return entity
 
 
 class DeleteMethodAsync[T: Dataclass]:
     def __init__(
         self,
-        dto_type: type[T],
+        entity_type: type[T],
         owner: HasMongorepoDict[AsyncIOMotorClientSession, AsyncIOMotorCollection],
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
         session: AsyncIOMotorClientSession | None = None,
         **kwargs,
     ) -> None:
-        self.dto_type = dto_type
+        self.entity_type = entity_type
         self.owner = owner
         self.session = session
         self.modifiers_after = [m for m in modifiers if isinstance(m, ModifierAfter)]
@@ -230,35 +230,35 @@ class DeleteMethodAsync[T: Dataclass]:
 class UpdateMethodAsync[T: Dataclass]:
     def __init__(
         self,
-        dto_type: type[T],
+        entity_type: type[T],
         owner: HasMongorepoDict[AsyncIOMotorClientSession, AsyncIOMotorCollection],
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
         converter: t.Callable[[type[T], dict[str, t.Any]], T] | None = None,
         id_field: str | None = None,
         **kwargs,
     ) -> None:
-        self.dto_type = dto_type
+        self.entity_type = entity_type
         self.owner = owner
         self.session: AsyncIOMotorClientSession | None = None
         self.modifiers_after = [m for m in modifiers if isinstance(m, ModifierAfter)]
         self.modifiers_before = [m for m in modifiers if isinstance(m, ModifierBefore)]
-        self.converter = converter or _get_converter(dto_type, id_field)
+        self.converter = converter or _get_converter(entity_type, id_field)
         self.kwargs = kwargs
 
-    async def __call__(self, dto: T, **filters: t.Any) -> T | None:
+    async def __call__(self, entity: T, **filters: t.Any) -> T | None:
         collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
-            dto, filters = modifier_before.modify(dto=dto, **filters)
+            entity, filters = modifier_before.modify(entity=entity, **filters)
 
         data: dict[str, dict[str, t.Any]] = {'$set': {}}
-        for field, value in asdict(dto).items():
+        for field, value in asdict(entity).items():
             data['$set'][field] = value
         updated_document: dict[str, t.Any] | None = await collection.find_one_and_update(
             filter=filters, update=data, return_document=True, session=self.session,
         )
 
-        result = self.converter(self.dto_type, updated_document) if updated_document else None
+        result = self.converter(self.entity_type, updated_document) if updated_document else None
 
         for modifier_after in self.modifiers_after:
             result = modifier_after.modify(result)
@@ -269,7 +269,7 @@ class UpdateMethodAsync[T: Dataclass]:
 class UpdateListFieldMethodAsync[T: Dataclass]:
     def __init__(
         self,
-        dto_type: type[T],
+        entity_type: type[T],
         owner: HasMongorepoDict[AsyncIOMotorClientSession, AsyncIOMotorCollection],
         field_name: str,
         action: t.Literal['$push', '$pull'],
@@ -278,9 +278,9 @@ class UpdateListFieldMethodAsync[T: Dataclass]:
         id_field: str | None = None,
         **kwargs,
     ) -> None:
-        self.dto_type = dto_type
+        self.entity_type = entity_type
         self.field_name = field_name
-        fields = get_dataclass_type_hints(dto_type)
+        fields = get_dataclass_type_hints(entity_type)
         self.field_type = fields.get(field_name, None)
         self.field_converter = None
         if is_dataclass(self.field_type):
@@ -316,7 +316,7 @@ class UpdateListFieldMethodAsync[T: Dataclass]:
 class AppendListMethodAsync[T: Dataclass](UpdateListFieldMethodAsync[T]):
     def __init__(
         self,
-        dto_type: type[T],
+        entity_type: type[T],
         owner: HasMongorepoDict[AsyncIOMotorClientSession, AsyncIOMotorCollection],
         field_name: str,
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
@@ -325,7 +325,7 @@ class AppendListMethodAsync[T: Dataclass](UpdateListFieldMethodAsync[T]):
         **kwargs,
     ) -> None:
         super().__init__(
-            dto_type=dto_type,
+            entity_type=entity_type,
             owner=owner,
             field_name=field_name,
             action='$push',
@@ -342,7 +342,7 @@ class AppendListMethodAsync[T: Dataclass](UpdateListFieldMethodAsync[T]):
 class RemoveListMethodAsync[T: Dataclass](UpdateListFieldMethodAsync[T]):
     def __init__(
         self,
-        dto_type: type[T],
+        entity_type: type[T],
         owner: HasMongorepoDict[AsyncIOMotorClientSession, AsyncIOMotorCollection],
         field_name: str,
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
@@ -351,7 +351,7 @@ class RemoveListMethodAsync[T: Dataclass](UpdateListFieldMethodAsync[T]):
         **kwargs,
     ) -> None:
         super().__init__(
-            dto_type=dto_type,
+            entity_type=entity_type,
             owner=owner,
             field_name=field_name,
             action='$pull',
@@ -368,16 +368,16 @@ class RemoveListMethodAsync[T: Dataclass](UpdateListFieldMethodAsync[T]):
 class GetListValuesMethodAsync[T: Dataclass]:
     def __init__(
         self,
-        dto_type: type[T],
+        entity_type: type[T],
         owner: HasMongorepoDict[AsyncIOMotorClientSession, AsyncIOMotorCollection],
         field_name: str,
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
         session: AsyncIOMotorClientSession | None = None,
         **kwargs,
     ) -> None:
-        self.dto_type = dto_type
+        self.entity_type = entity_type
         self.field_name = field_name
-        fields = get_dataclass_type_hints(dto_type)
+        fields = get_dataclass_type_hints(entity_type)
         self.field_type = fields.get(field_name, None)
         self.owner = owner
         self.field_converter = None
@@ -421,17 +421,17 @@ class GetListValuesMethodAsync[T: Dataclass]:
 class PopListMethodAsync[T: Dataclass]:
     def __init__(
         self,
-        dto_type: type[T],
+        entity_type: type[T],
         owner: HasMongorepoDict[AsyncIOMotorClientSession, AsyncIOMotorCollection],
         field_name: str,
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
         session: AsyncIOMotorClientSession | None = None,
         **kwargs,
     ) -> None:
-        self.dto_type = dto_type
+        self.entity_type = entity_type
         self.field_name = field_name
         self.owner = owner
-        fields = get_dataclass_type_hints(dto_type)
+        fields = get_dataclass_type_hints(entity_type)
         self.field_type = fields.get(field_name, None)
         self.field_converter = None
         if is_dataclass(self.field_type):
@@ -468,7 +468,7 @@ class PopListMethodAsync[T: Dataclass]:
 class IncrementIntegerFieldMethodAsync[T: Dataclass]:
     def __init__(
         self,
-        dto_type: type[T],
+        entity_type: type[T],
         owner: HasMongorepoDict[AsyncIOMotorClientSession, AsyncIOMotorCollection],
         field_name: str,
         weight: int = 1,

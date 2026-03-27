@@ -18,13 +18,13 @@ from .methods import Method, SpecificFieldMethod, SpecificMethod
 def _substitute_specific_method(
     cls,
     method: SpecificMethod | SpecificFieldMethod,
-    dto_type: type[Dataclass],
+    entity_type: type[Dataclass],
     id_field: str | None = None,
     field_name: str | None = None,
     integer_weight: int | None = None,
     **kwargs,
 ) -> Callable:
-    validate_input_parameters(method, dto_type)
+    validate_input_parameters(method, entity_type)
     is_async = inspect.iscoroutinefunction(method.source)
 
     if hasattr(method, 'field_name'):
@@ -36,7 +36,7 @@ def _substitute_specific_method(
     mapped_method = implement_mapper(method)
     callable_mongorepo_method = initialize_callable_mongorepo_method(
         mongorepo_method=mapped_method,
-        dto_type=dto_type,
+        entity_type=entity_type,
         owner=cls,
         id_field=id_field,
         field_name=field_name,

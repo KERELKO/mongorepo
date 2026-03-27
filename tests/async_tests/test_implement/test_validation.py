@@ -26,7 +26,7 @@ def test_can_identify_incorrect_named_field():
             class MongoRepo:
                 class Meta:
                     collection = c
-                    dto = Car
+                    entity = Car
 
             repo = cast(Repo, MongoRepo())
 
@@ -53,14 +53,14 @@ def test_can_identify_incorrect_named_field_with_alias():
     with in_collection(Car) as c:
         with pytest.raises(FieldDoesNotExist):
             @implement(
-                AddMethod(Repo.add, dto='car'),
+                AddMethod(Repo.add, entity='car'),
                 GetMethod(Repo.get_valid, filters=[FieldAlias('model', '__model__'), 'year']),
                 GetMethod(Repo.get_invalid, filters=[FieldAlias('years', 'la'), 'year_INVALID']),
             )
             class MongoRepo:
                 class Meta:
                     collection = c
-                    dto = Car
+                    entity = Car
 
             repo = cast(Repo, MongoRepo())
 

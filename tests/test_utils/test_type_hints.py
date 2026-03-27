@@ -1,16 +1,16 @@
 from dataclasses import dataclass, field
 
 from mongorepo.utils import get_dataclass_type_hints, get_first_arg
-from tests.common import NestedDTO, SimpleDTO
+from tests.common import NestedEntity, SimpleEntity
 
 
 def test_can_get_nested_dto_type_hints() -> None:
-    type_hints = get_dataclass_type_hints(NestedDTO)
+    type_hints = get_dataclass_type_hints(NestedEntity)
 
     assert 'title' in type_hints
     assert 'simple' in type_hints
     assert type_hints['title'] is str
-    assert type_hints['simple'] is SimpleDTO
+    assert type_hints['simple'] is SimpleEntity
 
 
 def different_cases_of_type_hints():

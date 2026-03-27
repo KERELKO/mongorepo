@@ -7,183 +7,169 @@ from mongorepo import Access
 from mongorepo.decorators import mongo_repository
 from mongorepo.exceptions import NoDTOTypeException
 from tests.common import (
-    ComplicatedDTO,
-    DTOWithID,
-    SimpleDTO,
-    collection_for_complicated_dto,
-    collection_for_dto_with_id,
-    collection_for_simple_dto,
+    MultiFieldEntity,
+    EntityWithID,
+    SimpleEntity,
     r,
+    in_collection
 )
 
 
 def test_all_methods_with_decorator():
-    cl = collection_for_simple_dto()
+    with in_collection(SimpleEntity) as cl:
+        @mongo_repository
+        class TestMongoRepository:
+            class Meta:
+                entity = SimpleEntity
+                collection = cl
 
-    @mongo_repository
-    class TestMongoRepository:
-        class Meta:
-            dto = SimpleDTO
-            collection = cl
+        num = random.randint(1, 123456)
 
-    num = random.randint(1, 123456)
+        repo = TestMongoRepository()
+        new_dto: SimpleEntity = repo.add(SimpleEntity(x='hey', y=num))
+        assert new_dto.x == 'hey'
 
-    repo = TestMongoRepository()
-    new_dto: SimpleDTO = repo.add(SimpleDTO(x='hey', y=num))
-    assert new_dto.x == 'hey'
+        updated_dto = repo.update(SimpleEntity(x='hey all!', y=13), y=num)
+        assert updated_dto.x == 'hey all!'
 
-    updated_dto = repo.update(SimpleDTO(x='hey all!', y=13), y=num)
-    assert updated_dto.x == 'hey all!'
+        for entity in repo.get_all():
+            assert isinstance(entity, SimpleEntity)
 
-    for dto in repo.get_all():
-        assert isinstance(dto, SimpleDTO)
+        entity = repo.get(y=13)
+        assert entity is not None
 
-    dto = repo.get(y=13)
-    assert dto is not None
+        is_deleted = repo.delete(y=13)
+        assert is_deleted is True
 
-    is_deleted = repo.delete(y=13)
-    assert is_deleted is True
-
-    dto = repo.get(y=13)
-    assert dto is None
-
-    cl.drop()
+        entity = repo.get(y=13)
+        assert entity is None
 
 
 def test_can_get_dto_with_id():
-    cl = collection_for_dto_with_id()
 
-    @mongo_repository
-    class TestMongoRepository:
-        class Meta:
-            dto = DTOWithID
-            collection = cl
+    with in_collection(EntityWithID) as cl:
+        @mongo_repository
+        class TestMongoRepository:
+            class Meta:
+                entity = EntityWithID
+                collection = cl
 
-    num = random.randint(1, 12346)
+        num = random.randint(1, 12346)
 
-    repo = TestMongoRepository()
-    new_dto: DTOWithID = repo.add(DTOWithID(x='dto with id', y=num))
-    assert new_dto.x == 'dto with id'
+        repo = TestMongoRepository()
+        new_dto: EntityWithID = repo.add(EntityWithID(x='entity with id', y=num))
+        assert new_dto.x == 'entity with id'
 
-    dto: DTOWithID = repo.get(y=num)
-    assert dto._id is not None
-
-    cl.drop()
+        entity: EntityWithID = repo.get(y=num)
+        assert entity._id is not None
 
 
 def test_can_handle_complicated_dto():
-    cl = collection_for_complicated_dto()
 
-    @mongo_repository
-    class TestMongoRepository:
-        class Meta:
-            dto = ComplicatedDTO
-            collection = cl
+    with in_collection(MultiFieldEntity) as cl:
+        @mongo_repository
+        class TestMongoRepository:
+            class Meta:
+                entity = MultiFieldEntity
+                collection = cl
 
-    repo = TestMongoRepository()
-    repo.add(ComplicatedDTO(x='comp', y=True, name='You', skills=['h', 'e']))
+        repo = TestMongoRepository()
+        repo.add(MultiFieldEntity(x='comp', y=True, name='You', skills=['h', 'e']))
 
-    resolved_dto = repo.get(name='You')
-    assert resolved_dto.skills == ['h', 'e'] and resolved_dto.x == 'comp'
-
-    cl.drop()
+        resolved_dto = repo.get(name='You')
+        assert resolved_dto.skills == ['h', 'e'] and resolved_dto.x == 'comp'
 
 
 def test_can_update_partially():
-    cl = collection_for_complicated_dto()
 
-    @mongo_repository
-    class TestMongoRepository:
-        class Meta:
-            dto = ComplicatedDTO
-            collection = cl
+    with in_collection(MultiFieldEntity) as cl:
+        @mongo_repository
+        class TestMongoRepository:
+            class Meta:
+                entity = MultiFieldEntity
+                collection = cl
 
-    repo = TestMongoRepository()
-    repo.add(ComplicatedDTO(x='Test', y=True, name='Me'))
-    repo.update(name='Me', dto=ComplicatedDTO(x='Test', skills=['hello!'], name='Me'))
+        repo = TestMongoRepository()
+        repo.add(MultiFieldEntity(x='Test', y=True, name='Me'))
+        repo.update(name='Me', entity=MultiFieldEntity(x='Test', skills=['hello!'], name='Me'))
 
-    updated_dto = repo.get(name='Me')
-    assert updated_dto.skills == ['hello!']
-
-    cl.drop()
+        updated_dto = repo.get(name='Me')
+        assert updated_dto.skills == ['hello!']
 
 
 def test_can_search_with_id():
-    cl = collection_for_dto_with_id()
+    with in_collection(EntityWithID) as cl:
+        @mongo_repository
+        class TestMongoRepository:
+            class Meta:
+                entity = EntityWithID
+                collection = cl
 
-    @mongo_repository
-    class TestMongoRepository:
-        class Meta:
-            dto = DTOWithID
-            collection = cl
+        repo = TestMongoRepository()
+        _dto = repo.add(EntityWithID(x='ID', y=10))
+        assert _dto
+        assert _dto._id is not None
 
-    repo = TestMongoRepository()
-    _dto = repo.add(DTOWithID(x='ID', y=10))
-    assert _dto
-    assert _dto._id is not None
-
-    dto: DTOWithID = repo.get(_id=_dto._id)
-    assert dto is not None
-    assert dto.x == 'ID'
-
-    cl.drop()
+        entity: EntityWithID = repo.get(_id=_dto._id)
+        assert entity is not None
+        assert entity.x == 'ID'
 
 
 def test_can_make_methods_protected():
-    cl = collection_for_simple_dto()
 
-    @mongo_repository
-    class TestMongoRepository:
-        class Meta:
-            dto = SimpleDTO
-            collection = cl
-            method_access = Access.PROTECTED
+    with in_collection(SimpleEntity) as cl:
+        @mongo_repository
+        class TestMongoRepository:
+            class Meta:
+                entity = SimpleEntity
+                collection = cl
+                method_access = Access.PROTECTED
 
-        def access_protected_method(self):
-            _ = self._get(name='Antony')  # type: ignore
+            def access_protected_method(self):
+                _ = self._get(name='Antony')  # type: ignore
 
-    repo = TestMongoRepository()
-    # check if repository has protected fields
-    _ = repo._get(name='Antony')
-    _ = repo._get_all()
-    repo.access_protected_method()
+        repo = TestMongoRepository()
+        # check if repository has protected fields
+        _ = repo._get(name='Antony')
+        _ = repo._get_all()
+        repo.access_protected_method()
 
 
 def test_can_make_methods_private():
-    cl = collection_for_simple_dto()
 
-    @mongo_repository
-    class TestMongoRepository:
-        class Meta:
-            dto = SimpleDTO
-            collection = cl
-            method_access = Access.PRIVATE
+    with in_collection(SimpleEntity) as cl:
+        @mongo_repository
+        class TestMongoRepository:
+            class Meta:
+                entity = SimpleEntity
+                collection = cl
+                method_access = Access.PRIVATE
 
-        def get(self) -> bool:
-            _ = self.__get(id='370r-o0-o23')  # type: ignore
-            return True
+            def get(self) -> bool:
+                _ = self.__get(id='370r-o0-o23')  # type: ignore
+                return True
 
-    repo = TestMongoRepository()
+        repo = TestMongoRepository()
 
-    # check if repository has private fields, this name because of the mangling
-    assert hasattr(repo, f'_{TestMongoRepository.__name__}__get')
+        # check if repository has private fields, this name because of the mangling
+        assert hasattr(repo, f'_{TestMongoRepository.__name__}__get')
 
-    assert repo.get() is True
+        assert repo.get() is True
 
 
 def test_can_access_dto_in_type_hints_decorator():
-    cl = collection_for_simple_dto()
 
-    @mongo_repository(delete=False)
-    class TestMongoRepository:
-        class Meta:
-            dto = SimpleDTO
-            collection = cl
+    with in_collection(SimpleEntity) as cl:
+        @mongo_repository(delete=False)
+        class TestMongoRepository:
+            class Meta:
+                entity = SimpleEntity
+                collection = cl
 
-    repo = TestMongoRepository()
+        repo = TestMongoRepository()
 
-    assert hasattr(repo, 'add')
-    assert not hasattr(repo, 'delete')
+        assert hasattr(repo, 'add')
+        assert not hasattr(repo, 'delete')
 
 
 def test_cannot_access_dto_type_in_type_hints_decorator():
@@ -196,52 +182,48 @@ def test_cannot_access_dto_type_in_type_hints_decorator():
 
 
 def test_get_list_method():
-    cl = collection_for_simple_dto()
 
-    @mongo_repository(get_list=True)
-    class TestMongoRepository:
-        class Meta:
-            dto = SimpleDTO
-            collection = cl
+    with in_collection(SimpleEntity) as cl:
+        @mongo_repository(get_list=True)
+        class TestMongoRepository:
+            class Meta:
+                entity = SimpleEntity
+                collection = cl
 
-    r = TestMongoRepository()
-    r.add(SimpleDTO(x='123', y=123))
-    r.add(SimpleDTO(x='234', y=999))
+        r = TestMongoRepository()
+        r.add(SimpleEntity(x='123', y=123))
+        r.add(SimpleEntity(x='234', y=999))
 
-    dtos = r.get_list(offset=0, limit=2)
-    assert len(dtos) == 2
+        dtos = r.get_list(offset=0, limit=2)
+        assert len(dtos) == 2
 
-    dtos = r.get_list(offset=1, limit=2)
+        dtos = r.get_list(offset=1, limit=2)
 
-    assert len(dtos) == 1
-    assert dtos[0].x == '234'
+        assert len(dtos) == 1
+        assert dtos[0].x == '234'
 
-    dtos = r.get_list(offset=0, limit=1)
+        dtos = r.get_list(offset=0, limit=1)
 
-    assert len(dtos) == 1
-    assert dtos[0].x == '123'
-
-    cl.drop()
+        assert len(dtos) == 1
+        assert dtos[0].x == '123'
 
 
 def test_get_list_with_add_batch_methods_with_decorator():
-    cl = collection_for_simple_dto()
 
-    @mongo_repository(add_batch=True, get_list=True)
-    class TestMongoRepository:
-        class Meta:
-            dto = SimpleDTO
-            collection = cl
+    with in_collection(SimpleEntity) as cl:
+        @mongo_repository(add_batch=True, get_list=True)
+        class TestMongoRepository:
+            class Meta:
+                entity = SimpleEntity
+                collection = cl
 
-    repo = TestMongoRepository()
+        repo = TestMongoRepository()
 
-    repo.add_batch(
-        [SimpleDTO(x='hey', y=r()), SimpleDTO(x='second hey!', y=r())],
-    )
+        repo.add_batch(
+            [SimpleEntity(x='hey', y=r()), SimpleEntity(x='second hey!', y=r())],
+        )
 
-    dto_list = repo.get_list(offset=0, limit=10)
-    for dto in dto_list:
-        assert dto
-        assert isinstance(dto, SimpleDTO)
-
-    cl.drop()
+        dto_list = repo.get_list(offset=0, limit=10)
+        for entity in dto_list:
+            assert entity
+            assert isinstance(entity, SimpleEntity)

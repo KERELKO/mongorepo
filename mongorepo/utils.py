@@ -12,17 +12,15 @@ from typing import (
     get_type_hints,
 )
 
-import pymongo
 from motor.motor_asyncio import AsyncIOMotorCollection
 from pymongo.collection import Collection
 
 from mongorepo import exceptions
 from mongorepo._base import (
-    DTO,
+    Entity,
     Access,
     CollectionProvider,
     Dataclass,
-    Index,
     MetaAttributes,
 )
 
@@ -62,11 +60,9 @@ def _get_meta_attributes(cls: type) -> MetaAttributes:
     """Collect all available attributes from `Meta` class."""
     meta = _get_meta(cls)
 
-    dto_type: type[Dataclass] | None = getattr(meta, 'dto', None)
+    entity_type: type[Dataclass] | None = getattr(meta, 'entity', None)
 
     collection: AsyncIOMotorCollection | Collection[Any] | None = getattr(meta, 'collection', None)
-
-    index: Index | str | None = getattr(meta, 'index', None)
 
     method_access: Access | None = getattr(meta, 'method_access', None)
 
@@ -77,9 +73,8 @@ def _get_meta_attributes(cls: type) -> MetaAttributes:
     id_field: str | None = getattr(meta, 'id_field', None)
 
     return MetaAttributes(
-        dto=dto_type,
+        entity=entity_type,
         collection=collection,  # type: ignore
-        index=index,
         method_access=method_access,
         substitute=substitute,
         id_field=id_field,
@@ -112,87 +107,20 @@ def get_dataclass_type_hints(dataclass: type[Dataclass]) -> dict[str, Any]:
     return type_hints
 
 
-def _create_index(index: Index | str, collection: Collection) -> None:
-    """### Creates an index for the collection
-
-    * index parameter can be string or `mongorepo.Index`
-    * If index is string, creates standard mongodb index
-    * If it's `mongorepo.Index` creates index with user's settings
-
-    """
-    if isinstance(index, str):
-        collection.create_index(index)
-        return
-    index_name = index.name or f'index_{index.field}'
-    direction = pymongo.DESCENDING if index.desc else pymongo.ASCENDING
-    collection.create_index(
-        [(index.field, direction)],
-        name=index_name,
-        unique=index.unique,
-    )
-
-
-async def _create_index_async(index: Index | str, collection: AsyncIOMotorCollection) -> None:
-    """### Creates an index for the collection
-
-    * index parameter can be string or mongorepo.Index
-    * If index is string, create standard mongodb index
-    * If it's `mongorepo.Index` creates index with user's settings
-
-    """
-    if isinstance(index, str):
-        await collection.create_index(index)
-        return
-    index_name = f'index_{index.field}'
-    if index.name:
-        index_name = index.name
-    direction = pymongo.DESCENDING if index.desc else pymongo.ASCENDING
-    await collection.create_index(
-        [(index.field, direction)],
-        name=index_name,
-        unique=index.unique,
-    )
-
-
-def _get_dto_from_origin(cls: type) -> type[Dataclass]:
-    """
-    Tries to get `dto` from origin of the class or raises an exception
-
-    ```
-    class A[UserDTO]: ...
-
-    _get_dto_from_origin(A)  # UserDTO
-
-    ```
-    """
-    try:
-        if not hasattr(cls, '__orig_bases__'):
-            raise exceptions.NoDTOTypeException
-        dto: type = get_args(cls.__orig_bases__[0])[0]
-    except IndexError:
-        raise exceptions.NoDTOTypeException
-    if dto is DTO:
-        raise exceptions.NoDTOTypeException
-    if not is_dataclass(dto):
-        raise exceptions.NoDTOTypeException
-
-    return dto
-
-
-def _convert_to_dto(dto_type: type[DTO], dct: dict[str, Any]) -> DTO:
-    """Converts document to dto, does not include mongodb `_id`"""
+def _convert_to_dto(entity_type: type[Entity], dct: dict[str, Any]) -> Entity:
+    """Converts document to entity, does not include mongodb `_id`"""
     dct.pop('_id') if dct.get('_id', None) else ...
-    return dto_type(**dct)
+    return entity_type(**dct)
 
 
 def _convert_to_dto_with_id(
     id_field: str,
 ) -> Callable:
-    """Converts document to dto, includes mongodb `_id` allows to set specific
+    """Converts document to entity, includes mongodb `_id` allows to set specific
     field where to store `_id`"""
-    def wrapper(dto_type: type[DTO], dct: dict[str, Any]) -> DTO:
+    def wrapper(entity_type: type[Entity], dct: dict[str, Any]) -> Entity:
         dct[id_field] = str(dct.pop('_id'))
-        return dto_type(**dct)
+        return entity_type(**dct)
     return wrapper
 
 
@@ -227,8 +155,8 @@ def _nested_convert_to_dto[T: Dataclass](
 
 
 def _get_converter(
-    dto_type: type[DTO], id_field: str | None = None,
-) -> Callable[[type[DTO], dict[str, Any]], DTO]:
+    entity_type: type[Entity], id_field: str | None = None,
+) -> Callable[[type[Entity], dict[str, Any]], Entity]:
     """Returns proper dataclass converter based on type hints of the dataclas.
 
     ## Usage example::
@@ -266,8 +194,8 @@ def _get_converter(
 
     """
 
-    converter: Callable[[type[DTO], dict[str, Any]], DTO] | partial = _convert_to_dto
-    r = _has_dataclass_fields(dto_type=dto_type)
+    converter: Callable[[type[Entity], dict[str, Any]], Entity] | partial = _convert_to_dto
+    r = _has_dataclass_fields(entity_type=entity_type)
     if r:
         converter = partial(_nested_convert_to_dto, id_field=id_field)
     elif id_field is not None:
@@ -275,19 +203,19 @@ def _get_converter(
     return converter
 
 
-def _has_dataclass_fields(dto_type: type[DTO]) -> bool:
-    type_hints = get_dataclass_type_hints(dto_type)
+def _has_dataclass_fields(entity_type: type[Entity]) -> bool:
+    type_hints = get_dataclass_type_hints(entity_type)
     for v in type_hints.values():
         if is_dataclass(v):
             return True
     return False
 
 
-def _check_valid_field_type(field_name: str, dto_type: type[DTO], data_type: type) -> None:
-    field = dto_type.__annotations__.get(field_name, None)
+def _check_valid_field_type(field_name: str, entity_type: type[Entity], data_type: type) -> None:
+    field = entity_type.__annotations__.get(field_name, None)
     if field is None:
         raise exceptions.MongorepoException(
-            message=f'{dto_type} does not have field "{field_name}"',
+            message=f'{entity_type} does not have field "{field_name}"',
         )
     org = get_origin(field)
     if field == data_type or org is data_type:
@@ -343,7 +271,7 @@ def use_collection[T](
     @repository(add=True, get=True)
     class Repository:
         class Meta:
-            dto = SimpleDTO
+            entity = SimpleEntity
 
     # 2. Applying the decorator dynamically
     def provide_repository() -> Repository:
@@ -364,8 +292,7 @@ def use_collection[T](
 
 
 def set_meta_attrs[T](
-    index: Index | str | None = None,
-    dto_type: type[Dataclass] | None = None,
+    entity_type: type[Dataclass] | None = None,
     method_access: Access | None = None,
     id_field: str | None = None,
     collection: AsyncIOMotorCollection | Collection | None = None,
@@ -377,27 +304,26 @@ def set_meta_attrs[T](
         # 1.
         @mongorepo.repository
         @mongorepo.use_collection(coll)
-        @set_meta_attrs(dto_type=SimpleDTO)
+        @set_meta_attrs(entity_type=SimpleEntity)
         class FirstRepository:
             ...
 
         # 2.
-        @implement(AddMethod(IRepo.add, dto='simple'), GetMethod(IRepo.get, filters=['x']))
-        @mongorepo.set_meta_attrs(dto_type=SimpleDTO, collection=coll)
+        @implement(AddMethod(IRepo.add, entity='simple'), GetMethod(IRepo.get, filters=['x']))
+        @mongorepo.set_meta_attrs(entity_type=SimpleEntity, collection=coll)
         class SecondRepository:
             ...
 
         # 3.
         @mongorepo.set_meta_attrs(
-            id_field='x', index='x', dto_type=ComplicatedDTO, collection=coll,
+            id_field='x', entity_type=MultiFieldEntity, collection=coll,
         )
         class ThirdRepository(mongorepo.BaseMongoRepository):
             ...
 
     """
     if (
-        index is None
-        and dto_type is None
+        entity_type is None
         and method_access is None
         and id_field is None
     ):
@@ -410,11 +336,8 @@ def set_meta_attrs[T](
             meta = type('Meta', (), {})
             setattr(cls, 'Meta', meta)
 
-        if index is not None:
-            setattr(meta, 'index', index)
-
-        if dto_type is not None:
-            setattr(meta, 'dto', dto_type)
+        if entity_type is not None:
+            setattr(meta, 'entity', entity_type)
 
         if id_field is not None:
             setattr(meta, 'id_field', id_field)

@@ -21,12 +21,12 @@ class IGetMethodAsync[T: Dataclass](t.Protocol):
 
 
 class IAddMethod[T: Dataclass](t.Protocol):
-    def __call__(self, dto: T) -> T:
+    def __call__(self, entity: T) -> T:
         ...
 
 
 class IAddMethodAsync[T: Dataclass](t.Protocol):
-    async def __call__(self, dto: T) -> T:
+    async def __call__(self, entity: T) -> T:
         ...
 
 
@@ -71,12 +71,12 @@ class IDeleteMethodAsync(t.Protocol):
 
 
 class IUpdateMethod[T: Dataclass](t.Protocol):
-    def __call__(self, dto: T, **filters: t.Any) -> T | None:
+    def __call__(self, entity: T, **filters: t.Any) -> T | None:
         ...
 
 
 class IUpdateMethodAsync[T: Dataclass](t.Protocol):
-    async def __call__(self, dto: T, **filters: t.Any) -> T | None:
+    async def __call__(self, entity: T, **filters: t.Any) -> T | None:
         ...
 
 

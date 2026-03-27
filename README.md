@@ -52,7 +52,7 @@ class Person:
 @mongorepo.async_repository(array_fields=['skills'])
 class MongoRepository:
     class Meta:
-        dto = Person
+        entity = Person
         collection = async_mongo_client().people_db.people
 
 
@@ -103,12 +103,12 @@ class MessageRepository(typing.Protocol):
 
 @implement(
     GetMethod(MessageRepository.get_message, filters=['id']),
-    AddMethod(MessageRepository.add_message, dto='message')
+    AddMethod(MessageRepository.add_message, entity='message')
 )
 @use_collection(async_mongo_client().messages_db.messages)
 class MongoMessageRepository:
     class Meta:
-        dto = Message
+        entity = Message
 
 
 repo: MessageRepository = MongoMessageRepository()

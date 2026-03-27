@@ -21,7 +21,7 @@ class NoDTOTypeException(MongorepoException):
     def __str__(self) -> str:
         if self.message:
             return self.message
-        return 'DTO type was not provided' + ' in "Meta" class' if self.with_meta else ''
+        return 'Entity type was not provided' + ' in "Meta" class' if self.with_meta else ''
 
 
 class NoCollectionException(MongorepoException):
@@ -39,7 +39,7 @@ class NotDataClass(MongorepoException):
     def __str__(self) -> str:
         if self.message:
             return self.message
-        return 'Provided dto type does not implement dataclass interface'
+        return 'Provided entity type does not implement dataclass interface'
 
 
 class InvalidMethodNameException(MongorepoException):

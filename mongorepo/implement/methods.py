@@ -167,7 +167,7 @@ class GetMethod(Method):
     @implement(GetMethod(Repo.get, filters=['id']))
     class MongoRepo:
         class Meta:
-            dto = User
+            entity = User
             collection = mongo_client().users.users_collection
 
     repo = MongoRepo()
@@ -208,10 +208,10 @@ class AddMethod(Method):
         def add(self, user: User) -> User:
             ...
 
-    @implement(AddMethod(Repo.add, dto='user'))
+    @implement(AddMethod(Repo.add, entity='user'))
     class MongoRepo:
         class Meta:
-            dto = User
+            entity = User
             collection = mongo_client().users.users_collection
 
     repo = MongoRepo()
@@ -223,10 +223,10 @@ class AddMethod(Method):
     def __init__(
         self,
         source: Callable,
-        dto: str,
+        entity: str,
         modifiers: Modifiers | None = None,
     ) -> None:
-        super().__init__(source, **{dto: 'dto'})  # type: ignore
+        super().__init__(source, **{entity: 'entity'})  # type: ignore
         self.action = MethodAction.ADD
         self.modifiers = modifiers or []
 
@@ -256,10 +256,10 @@ class UpdateMethod(Method):
         def update_user(self, id: str, update_model: UpdateUser) -> User:
             ...
 
-    @implement(UpdateMethod(Repo.update_user, filters=['id'], dto='update_model'))
+    @implement(UpdateMethod(Repo.update_user, filters=['id'], entity='update_model'))
     class MongoRepo:
         class Meta:
-            dto = User
+            entity = User
             collection = mongo_client().users.users_collection
 
     repo = MongoRepo()
@@ -300,12 +300,12 @@ class UpdateMethod(Method):
     def __init__(
         self,
         source: Callable,
-        dto: str,
+        entity: str,
         filters: list[FieldAlias | str],
         modifiers: Modifiers | None = None,
     ) -> None:
         super().__init__(
-            source, **{dto: 'dto'}, **_manage_filters(filters),  # type: ignore
+            source, **{entity: 'entity'}, **_manage_filters(filters),  # type: ignore
         )
         self.action = MethodAction.UPDATE
         self.modifiers = modifiers or []
@@ -330,7 +330,7 @@ class DeleteMethod(Method):
     @implement(DeleteMethod(Repo.remove_user, filters=['id']))
     class MongoRepo:
         class Meta:
-            dto = User
+            entity = User
             collection = mongo_client().users.users_collection
 
     repo = MongoRepo()
@@ -367,7 +367,7 @@ class GetListMethod(Method):
     @implement(GetListMethod(BookRepo.get_list_of_books, filters=['category']))
     class MongoRepo:
         class Meta:
-            dto = Book
+            entity = Book
             collection = mongo_client().books.books_collection
 
     repo = MongoRepo()
@@ -416,7 +416,7 @@ class GetAllMethod(Method):
     )
     class MongoRepo:
         class Meta:
-            dto = Book
+            entity = Book
             collection = mongo_client().books.books_collection
 
     repo = MongoRepo()
@@ -458,7 +458,7 @@ class AddBatchMethod(Method):
     @implement(AddBatchMethod(BookRepo.add_books, dto_list=['books']))
     class MongoRepo:
         class Meta:
-            dto = Book
+            entity = Book
             collection = mongo_client().books.books_collection
 
     repo = MongoRepo()
@@ -519,7 +519,7 @@ class ListAppendMethod(Method):
     )
     class MongoRepo:
         class Meta:
-            dto = Cargo
+            entity = Cargo
             collection = mongo_client().cargo.cargo_collection
 
     repo = MongoRepo()
@@ -583,7 +583,7 @@ class ListPopMethod(Method):
     )
     class MongoRepo:
         class Meta:
-            dto = Cargo
+            entity = Cargo
             collection = mongo_client().cargo.cargo_collection
 
     repo = MongoRepo()
@@ -651,7 +651,7 @@ class ListRemoveMethod(Method):
     )
     class MongoRepo:
         class Meta:
-            dto = Cargo
+            entity = Cargo
             collection = mongo_client().cargo.cargo_collection
 
     repo = MongoRepo()
@@ -723,7 +723,7 @@ class ListGetFieldValuesMethod(Method):
     )
     class MongoRepo:
         class Meta:
-            dto = Cargo
+            entity = Cargo
             collection = mongo_client().cargo.cargo_collection
 
     repo = MongoRepo()
@@ -793,7 +793,7 @@ class IncrementIntegerFieldMethod(Method):
     )
     class MongoRepo:
         class Meta:
-            dto = Record
+            entity = Record
             collection = mongo_client().records.record_collection
 
     repo = MongoRepo()

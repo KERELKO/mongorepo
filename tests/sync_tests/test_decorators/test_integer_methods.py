@@ -1,20 +1,20 @@
 # type: ignore
 from mongorepo.decorators import mongo_repository
-from tests.common import SimpleDTO, in_collection
+from tests.common import SimpleEntity, in_collection
 
 
 def test_can_increment_and_decrement_field_with_decorator():
 
-    with in_collection(SimpleDTO) as coll:
+    with in_collection(SimpleEntity) as coll:
         @mongo_repository(integer_fields=['y'])
         class Repository:
             class Meta:
-                dto = SimpleDTO
+                entity = SimpleEntity
                 collection = coll
 
         repo = Repository()
 
-        repo.add(SimpleDTO(x='admin', y=10))
+        repo.add(SimpleEntity(x='admin', y=10))
 
         repo.incr__y(x='admin')
         repo.incr__y(x='admin')
@@ -23,5 +23,5 @@ def test_can_increment_and_decrement_field_with_decorator():
 
         repo.decr__y(x='admin')
 
-        dto = repo.get(x='admin')
-        assert dto.y == 13
+        entity = repo.get(x='admin')
+        assert entity.y == 13

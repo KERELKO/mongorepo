@@ -22,7 +22,7 @@ def default_mongorepo_dict(
     return MongorepoDict(collection_provider=collection_provider, methods=methods)
 
 
-def use_session(
+def set_session(
     session: SessionType,
     *mongorepo_repositories: HasMongorepoDict[SessionType, CollectionType] | Any,
 ):
@@ -41,7 +41,7 @@ def use_session(
             method.session = session
 
 
-def remove_session(
+def unset_session(
     *mongorepo_repositories: HasMongorepoDict[SessionType, CollectionType] | Any,
 ):
     """Function to remove session from mongorepo methods."""
@@ -87,7 +87,7 @@ def session_context(
 
     """
     try:
-        use_session(session, *mongorepo_repositories)
+        set_session(session, *mongorepo_repositories)
         yield
     finally:
-        remove_session(*mongorepo_repositories)
+        unset_session(*mongorepo_repositories)

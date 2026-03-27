@@ -27,11 +27,8 @@ def mongo_repository(
 
     ## Requirements:
     The decorated class must define a nested `Meta` class with:
-    - `dto`: A dataclass representing the document schema.
+    - `entity`: A dataclass representing the document schema.
     - `collection`: An instance of `Collection` from `pymongo`.
-    - `index` (optional): Either:
-      - A string representing the indexed field.
-      - An instance of `mongorepo.Index` for advanced indexing options.
     - `method_access` (optional): Specifies the access level for repository methods
       using `mongorepo.Access`.
 
@@ -59,9 +56,8 @@ def mongo_repository(
     @mongo_repository(delete=False)
     class MongoRepository:
         class Meta:
-            dto = UserDTO
+            entity = UserDTO
             collection: Collection = db["users"]
-            index = mongorepo.Index(field="name")
             method_access = mongorepo.Access.PUBLIC
 
     repo = MongoRepository()
@@ -114,11 +110,8 @@ def async_mongo_repository(
 
     ## Requirements:
     The decorated class must define a nested `Meta` class with:
-    - `dto`: A dataclass representing the document schema.
+    - `entity`: A dataclass representing the document schema.
     - `collection`: An instance of `AsyncIOMotorCollection`.
-    - `index` (optional): Either:
-      - A string representing the indexed field.
-      - An instance of `mongorepo.Index` for advanced indexing options.
     - `method_access` (optional): Specifies the access level for repository methods
       using `mongorepo.Access`.
 
@@ -146,9 +139,8 @@ def async_mongo_repository(
     @async_mongo_repository(get_all=True, update=True)
     class MongoRepository:
         class Meta:
-            dto = ExampleDTO
+            entity = ExampleDTO
             collection: AsyncIOMotorCollection = db["example"]
-            index = mongorepo.Index(field="id_field")
             method_access = mongorepo.Access.PUBLIC
 
     repo = MongoRepository()

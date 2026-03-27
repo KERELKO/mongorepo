@@ -2,35 +2,7 @@
 import typing
 from dataclasses import dataclass, field
 
-import pymongo
 from motor.motor_asyncio import AsyncIOMotorClient
-
-from mongorepo import use_collection
-from mongorepo.classes import BaseMongoRepository
-
-
-# Example with base class
-def test_sync_base_mongo_repository():
-    def mongo_client(mongo_uri: str = 'mongodb://mongodb:27017/') -> pymongo.MongoClient:
-        client: pymongo.MongoClient = pymongo.MongoClient(mongo_uri)
-        return client
-
-    @dataclass
-    class UserDTO:
-        username: str = ''
-        password: str = ''
-
-    @use_collection(collection=mongo_client().users_db.users)
-    class SimpleMongoRepository(BaseMongoRepository[UserDTO]):
-        ...
-
-    repo = SimpleMongoRepository()
-
-    new_user = UserDTO(username='admin', password='1234')
-    repo.add(new_user)
-
-    user = repo.get(username='admin')
-    print(user)  # UserDTO(username='admin', password='1234')
 
 
 # Example with decorator
@@ -50,7 +22,7 @@ async def test_async_repository():
     @mongorepo.async_repository(list_fields=['skills'])
     class MongoRepository:
         class Meta:
-            dto = Person
+            entity = Person
             collection = async_mongo_client().people_db.people
 
     repo = MongoRepository()
@@ -93,11 +65,11 @@ async def test_async_implement_decorator():
 
     @implement(
         GetMethod(MessageRepository.get_message, filters=['id']),
-        AddMethod(MessageRepository.add_message, dto='message'),
+        AddMethod(MessageRepository.add_message, entity='message'),
     )
     class MongoMessageRepository:
         class Meta:
-            dto = Message
+            entity = Message
             collection = async_mongo_client().messages_db.messages
 
     repo: MessageRepository = MongoMessageRepository()

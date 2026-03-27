@@ -9,8 +9,8 @@ from .methods import SpecificMethod
 
 def _handle_implement_specific_methods[T: type](cls: T, *specific_methods: SpecificMethod) -> T:
     attrs = _get_meta_attributes(cls)
-    dto_type = attrs['dto']
-    if not dto_type:
+    entity_type = attrs['entity']
+    if not entity_type:
         raise exceptions.NoDTOTypeException
     collection = attrs['collection']
     id_field = attrs['id_field']
@@ -26,7 +26,7 @@ def _handle_implement_specific_methods[T: type](cls: T, *specific_methods: Speci
         implemented_method = _substitute_specific_method(
             cls,
             method=method,
-            dto_type=dto_type,
+            entity_type=entity_type,
             id_field=id_field,
         )
         __mongorepo__['methods'][method.name] = implemented_method  # type: ignore

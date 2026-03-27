@@ -1,28 +1,28 @@
 # type: ignore
 from mongorepo import async_repository
-from tests.common import NestedListDTO, SimpleDTO, custom_collection
+from tests.common import NestedListEntity, SimpleEntity, custom_collection
 
 
 async def test_can_use_array_methods_with_dto_fields() -> None:
-    c = custom_collection(dto=NestedListDTO, async_client=True)
+    c = custom_collection(entity=NestedListEntity, async_client=True)
 
     @async_repository(list_fields=['dtos'])
     class MongoRepository:
         class Meta:
-            dto = NestedListDTO
+            entity = NestedListEntity
             collection = c
 
     repo = MongoRepository()
 
     await repo.add(
-        NestedListDTO(
+        NestedListEntity(
             title='Test',
             dtos=[
-                SimpleDTO(x='1', y=1),
-                SimpleDTO(x='2', y=2),
-                SimpleDTO(x='3', y=3),
-                SimpleDTO(x='4', y=4),
-                SimpleDTO(x='5', y=5),
+                SimpleEntity(x='1', y=1),
+                SimpleEntity(x='2', y=2),
+                SimpleEntity(x='3', y=3),
+                SimpleEntity(x='4', y=4),
+                SimpleEntity(x='5', y=5),
             ],
         ),
     )
@@ -40,21 +40,21 @@ async def test_can_use_array_methods_with_dto_fields() -> None:
 
     assert dto_slice[0].x == '3'
 
-    last: SimpleDTO | None = await repo.dtos__pop(title='Test')
+    last: SimpleEntity | None = await repo.dtos__pop(title='Test')
     assert last
     assert last.y == 5
 
-    await repo.dtos__append(title='Test', value=SimpleDTO(x='10', y=10))
+    await repo.dtos__append(title='Test', value=SimpleEntity(x='10', y=10))
 
     the_latest_dto = await repo.dtos__pop(title='Test')
     assert the_latest_dto is not None
 
     assert the_latest_dto.x == '10' and the_latest_dto.y == 10
-    await repo.dtos__remove(title='Test', value=SimpleDTO(x='4', y=4))
+    await repo.dtos__remove(title='Test', value=SimpleEntity(x='4', y=4))
 
-    dto: NestedListDTO | None = await repo.get(title='Test')
-    assert dto
-    for simple_dto in dto.dtos:
+    entity: NestedListEntity | None = await repo.get(title='Test')
+    assert entity
+    for simple_dto in entity.dtos:
         assert simple_dto.x != '4' and simple_dto.y != 4
 
     c.drop()

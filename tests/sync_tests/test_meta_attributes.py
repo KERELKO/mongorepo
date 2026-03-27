@@ -15,7 +15,7 @@ def test_repo_does_not_include_id_in_dto():
     @mongo_repository
     class WithoutIdRepository:
         class Meta:
-            dto = WithoutId
+            entity = WithoutId
             collection = mongo_client()['test_id_field_db']['withoutid']
 
     r_2 = WithoutIdRepository()
@@ -38,9 +38,9 @@ def test_repo_include_id_in_dto():
     @mongo_repository
     class WithIdRepository:
         class Meta:
-            # set mongodb oid to dto field specified in "id_field"
+            # set mongodb oid to entity field specified in "id_field"
             id_field = 'oid'
-            dto = WithId
+            entity = WithId
             collection = mongo_client()['test_id_field_db']['withid']
 
     r_1 = WithIdRepository()
@@ -52,6 +52,6 @@ def test_repo_include_id_in_dto():
     assert with_id_dto
     assert with_id_dto.oid, with_id_dto.oid
 
-    dto: WithId = r_1.get(oid=inserted_dto.oid)
-    assert dto
-    assert dto.name == 'cookie'
+    entity: WithId = r_1.get(oid=inserted_dto.oid)
+    assert entity
+    assert entity.name == 'cookie'

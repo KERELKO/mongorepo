@@ -72,16 +72,16 @@ class UpdateSkipModifier[T: Dataclass](ModifierBefore[T]):
     def __init__(self, skip_if_value: t.Any) -> None:
         self.skip_if_value = skip_if_value
 
-    def modify(self, dto: T, **filters: t.Any) -> tuple[Dataclass, dict[str, t.Any]]:
-        _d = asdict(dto)
+    def modify(self, entity: T, **filters: t.Any) -> tuple[Dataclass, dict[str, t.Any]]:
+        _d = asdict(entity)
         new_dataclass = make_dataclass(
             f'{self.__class__.__name__}Dataclass',
             [
                 (k, 'typing.Any', f)
-                for k, f in dto.__dataclass_fields__.items()
+                for k, f in entity.__dataclass_fields__.items()
                 if _d[k] != self.skip_if_value
             ],
-            bases=dto.__class__.__bases__,
+            bases=entity.__class__.__bases__,
         )
         new_dto = new_dataclass(**{k: v for k, v in _d.items() if v != self.skip_if_value})
         return new_dto, filters

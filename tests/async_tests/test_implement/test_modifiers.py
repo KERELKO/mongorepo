@@ -9,13 +9,13 @@ from mongorepo.modifiers.base import (
     RaiseExceptionModifier,
     UpdateSkipModifier,
 )
-from tests.common import Box, SimpleDTO, in_async_collection
+from tests.common import Box, SimpleEntity, in_async_collection
 
 
 async def test_after_modifiers():
     class CustomAfterModifier(ModifierAfter):
-        def modify(self, data: SimpleDTO | None) -> SimpleDTO | None:
-            if isinstance(data, SimpleDTO):
+        def modify(self, data: SimpleEntity | None) -> SimpleEntity | None:
+            if isinstance(data, SimpleEntity):
                 data.x = 'Hello World'
             return data
 
@@ -23,19 +23,19 @@ async def test_after_modifiers():
         ...
 
     class Repo:
-        async def get(self, dto_id: str) -> SimpleDTO | None:
+        async def get(self, dto_id: str) -> SimpleEntity | None:
             ...
 
-        async def add(self, dto: SimpleDTO):
+        async def add(self, entity: SimpleEntity):
             ...
 
-        async def get_custom(self, x: str) -> SimpleDTO | None:
+        async def get_custom(self, x: str) -> SimpleEntity | None:
             ...
 
-    async with in_async_collection(SimpleDTO) as coll:
+    async with in_async_collection(SimpleEntity) as coll:
         @use_collection(coll)
         @implement(
-            AddMethod(Repo.add, dto='dto'),
+            AddMethod(Repo.add, entity='entity'),
             GetMethod(
                 Repo.get,
                 filters=[FieldAlias('x', 'dto_id')],
@@ -45,11 +45,11 @@ async def test_after_modifiers():
         )
         class Mongorepo:
             class Meta:
-                dto = SimpleDTO
+                entity = SimpleEntity
 
         repo: Repo = Mongorepo()  # type: ignore
 
-        new_dto = SimpleDTO(x='100', y=100)
+        new_dto = SimpleEntity(x='100', y=100)
 
         await repo.add(new_dto)
 
@@ -96,17 +96,17 @@ async def test_before_modifiers():
                     not_found_mod, CustomGetBeforeModifier(),
                 ],
             ),
-            AddMethod(Repo.add, dto='box'),
+            AddMethod(Repo.add, entity='box'),
             UpdateMethod(
                 Repo.update,
-                dto='box',
+                entity='box',
                 filters=[a],
                 modifiers=[UpdateSkipModifier(skip_if_value=None), not_found_mod],
             ),
         )
         class Mongorepo:
             class Meta:
-                dto = Box
+                entity = Box
                 collection = coll
                 id_field = 'id'
 

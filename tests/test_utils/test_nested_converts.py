@@ -6,34 +6,34 @@ from mongorepo.utils import _get_converter, _nested_convert_to_dto
 
 def test_nested_converts_to_dto() -> None:
     @dataclass
-    class SimpleDTO:
+    class SimpleEntity:
         x: str
         y: int
 
     @dataclass
-    class NestedDTO:
+    class NestedEntity:
         title: str
-        simple: SimpleDTO
+        simple: SimpleEntity
 
     @dataclass
-    class NestedListDTO:
-        title: str = 'Nested DTO'
-        dtos: list[SimpleDTO] = field(default_factory=list)
+    class NestedListEntity:
+        title: str = 'Nested Entity'
+        dtos: list[SimpleEntity] = field(default_factory=list)
 
     @dataclass
     class VeryNestedDTO:
-        dtos: list[NestedListDTO]
+        dtos: list[NestedListEntity]
 
-    simple_dto = SimpleDTO(x='123', y=5)
-    assert _nested_convert_to_dto(SimpleDTO, {'x': '123', 'y': 5}) == simple_dto
+    simple_dto = SimpleEntity(x='123', y=5)
+    assert _nested_convert_to_dto(SimpleEntity, {'x': '123', 'y': 5}) == simple_dto
 
-    nested_dto = NestedDTO(title='.', simple=simple_dto)
+    nested_dto = NestedEntity(title='.', simple=simple_dto)
     assert _nested_convert_to_dto(
-        NestedDTO, {'title': '.', 'simple': {'x': '123', 'y': 5}},
+        NestedEntity, {'title': '.', 'simple': {'x': '123', 'y': 5}},
     ) == nested_dto
-    nested_list_dto = NestedListDTO(title='...', dtos=[simple_dto, simple_dto, simple_dto])
+    nested_list_dto = NestedListEntity(title='...', dtos=[simple_dto, simple_dto, simple_dto])
     convert = _nested_convert_to_dto(
-        NestedListDTO,
+        NestedListEntity,
         data={
             'title': '...', 'dtos': [
                 {'x': '123', 'y': 5}, {'x': '123', 'y': 5}, {'x': '123', 'y': 5},

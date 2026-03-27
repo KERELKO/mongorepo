@@ -34,7 +34,7 @@ class ParameterEnum(StrEnum):
     FILTER = 'filters'
     OFFSET = 'offset'
     LIMIT = 'limit'
-    DTO = 'dto'
+    Entity = 'entity'
     VALUE = 'value'
     WEIGHT = 'weight'
     FILTER_ALIAS = '__filter_alias'
@@ -44,7 +44,7 @@ LParameter = Literal[
     ParameterEnum.FILTER,
     ParameterEnum.OFFSET,
     ParameterEnum.LIMIT,
-    ParameterEnum.DTO,
+    ParameterEnum.Entity,
     ParameterEnum.VALUE,
     ParameterEnum.WEIGHT,
     ParameterEnum.FILTER_ALIAS,

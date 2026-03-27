@@ -1,6 +1,6 @@
-from dataclasses import Field, dataclass
+from dataclasses import Field
 from enum import Enum
-from typing import Any, ClassVar, Generic, Protocol, TypedDict, TypeVar, cast
+from typing import Any, ClassVar, Generic, Protocol, TypedDict, TypeVar
 
 from motor.motor_asyncio import (
     AsyncIOMotorClientSession,
@@ -16,18 +16,9 @@ class Dataclass(Protocol):
     __dataclass_fields__: ClassVar[dict[str, Field[Any]]]
 
 
-DTO = TypeVar('DTO', bound=Dataclass)
+Entity = TypeVar("Entity", bound=Dataclass)
 CollectionType = TypeVar('CollectionType', AsyncIOMotorCollection, Collection[Any])
 SessionType = TypeVar('SessionType', AsyncIOMotorClientSession, ClientSession)
-
-
-@dataclass(repr=False, slots=True, eq=False)
-class Index:
-    """Allows to specify extra information about mongodb index."""
-    field: str
-    name: str | None = None
-    desc: bool = True
-    unique: bool = False
 
 
 class Access(int, Enum):
@@ -38,9 +29,8 @@ class Access(int, Enum):
 
 
 class MetaAttributes(Generic[CollectionType], TypedDict, total=True):
-    dto: type[Dataclass] | None
+    entity_type: type[Dataclass] | None
     collection: CollectionType | None
-    index: str | Index | None
     method_access: Access | None
     id_field: str | None
 
@@ -62,13 +52,5 @@ class CollectionProvider(Generic[CollectionType]):
                 self.collection = collection
                 return collection
 
-        # Check if collection in Meta class
-        meta = self.obj.__dict__.get('Meta', None)
-        if meta is not None:
-            if (c := getattr(meta, 'collection', None)) is not None:
-                if not isinstance(c, (AsyncIOMotorCollection, Collection)):
-                    raise exceptions.NoCollectionException
-                self.collection = cast(CollectionType, c)
-                return self.collection
         # If no collection raise exception
         raise exceptions.NoCollectionException('Collection cannot be found', with_meta=False)
