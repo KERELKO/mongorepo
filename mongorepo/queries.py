@@ -39,7 +39,6 @@ Condition = Literal[
     '$size',         # Match array size
 ]
 
-
 AggregationStage = Literal[
     '$match',          # Filters documents
     '$group',          # Groups documents by a specified expression

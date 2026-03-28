@@ -1,27 +1,21 @@
-# type: ignore
 import random
 
-import pytest
-
-from mongorepo import Access
 from mongorepo.decorators import mongo_repository
-from mongorepo.exceptions import NoDTOTypeException
+from mongorepo.types import MethodAccess, RepositoryConfig
 from tests.common import (
-    MultiFieldEntity,
     EntityWithID,
+    MultiFieldEntity,
     SimpleEntity,
+    in_collection,
     r,
-    in_collection
 )
 
 
 def test_all_methods_with_decorator():
     with in_collection(SimpleEntity) as cl:
-        @mongo_repository
+        @mongo_repository(config=RepositoryConfig(entity_type=SimpleEntity, collection=cl))
         class TestMongoRepository:
-            class Meta:
-                entity = SimpleEntity
-                collection = cl
+            ...
 
         num = random.randint(1, 123456)
 
@@ -48,11 +42,9 @@ def test_all_methods_with_decorator():
 def test_can_get_dto_with_id():
 
     with in_collection(EntityWithID) as cl:
-        @mongo_repository
+        @mongo_repository(RepositoryConfig(entity_type=EntityWithID, collection=cl))
         class TestMongoRepository:
-            class Meta:
-                entity = EntityWithID
-                collection = cl
+            ...
 
         num = random.randint(1, 12346)
 
@@ -67,11 +59,9 @@ def test_can_get_dto_with_id():
 def test_can_handle_complicated_dto():
 
     with in_collection(MultiFieldEntity) as cl:
-        @mongo_repository
+        @mongo_repository(RepositoryConfig(entity_type=MultiFieldEntity, collection=cl))
         class TestMongoRepository:
-            class Meta:
-                entity = MultiFieldEntity
-                collection = cl
+            ...
 
         repo = TestMongoRepository()
         repo.add(MultiFieldEntity(x='comp', y=True, name='You', skills=['h', 'e']))
@@ -83,11 +73,9 @@ def test_can_handle_complicated_dto():
 def test_can_update_partially():
 
     with in_collection(MultiFieldEntity) as cl:
-        @mongo_repository
+        @mongo_repository(RepositoryConfig(entity_type=MultiFieldEntity, collection=cl))
         class TestMongoRepository:
-            class Meta:
-                entity = MultiFieldEntity
-                collection = cl
+            ...
 
         repo = TestMongoRepository()
         repo.add(MultiFieldEntity(x='Test', y=True, name='Me'))
@@ -99,11 +87,9 @@ def test_can_update_partially():
 
 def test_can_search_with_id():
     with in_collection(EntityWithID) as cl:
-        @mongo_repository
+        @mongo_repository(RepositoryConfig(entity_type=EntityWithID, collection=cl))
         class TestMongoRepository:
-            class Meta:
-                entity = EntityWithID
-                collection = cl
+            ...
 
         repo = TestMongoRepository()
         _dto = repo.add(EntityWithID(x='ID', y=10))
@@ -118,12 +104,11 @@ def test_can_search_with_id():
 def test_can_make_methods_protected():
 
     with in_collection(SimpleEntity) as cl:
-        @mongo_repository
+        @mongo_repository(
+            RepositoryConfig(entity_type=SimpleEntity, method_access=MethodAccess.PROTECTED, collection=cl),
+        )
         class TestMongoRepository:
-            class Meta:
-                entity = SimpleEntity
-                collection = cl
-                method_access = Access.PROTECTED
+            ...
 
             def access_protected_method(self):
                 _ = self._get(name='Antony')  # type: ignore
@@ -138,12 +123,11 @@ def test_can_make_methods_protected():
 def test_can_make_methods_private():
 
     with in_collection(SimpleEntity) as cl:
-        @mongo_repository
+        @mongo_repository(
+            RepositoryConfig(entity_type=SimpleEntity, collection=cl, method_access=MethodAccess.PRIVATE),
+        )
         class TestMongoRepository:
-            class Meta:
-                entity = SimpleEntity
-                collection = cl
-                method_access = Access.PRIVATE
+            ...
 
             def get(self) -> bool:
                 _ = self.__get(id='370r-o0-o23')  # type: ignore
@@ -160,11 +144,9 @@ def test_can_make_methods_private():
 def test_can_access_dto_in_type_hints_decorator():
 
     with in_collection(SimpleEntity) as cl:
-        @mongo_repository(delete=False)
+        @mongo_repository(delete=False, config=RepositoryConfig(entity_type=SimpleEntity, collection=cl))
         class TestMongoRepository:
-            class Meta:
-                entity = SimpleEntity
-                collection = cl
+            ...
 
         repo = TestMongoRepository()
 
@@ -172,23 +154,12 @@ def test_can_access_dto_in_type_hints_decorator():
         assert not hasattr(repo, 'delete')
 
 
-def test_cannot_access_dto_type_in_type_hints_decorator():
-    with pytest.raises(NoDTOTypeException):
-
-        @mongo_repository
-        class TestMongoRepository:
-            class Meta:
-                ...
-
-
 def test_get_list_method():
 
     with in_collection(SimpleEntity) as cl:
-        @mongo_repository(get_list=True)
+        @mongo_repository(get_list=True, config=RepositoryConfig(entity_type=SimpleEntity, collection=cl))
         class TestMongoRepository:
-            class Meta:
-                entity = SimpleEntity
-                collection = cl
+            ...
 
         r = TestMongoRepository()
         r.add(SimpleEntity(x='123', y=123))
@@ -211,11 +182,9 @@ def test_get_list_method():
 def test_get_list_with_add_batch_methods_with_decorator():
 
     with in_collection(SimpleEntity) as cl:
-        @mongo_repository(add_batch=True, get_list=True)
+        @mongo_repository(add_batch=True, get_list=True, config=RepositoryConfig(entity_type=SimpleEntity, collection=cl))
         class TestMongoRepository:
-            class Meta:
-                entity = SimpleEntity
-                collection = cl
+            ...
 
         repo = TestMongoRepository()
 

@@ -1,7 +1,6 @@
 from typing import Callable
 
 from mongorepo import exceptions
-from mongorepo._base import Dataclass
 from mongorepo._methods.impl import AddBatchMethod as CallableAddBatchMethod
 from mongorepo._methods.impl import AddMethod as CallableAddMethod
 from mongorepo._methods.impl import \
@@ -61,6 +60,7 @@ from mongorepo.implement.methods import (
     SpecificMethod,
     UpdateMethod,
 )
+from mongorepo.types import Dataclass
 
 from .exceptions import FieldDoesNotExist
 
@@ -133,25 +133,33 @@ def initialize_callable_mongorepo_method(
                 raise exceptions.MongorepoException(
                     f'Cannot initialize {mcls}: field_name was not provided',
                 )
-            return mongorepo_method(entity_type=entity_type, owner=owner, field_name=field_name, **kwargs)
+            return mongorepo_method(
+                entity_type=entity_type, owner=owner, field_name=field_name, **kwargs,
+            )
         case CallableAppendListMethod.__name__ | CallableAppendListMethodAsync.__name__:
             if not field_name:
                 raise exceptions.MongorepoException(
                     f'Cannot initialize {mcls}: field_name was not provided',
                 )
-            return mongorepo_method(entity_type=entity_type, owner=owner, field_name=field_name, **kwargs)
+            return mongorepo_method(
+                entity_type=entity_type, owner=owner, field_name=field_name, **kwargs,
+            )
         case CallableRemoveListMethod.__name__ | CallableRemoveListMethodAsync.__name__:
             if not field_name:
                 raise exceptions.MongorepoException(
                     f'Cannot initialize {mcls}: field_name was not provided',
                 )
-            return mongorepo_method(entity_type=entity_type, owner=owner, field_name=field_name, **kwargs)
+            return mongorepo_method(
+                entity_type=entity_type, owner=owner, field_name=field_name, **kwargs,
+            )
         case CallableGetListValuesMethod.__name__ | CallableGetListValuesMethodAsync.__name__:
             if not field_name:
                 raise exceptions.MongorepoException(
                     f'Cannot initialize {mcls}: field_name was not provided',
                 )
-            return mongorepo_method(entity_type=entity_type, owner=owner, field_name=field_name, **kwargs)
+            return mongorepo_method(
+                entity_type=entity_type, owner=owner, field_name=field_name, **kwargs,
+            )
 
         case (
             CallableIncrementIntegerFieldMethod.__name__

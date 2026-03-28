@@ -1,10 +1,15 @@
 from typing import Callable
 
+from mongorepo.types import RepositoryConfig
+
 from ._handlers import _handle_implement_specific_methods
 from .methods import SpecificMethod
 
 
-def implement[T: type](*specific_methods: SpecificMethod) -> Callable[[T], T]:
+def implement[T: type](
+    *specific_methods: SpecificMethod,
+    config: RepositoryConfig,
+) -> Callable[[T], T]:
     """## Implements Methods from an Interface or Base Class
 
     This decorator dynamically implements specified methods from an interface or
@@ -57,5 +62,5 @@ def implement[T: type](*specific_methods: SpecificMethod) -> Callable[[T], T]:
         raise ValueError('No methods to implement')
 
     def wrapper(cls: T) -> T:
-        return _handle_implement_specific_methods(cls, *specific_methods)
+        return _handle_implement_specific_methods(cls, *specific_methods, config=config)
     return wrapper

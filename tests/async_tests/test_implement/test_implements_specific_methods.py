@@ -1,6 +1,7 @@
 # mypy: disable-error-code="empty-body"
 from typing import AsyncGenerator
 
+from mongorepo import RepositoryConfig
 from mongorepo.implement import implement
 from mongorepo.implement.methods import (
     AddBatchMethod,
@@ -29,31 +30,31 @@ async def test_implement_crud_with_specific_method_protocol():
     """Test `@implement` decorator with classes that implement `SpecificMethod`
     protocol."""
 
-    async with in_async_collection(NestedListEntity) as c:
-        class IRepo:
-            async def get(self, title: str) -> NestedListEntity:
-                ...
+    class IRepo:
+        async def get(self, title: str) -> NestedListEntity:
+            ...
 
-            async def add(self, model: NestedListEntity) -> NestedListEntity:
-                ...
+        async def add(self, model: NestedListEntity) -> NestedListEntity:
+            ...
 
-            async def update(self, model: NestedListEntity, title: str) -> NestedListEntity:
-                ...
+        async def update(self, model: NestedListEntity, title: str) -> NestedListEntity:
+            ...
 
-            async def delete(self, title: str) -> bool:
-                ...
+        async def delete(self, title: str) -> bool:
+            ...
 
-            async def add_batch(self, models: list[NestedListEntity]) -> None:
-                ...
+        async def add_batch(self, models: list[NestedListEntity]) -> None:
+            ...
 
-            async def get_all_by_title(self, title: str) -> AsyncGenerator[NestedListEntity, None]:
-                ...
+        async def get_all_by_title(self, title: str) -> AsyncGenerator[NestedListEntity, None]:
+            ...
 
-            async def get_model_list(
-                self, title: str, limit: int, offset: int = 20,
-            ) -> list[NestedListEntity]:
-                ...
+        async def get_model_list(
+            self, title: str, limit: int, offset: int = 20,
+        ) -> list[NestedListEntity]:
+            ...
 
+    async with in_async_collection(NestedListEntity) as cl:
         @implement(
             AddMethod(IRepo.add, entity='model'),
             GetMethod(IRepo.get, filters=['title']),
@@ -62,11 +63,10 @@ async def test_implement_crud_with_specific_method_protocol():
             GetAllMethod(IRepo.get_all_by_title, filters=['title']),
             GetListMethod(IRepo.get_model_list, offset='offset', limit='limit', filters=['title']),
             DeleteMethod(IRepo.delete, filters=['title']),
+            config=RepositoryConfig(entity_type=NestedListEntity, collection=cl),
         )
         class MongoRepo:
-            class Meta:
-                collection = c
-                entity = NestedListEntity
+            ...
 
         r: IRepo = MongoRepo()  # type: ignore
         await r.add(NestedListEntity('...', dtos=[SimpleEntity(x='1', y=1), SimpleEntity(x='1', y=1)]))
@@ -124,7 +124,7 @@ async def test_implement_list_methods_with_specific_method_protocol():
         async def remove_dto_by_title(self, entity: SimpleEntity, title: str) -> None:
             ...
 
-    async with in_async_collection(NestedListEntity) as c:
+    async with in_async_collection(NestedListEntity) as cl:
 
         @implement(
             AddMethod(IRepo.add, entity='entity'),
@@ -137,11 +137,10 @@ async def test_implement_list_methods_with_specific_method_protocol():
             ListPopMethod(IRepo.pop_dto_by_title, 'dtos', filters=['title']),
             ListAppendMethod(IRepo.append_dto_by_title, 'dtos', value='entity', filters=['title']),
             ListRemoveMethod(IRepo.remove_dto_by_title, 'dtos', value='entity', filters=['title']),
+            config=RepositoryConfig(entity_type=NestedListEntity, collection=cl),
         )
         class MongoRepo:
-            class Meta:
-                collection = c
-                entity = NestedListEntity
+            ...
 
         r: IRepo = MongoRepo()  # type: ignore
         title = '...'
@@ -182,7 +181,7 @@ async def test_implement_integer_methods_with_specific_method_protocol() -> None
         async def update_year(self, id: str) -> None:
             ...
 
-    async with in_async_collection(MixedEntity) as coll:
+    async with in_async_collection(MixedEntity) as cl:
         @implement(
             AddMethod(IRepo.add, entity='entity'),
             GetMethod(IRepo.get, filters=['id']),
@@ -192,11 +191,10 @@ async def test_implement_integer_methods_with_specific_method_protocol() -> None
             IncrementIntegerFieldMethod(
                 IRepo.update_year, field_name='year', filters=['id'], default_weight_value=-1,
             ),
+            config=RepositoryConfig(entity_type=MixedEntity, collection=cl),
         )
         class MongoRepo:
-            class Meta:
-                entity = MixedEntity
-                collection = coll
+            ...
 
     repo: IRepo = MongoRepo()  # type: ignore
     entity = MixedEntity(

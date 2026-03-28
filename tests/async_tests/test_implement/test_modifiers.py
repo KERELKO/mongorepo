@@ -1,6 +1,6 @@
 import pytest
 
-from mongorepo import use_collection
+from mongorepo import RepositoryConfig
 from mongorepo.implement import AddMethod, FieldAlias, GetMethod, implement
 from mongorepo.implement.methods import UpdateMethod
 from mongorepo.modifiers.base import (
@@ -32,8 +32,7 @@ async def test_after_modifiers():
         async def get_custom(self, x: str) -> SimpleEntity | None:
             ...
 
-    async with in_async_collection(SimpleEntity) as coll:
-        @use_collection(coll)
+    async with in_async_collection(SimpleEntity) as cl:
         @implement(
             AddMethod(Repo.add, entity='entity'),
             GetMethod(
@@ -42,10 +41,10 @@ async def test_after_modifiers():
                 modifiers=[RaiseExceptionModifier(exc=NotFound, raise_when_result=None)],
             ),
             GetMethod(Repo.get_custom, filters=['x'], modifiers=[CustomAfterModifier()]),
+            config=RepositoryConfig(entity_type=SimpleEntity, collection=cl),
         )
         class Mongorepo:
-            class Meta:
-                entity = SimpleEntity
+            ...
 
         repo: Repo = Mongorepo()  # type: ignore
 
@@ -89,7 +88,7 @@ async def test_before_modifiers():
 
     not_found_mod = RaiseExceptionModifier(NotFound, None)
 
-    async with in_async_collection(Box) as coll:
+    async with in_async_collection(Box) as cl:
         @implement(
             GetMethod(
                 Repo.get, filters=[a := FieldAlias('id', 'box_id')], modifiers=[
@@ -103,12 +102,10 @@ async def test_before_modifiers():
                 filters=[a],
                 modifiers=[UpdateSkipModifier(skip_if_value=None), not_found_mod],
             ),
+            config=RepositoryConfig(entity_type=Box, collection=cl),
         )
         class Mongorepo:
-            class Meta:
-                entity = Box
-                collection = coll
-                id_field = 'id'
+            ...
 
         repo: Repo = Mongorepo()  # type: ignore
         box = Box(id='1', value='1kg')

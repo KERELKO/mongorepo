@@ -2,7 +2,7 @@ import typing as t
 from abc import ABC, abstractmethod
 from dataclasses import asdict, make_dataclass
 
-from mongorepo._base import Dataclass
+from mongorepo.types import Dataclass
 
 P = t.ParamSpec('P')
 

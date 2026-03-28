@@ -1,6 +1,6 @@
 import typing as t
 
-from mongorepo._base import Dataclass, SessionType
+from mongorepo.types import Dataclass, SessionType
 
 if t.TYPE_CHECKING:
     from pymongo.results import InsertManyResult, UpdateResult

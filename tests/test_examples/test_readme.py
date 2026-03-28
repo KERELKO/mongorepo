@@ -1,13 +1,14 @@
-# type: ignore[reportAttributeAccessIssue]
 import typing
 from dataclasses import dataclass, field
 
 from motor.motor_asyncio import AsyncIOMotorClient
 
+import mongorepo
+from mongorepo.types import RepositoryConfig
+
 
 # Example with decorator
 async def test_async_repository():
-    import mongorepo
 
     def async_mongo_client(mongo_uri: str = 'mongodb://mongodb:27017/') -> AsyncIOMotorClient:
         async_client = AsyncIOMotorClient(mongo_uri)
@@ -19,11 +20,12 @@ async def test_async_repository():
         name: str
         skills: list[str] = field(default_factory=list)
 
-    @mongorepo.async_repository(list_fields=['skills'])
+    @mongorepo.async_repository(
+        list_fields=['skills'],
+        config=RepositoryConfig(entity_type=Person, collection=async_mongo_client().people_db.people),
+    )
     class MongoRepository:
-        class Meta:
-            entity = Person
-            collection = async_mongo_client().people_db.people
+        ...
 
     repo = MongoRepository()
 
@@ -66,11 +68,10 @@ async def test_async_implement_decorator():
     @implement(
         GetMethod(MessageRepository.get_message, filters=['id']),
         AddMethod(MessageRepository.add_message, entity='message'),
+        config=RepositoryConfig(entity_type=Message, collection=async_mongo_client().messages_db.messages),
     )
     class MongoMessageRepository:
-        class Meta:
-            entity = Message
-            collection = async_mongo_client().messages_db.messages
+        ...
 
     repo: MessageRepository = MongoMessageRepository()
 

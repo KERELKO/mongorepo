@@ -1,6 +1,7 @@
 # mypy: disable-error-code="empty-body"
 from typing import AsyncGenerator
 
+from mongorepo import RepositoryConfig
 from mongorepo.implement import implement
 from mongorepo.implement.methods import AddBatchMethod, AddMethod, DeleteMethod
 from mongorepo.implement.methods import FieldAlias as FA
@@ -27,8 +28,7 @@ from tests.common import (
 async def test_field_alias_with_crud_protocol_methods():
     """Test `@implement` decorator with classes that implement `SpecificMethod`
     protocol."""
-
-    async with in_async_collection(NestedListEntity) as c:
+    async with in_async_collection(NestedListEntity) as cl:
         class IRepo:
             async def get(self, dto_title: str) -> NestedListEntity:
                 ...
@@ -65,11 +65,10 @@ async def test_field_alias_with_crud_protocol_methods():
             GetListMethod(
                 IRepo.get_model_list, offset='offset', limit='limit', filters=[title_alias],
             ),
+            config=RepositoryConfig(entity_type=NestedListEntity, collection=cl),
         )
         class MongoRepo:
-            class Meta:
-                collection = c
-                entity = NestedListEntity
+            ...
 
         r: IRepo = MongoRepo()  # type: ignore
         await r.add(NestedListEntity('...', dtos=[SimpleEntity(x='1', y=1), SimpleEntity(x='1', y=1)]))
@@ -127,7 +126,7 @@ async def test_implement_list_methods_with_specific_method_protocol():
         async def remove_dto_by_title(self, entity: SimpleEntity, t: str) -> None:
             ...
 
-    async with in_async_collection(NestedListEntity) as c:
+    async with in_async_collection(NestedListEntity) as cl:
 
         @implement(
             AddMethod(IRepo.add, entity='entity'),
@@ -142,11 +141,10 @@ async def test_implement_list_methods_with_specific_method_protocol():
             ListRemoveMethod(
                 IRepo.remove_dto_by_title, 'dtos', value='entity', filters=[FA('title', 't')],
             ),
+            config=RepositoryConfig(entity_type=NestedListEntity, collection=cl),
         )
         class MongoRepo:
-            class Meta:
-                collection = c
-                entity = NestedListEntity
+            ...
 
         r: IRepo = MongoRepo()  # type: ignore
         title = '...'
@@ -187,7 +185,7 @@ async def test_implement_integer_methods_with_specific_method_protocol() -> None
         async def update_year(self, mix_dto_id: str) -> None:
             ...
 
-    async with in_async_collection(MixedEntity) as coll:
+    async with in_async_collection(MixedEntity) as cl:
         @implement(
             AddMethod(IRepo.add, entity='entity'),
             GetMethod(IRepo.get, filters=[f := FA('id', 'mix_id')]),
@@ -198,11 +196,10 @@ async def test_implement_integer_methods_with_specific_method_protocol() -> None
                 IRepo.update_year, field_name='year', filters=[FA('id', 'mix_dto_id')],
                 default_weight_value=-1,
             ),
+            config=RepositoryConfig(entity_type=MixedEntity, collection=cl),
         )
         class MongoRepo:
-            class Meta:
-                entity = MixedEntity
-                collection = coll
+            ...
 
     repo: IRepo = MongoRepo()  # type: ignore
     entity = MixedEntity(
@@ -236,15 +233,14 @@ async def test_implement_with_specific_method_with_multiple_aliases():
         async def add(self, entity: MixedEntity) -> None:
             ...
 
-    async with in_async_collection(MixedEntity) as coll:
+    async with in_async_collection(MixedEntity) as cl:
         @implement(
             AddMethod(IRepo.add, entity='entity'),
             GetMethod(IRepo.get, filters=[FA('id', 'mix_id', '_mix_id_'), FA('name', 'mix_name')]),
+            config=RepositoryConfig(entity_type=MixedEntity, collection=cl),
         )
         class MongoRepo:
-            class Meta:
-                entity = MixedEntity
-                collection = coll
+            ...
 
     repo: IRepo = MongoRepo()  # type: ignore
     entity = MixedEntity(

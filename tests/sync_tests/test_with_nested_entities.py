@@ -1,16 +1,20 @@
 # type: ignore
-from tests.common import NestedEntity, NestedListEntity, SimpleEntity, in_collection, DictEntity
-from mongorepo.decorators import mongo_repository
+from mongorepo.decorators import RepositoryConfig, mongo_repository
+from tests.common import (
+    DictEntity,
+    NestedEntity,
+    NestedListEntity,
+    SimpleEntity,
+    in_collection,
+)
 
 
 def test_methods_with_nested_dto() -> None:
 
-    with in_collection(NestedEntity) as c:
-        @mongo_repository
+    with in_collection(NestedEntity) as cl:
+        @mongo_repository(config=RepositoryConfig(collection=cl, entity_type=NestedEntity))
         class Repo:
-            class Meta:
-                collection = c
-                entity = NestedEntity
+            ...
 
         _title = '#0000'
 
@@ -28,12 +32,10 @@ def test_methods_with_nested_dto() -> None:
 
 def test_methods_with_nested_list_dto() -> None:
 
-    with in_collection(NestedListEntity) as c:
-        @mongo_repository
+    with in_collection(NestedListEntity) as cl:
+        @mongo_repository(config=RepositoryConfig(collection=cl, entity_type=NestedListEntity))
         class Repo:
-            class Meta:
-                collection = c
-                entity = NestedListEntity
+            ...
 
         _title = '#8999'
 
@@ -53,12 +55,10 @@ def test_methods_with_nested_list_dto() -> None:
 
 def test_methods_with_dict_dto() -> None:
 
-    with in_collection(DictEntity) as c:
-        @mongo_repository
+    with in_collection(DictEntity) as cl:
+        @mongo_repository(config=RepositoryConfig(collection=cl, entity_type=DictEntity))
         class Repo:
-            class Meta:
-                collection = c
-                entity = DictEntity
+            ...
 
         record_data = 'Read "Berserk again"'
 

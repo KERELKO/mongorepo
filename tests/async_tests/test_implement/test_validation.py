@@ -3,6 +3,7 @@ from typing import Protocol, cast
 
 import pytest
 
+from mongorepo import RepositoryConfig
 from mongorepo.implement import AddMethod, GetMethod, implement
 from mongorepo.implement.exceptions import FieldDoesNotExist
 from mongorepo.implement.methods import FieldAlias
@@ -20,13 +21,14 @@ def test_can_identify_incorrect_named_field():
         def get(self, model: str, year: int) -> Car | None:
             ...
 
-    with in_collection(Car) as c:
+    with in_collection(Car) as cl:
         with pytest.raises(FieldDoesNotExist):
-            @implement(GetMethod(Repo.get, filters=['model', 'years']))
+            @implement(
+                GetMethod(Repo.get, filters=['model', 'years']),
+                config=RepositoryConfig(entity_type=Car, collection=cl),
+            )
             class MongoRepo:
-                class Meta:
-                    collection = c
-                    entity = Car
+                ...
 
             repo = cast(Repo, MongoRepo())
 
@@ -50,17 +52,16 @@ def test_can_identify_incorrect_named_field_with_alias():
         def get_invalid(self, model: str, year: int) -> Car | None:
             ...
 
-    with in_collection(Car) as c:
+    with in_collection(Car) as cl:
         with pytest.raises(FieldDoesNotExist):
             @implement(
                 AddMethod(Repo.add, entity='car'),
                 GetMethod(Repo.get_valid, filters=[FieldAlias('model', '__model__'), 'year']),
                 GetMethod(Repo.get_invalid, filters=[FieldAlias('years', 'la'), 'year_INVALID']),
+                config=RepositoryConfig(collection=cl, entity_type=Car),
             )
             class MongoRepo:
-                class Meta:
-                    collection = c
-                    entity = Car
+                ...
 
             repo = cast(Repo, MongoRepo())
 

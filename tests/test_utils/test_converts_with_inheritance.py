@@ -1,7 +1,7 @@
 import random
 from dataclasses import dataclass, field
 
-from mongorepo.utils import _get_converter
+from mongorepo import get_converter
 
 
 def test_can_convert_simple_parent_variables() -> None:
@@ -14,7 +14,7 @@ def test_can_convert_simple_parent_variables() -> None:
     class UserDTO(BaseDTO):
         name: str
 
-    to_dto = _get_converter(UserDTO)
+    to_dto = get_converter(UserDTO)
 
     entity: UserDTO = to_dto(UserDTO, {'_id': '-', 'name': 'Artorias', 'id': 100})
 
@@ -32,7 +32,7 @@ def test_can_convert_simple_parent_variables_with_id_field() -> None:
     class UserDTO(BaseDTO):
         name: str
 
-    to_dto = _get_converter(UserDTO, id_field='id')
+    to_dto = get_converter(UserDTO, id_field='id')
 
     entity: UserDTO = to_dto(UserDTO, {'_id': 'id_field', 'name': 'Artorias'})
 
@@ -60,7 +60,7 @@ def test_can_convert_simple_parent_variables_with_recursion() -> None:
         name: str
         records: list[Record]
 
-    to_dto = _get_converter(UserDTOWithRecord)
+    to_dto = get_converter(UserDTOWithRecord)
 
     entity: UserDTOWithRecord = to_dto(
         UserDTOWithRecord, {'id': 100, 'name': 'Artorias', 'record': {'text': 'Hello World'}},
@@ -71,7 +71,7 @@ def test_can_convert_simple_parent_variables_with_recursion() -> None:
     assert isinstance(entity.record, Record)
     assert entity.record.text == 'Hello World'
 
-    to_dto_r = _get_converter(UserDTOWithListOfRecords)
+    to_dto_r = get_converter(UserDTOWithListOfRecords)
 
     dto_r: UserDTOWithListOfRecords = to_dto_r(
         UserDTOWithListOfRecords, {'id': 101, 'name': 'admin', 'records': [{'text': 'SUCCESS'}]},

@@ -2,13 +2,11 @@
 from dataclasses import dataclass, field
 from typing import List
 
-from mongorepo import Access
-from mongorepo.decorators import mongo_repository
+from mongorepo import MethodAccess, RepositoryConfig, repository
 from tests.common import (
     MultiFieldEntity,
     NestedListEntity,
     SimpleEntity,
-    custom_collection,
     in_collection,
 )
 
@@ -16,11 +14,9 @@ from tests.common import (
 def test_can_push_and_pull_elements_from_list_with_decorator():
 
     with in_collection(MultiFieldEntity) as cl:
-        @mongo_repository(list_fields=['skills'])
+        @repository(list_fields=['skills'], config=RepositoryConfig(entity_type=MultiFieldEntity, collection=cl))
         class Repository:
-            class Meta:
-                entity = MultiFieldEntity
-                collection = cl
+            ...
 
         repo = Repository()
 
@@ -42,12 +38,13 @@ def test_can_push_and_pull_elements_from_list_with_decorator():
 def test_can_mix_methods_with_decorators():
 
     with in_collection(MultiFieldEntity) as cl:
-        @mongo_repository(list_fields=['skills'], method_access=Access.PROTECTED)
-        @mongo_repository
+        @repository(
+            list_fields=['skills'],
+            config=RepositoryConfig(entity_type=MultiFieldEntity, collection=cl, method_access=MethodAccess.PROTECTED),
+        )
+        @repository(config=RepositoryConfig(entity_type=MultiFieldEntity, collection=cl))
         class TestMongoRepository:
-            class Meta:
-                entity = MultiFieldEntity
-                collection = cl
+            ...
 
         r = TestMongoRepository()
 
@@ -58,11 +55,9 @@ def test_can_mix_methods_with_decorators():
 def test_pop_method_with_decorator():
 
     with in_collection(MultiFieldEntity) as cl:
-        @mongo_repository(list_fields=['skills'])
+        @repository(list_fields=['skills'], config=RepositoryConfig(entity_type=MultiFieldEntity, collection=cl))
         class TestMongoRepository:
-            class Meta:
-                entity = MultiFieldEntity
-                collection = cl
+            ...
 
         r = TestMongoRepository()
         assert hasattr(r, 'skills__pop')
@@ -97,82 +92,69 @@ def test_list_with_different_type_hints_decorator():
     class A4:
         types: list[int | None]
 
-    cl = custom_collection(A1)
+    with in_collection(A1) as cl:
+        config = RepositoryConfig(entity_type=A1, collection=cl)
 
-    @mongo_repository(list_fields=['types'])
-    class TestA1:
-        class Meta:
-            entity = A1
-            collection = cl
+        @repository(list_fields=['types'], config=config)
+        class TestA1:
+            ...
 
+        @repository(list_fields=['types'], config=config)
+        class TestA2:
+            ...
 
-    @mongo_repository(list_fields=['types'])
-    class TestA2:
-        class Meta:
-            entity = A2
-            collection = cl
+        @repository(list_fields=['types'], config=config)
+        class TestA3:
+            ...
 
-    @mongo_repository(list_fields=['types'])
-    class TestA3:
-        class Meta:
-            entity = A3
-            collection = cl
+        _ = TestA1()
+        _ = TestA2()
+        _ = TestA3()
 
-    _ = TestA1()
-    _ = TestA2()
-    _ = TestA3()
+        @repository(list_fields=['types'], config=config)
+        class TestA4:
+            ...
 
-    @mongo_repository(list_fields=['types'])
-    class TestA4:
-        class Meta:
-            entity = A4
-            collection = cl
+        _ = TestA4
 
-    _ = TestA4
-
-    cl.drop()
     assert True
 
 
 def test_can_get_list_of_dto_field_values() -> None:
-    c = custom_collection(NestedListEntity)
 
-    @mongo_repository(list_fields=['dtos'])
-    class MongoRepository:
-        class Meta:
-            entity = NestedListEntity
-            collection = c
+    with in_collection(NestedListEntity) as cl:
+        @repository(list_fields=['dtos'], config=RepositoryConfig(entity_type=NestedListEntity, collection=cl))
+        class MongoRepository:
+            ...
 
-    repo = MongoRepository()
+        repo = MongoRepository()
 
-    repo.add(
-        NestedListEntity(
-            title='Test',
-            dtos=[
-                SimpleEntity(x='1', y=1),
-                SimpleEntity(x='2', y=2),
-                SimpleEntity(x='3', y=3),
-                SimpleEntity(x='4', y=4),
-                SimpleEntity(x='5', y=5),
-            ],
-        ),
-    )
+        repo.add(
+            NestedListEntity(
+                title='Test',
+                dtos=[
+                    SimpleEntity(x='1', y=1),
+                    SimpleEntity(x='2', y=2),
+                    SimpleEntity(x='3', y=3),
+                    SimpleEntity(x='4', y=4),
+                    SimpleEntity(x='5', y=5),
+                ],
+            ),
+        )
 
-    dtos = repo.dtos__list(title='Test', offset=0, limit=10)
-    assert dtos
+        dtos = repo.dtos__list(title='Test', offset=0, limit=10)
+        assert dtos
 
-    assert len(dtos) == 5
+        assert len(dtos) == 5
 
-    assert dtos[0].x == '1'
+        assert dtos[0].x == '1'
 
-    dto_slice = repo.dtos__list(title='Test', offset=2, limit=4)
+        dto_slice = repo.dtos__list(title='Test', offset=2, limit=4)
 
-    assert dto_slice
+        assert dto_slice
 
-    assert dto_slice[0].x == '3'
+        assert dto_slice[0].x == '3'
 
-    last: SimpleEntity | None = repo.dtos__pop(title='Test')
-    assert last
-    assert last.y == 5
-
-    c.drop()
+        last: SimpleEntity | None = repo.dtos__pop(title='Test')
+        assert last
+        assert last.y == 5

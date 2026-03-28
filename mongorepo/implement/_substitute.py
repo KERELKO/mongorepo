@@ -2,8 +2,8 @@ import inspect
 from typing import Any, Callable
 
 from mongorepo import exceptions
-from mongorepo._base import Dataclass
-from mongorepo.utils import _get_defaults
+from mongorepo.types import Dataclass
+from mongorepo.utils.type_hints import get_function_default_values
 
 from ._types import MethodAction
 from ._types import ParameterEnum as MongorepoParameter
@@ -72,7 +72,7 @@ def _manage_custom_params(
     *args,
     **kwargs,
 ) -> dict[str, Any]:
-    defaults = _get_defaults(method.source)
+    defaults = get_function_default_values(method.source)
     result: dict[str, Any] = {}
     filters: dict[str, Any] = {}
     source_params_map: dict[str, Any] = {}

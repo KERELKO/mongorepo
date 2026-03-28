@@ -1,5 +1,6 @@
 from typing import Iterable
 
+from mongorepo import RepositoryConfig
 from mongorepo.implement import implement
 from mongorepo.implement.methods import (
     AddBatchMethod,
@@ -15,14 +16,20 @@ from mongorepo.implement.methods import (
     ListRemoveMethod,
     UpdateMethod,
 )
-from tests.common import Box, MixedEntity, NestedListEntity, SimpleEntity, in_collection
+from tests.common import (
+    Box,
+    MixedEntity,
+    NestedListEntity,
+    SimpleEntity,
+    in_collection,
+)
 
 
 def test_implement_crud_with_specific_method_protocol():
     """Test `@implement` decorator with classes that implement `SpecificMethod`
     protocol."""
 
-    with in_collection(NestedListEntity) as c:
+    with in_collection(NestedListEntity) as cl:
         class IRepo:
             def get(self, title: str) -> NestedListEntity:  # type: ignore[empty-body]
                 ...
@@ -59,11 +66,10 @@ def test_implement_crud_with_specific_method_protocol():
             GetAllMethod(IRepo.get_all_by_title, filters=['title']),
             GetListMethod(IRepo.get_model_list, offset='offset', limit='limit', filters=['title']),
             DeleteMethod(IRepo.delete, filters=['title']),
+            config=RepositoryConfig(collection=cl, entity_type=NestedListEntity),
         )
         class MongoRepo:
-            class Meta:
-                collection = c
-                entity = NestedListEntity
+            ...
 
         r: IRepo = MongoRepo()  # type: ignore
         r.add(NestedListEntity('...', dtos=[SimpleEntity(x='1', y=1), SimpleEntity(x='1', y=1)]))
@@ -122,7 +128,7 @@ def test_implement_list_methods_with_specific_method_protocol():
         def remove_dto_by_title(self, entity: SimpleEntity, title: str) -> None:
             ...
 
-    with in_collection(NestedListEntity) as c:
+    with in_collection(NestedListEntity) as cl:
 
         @implement(
             AddMethod(IRepo.add, entity='entity'),
@@ -135,11 +141,10 @@ def test_implement_list_methods_with_specific_method_protocol():
             ListPopMethod(IRepo.pop_dto_by_title, 'dtos', filters=['title']),
             ListAppendMethod(IRepo.append_dto_by_title, 'dtos', value='entity', filters=['title']),
             ListRemoveMethod(IRepo.remove_dto_by_title, 'dtos', value='entity', filters=['title']),
+            config=RepositoryConfig(collection=cl, entity_type=NestedListEntity),
         )
         class MongoRepo:
-            class Meta:
-                collection = c
-                entity = NestedListEntity
+            ...
 
         r: IRepo = MongoRepo()  # type: ignore
         title = '...'
@@ -180,7 +185,7 @@ def test_implement_integer_methods_with_specific_method_protocol() -> None:
         def update_year(self, id: str) -> None:
             ...
 
-    with in_collection(MixedEntity) as coll:
+    with in_collection(MixedEntity) as cl:
         @implement(
             AddMethod(IRepo.add, entity='entity'),
             GetMethod(IRepo.get, filters=['id']),
@@ -190,11 +195,10 @@ def test_implement_integer_methods_with_specific_method_protocol() -> None:
             IncrementIntegerFieldMethod(
                 IRepo.update_year, field_name='year', filters=['id'], default_weight_value=-1,
             ),
+            config=RepositoryConfig(entity_type=MixedEntity, collection=cl),
         )
         class MongoRepo:
-            class Meta:
-                entity = MixedEntity
-                collection = coll
+            ...
 
     repo: IRepo = MongoRepo()  # type: ignore
     entity = MixedEntity(

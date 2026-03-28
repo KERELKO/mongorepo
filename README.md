@@ -1,37 +1,6 @@
 # mongorepo
 Simple lib for python &amp; mongodb, provides auto repository factory based on DTO type
 
-## Example with **BaseMongoRepository**
-```python
-from mongorepo.classes import BaseMongoRepository
-from mongorepo import use_collection
-
-
-def mongo_client(mongo_uri: str = 'mongodb://mongodb:27017/') -> pymongo.MongoClient:
-    client: pymongo.MongoClient = pymongo.MongoClient(mongo_uri)
-    return client
-
-
-@dataclass
-class UserDTO:
-    username: str = ''
-    password: str = ''
-
-
-@use_collection(mongo_client().users_db.users)
-class SimpleMongoRepository(BaseMongoRepository[UserDTO]):
-    ...
-
-
-repo = SimpleMongoRepository()
-
-new_user = UserDTO(username='admin', password='1234')
-repo.add(new_user)
-
-user = repo.get(username='admin')
-print(user)  # UserDTO(username='admin', password='1234')
-```
-
 ## Example with **mongorepo.async_repository**
 ```python
 import mongorepo
@@ -49,11 +18,12 @@ class Person:
     skills: list[str] = field(default_factory=list)    
 
 
-@mongorepo.async_repository(array_fields=['skills'])
+@mongorepo.async_repository(
+    array_fields=['skills'],
+    config=RepositoryConfig(entity_type=Person, collection=async_mongo_client().people_db.people)
+)
 class MongoRepository:
-    class Meta:
-        entity = Person
-        collection = async_mongo_client().people_db.people
+    ...
 
 
 repo = MongoRepository()

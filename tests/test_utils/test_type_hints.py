@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 
-from mongorepo.utils import get_dataclass_type_hints, get_first_arg
+from mongorepo.utils.type_hints import get_dataclass_type_hints, get_first_arg
 from tests.common import NestedEntity, SimpleEntity
 
 
@@ -13,7 +13,7 @@ def test_can_get_nested_dto_type_hints() -> None:
     assert type_hints['simple'] is SimpleEntity
 
 
-def different_cases_of_type_hints():
+def different_cases_of_type_hints() -> None:
     @dataclass
     class Profile:
         first_name: str

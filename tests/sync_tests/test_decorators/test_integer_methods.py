@@ -1,16 +1,14 @@
 # type: ignore
-from mongorepo.decorators import mongo_repository
+from mongorepo import RepositoryConfig, repository
 from tests.common import SimpleEntity, in_collection
 
 
 def test_can_increment_and_decrement_field_with_decorator():
 
     with in_collection(SimpleEntity) as coll:
-        @mongo_repository(integer_fields=['y'])
+        @repository(integer_fields=['y'], config=RepositoryConfig(entity_type=SimpleEntity, collection=coll))
         class Repository:
-            class Meta:
-                entity = SimpleEntity
-                collection = coll
+            ...
 
         repo = Repository()
 

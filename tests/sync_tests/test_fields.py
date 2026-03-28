@@ -11,13 +11,12 @@ def test_can_convert_to_datetime() -> None:
         id: str
         created_at: datetime.datetime
 
-    with in_collection(Subscription) as c:
-        @mongorepo.repository
+    with in_collection(Subscription) as cl:
+        @mongorepo.repository(
+            config=mongorepo.RepositoryConfig(entity_type=Subscription, collection=cl, id_field='id'),
+        )
         class Repository:
-            class Meta:
-                entity = Subscription
-                collection = c
-                id_field = 'id'
+            ...
 
         r = Repository()
         added_sub = r.add(Subscription(id='1', created_at=datetime.datetime.now()))  # type: ignore[attr-defined]

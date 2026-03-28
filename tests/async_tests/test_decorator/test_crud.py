@@ -1,20 +1,14 @@
-# type: ignore
 import random
 
-import pytest
-
-from mongorepo import async_repository, exceptions
-from tests.common import SimpleEntity, r, in_async_collection, custom_collection
+from mongorepo import RepositoryConfig, async_repository
+from tests.common import SimpleEntity, in_async_collection, r
 
 
 async def test_all_methods_with_async_decorator():
-
     async with in_async_collection(SimpleEntity) as cl:
-        @async_repository
+        @async_repository(config=RepositoryConfig(entity_type=SimpleEntity, collection=cl))
         class TestMongoRepository:
-            class Meta:
-                entity = SimpleEntity
-                collection = cl
+            ...
 
         num = random.randint(1, 123456)
 
@@ -43,29 +37,14 @@ async def test_all_methods_with_async_decorator():
         assert isinstance(dtos[0], SimpleEntity)
 
 
-async def test_cannot_initialize_class_if_dto_is_not_dataclass():
-
-    class Bob:
-        def __init__(self, name: str) -> None:
-            self.name = name
-
-    with pytest.raises(exceptions.NoDTOTypeException):
-        @async_repository
-        class TestMongoRepository[Bob]:  # type: ignore
-            class Meta:
-                collection = custom_collection(Bob, async_client=True)
-
-        _ = TestMongoRepository()
-
-
 async def test_get_list_with_add_batch_methods_with_decorator():
 
     async with in_async_collection(SimpleEntity) as cl:
-        @async_repository(add_batch=True, get_list=True)
+        @async_repository(
+            add_batch=True, get_list=True, config=RepositoryConfig(entity_type=SimpleEntity, collection=cl),
+        )
         class TestMongoRepository:
-            class Meta:
-                entity = SimpleEntity
-                collection = cl
+            ...
 
         repo = TestMongoRepository()
 

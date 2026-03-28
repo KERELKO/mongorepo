@@ -1,3 +1,11 @@
+from typing import NoReturn
+
+
+def raise_exc(exc: Exception | type[Exception]) -> NoReturn:
+    """Allows to write one-lined exceptions."""
+    raise exc
+
+
 class MongorepoException(Exception):
     def __init__(self, message: str | None = None):
         self.message = message

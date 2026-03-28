@@ -8,10 +8,13 @@ from motor.motor_asyncio import (
 )
 from pymongo.results import InsertManyResult, UpdateResult
 
-from mongorepo._base import Dataclass
-from mongorepo._common import HasMongorepoDict
+from mongorepo._mongorepo_dict import HasMongorepoDict
 from mongorepo.modifiers.base import ModifierAfter, ModifierBefore
-from mongorepo.utils import _get_converter, get_dataclass_type_hints
+from mongorepo.types import Dataclass
+from mongorepo.utils.entity_converters import (
+    get_converter,
+    get_dataclass_type_hints,
+)
 
 
 class AddMethodAsync[T: Dataclass]:
@@ -30,7 +33,7 @@ class AddMethodAsync[T: Dataclass]:
         self.session = session
         self.modifiers_after = [m for m in modifiers if isinstance(m, ModifierAfter)]
         self.modifiers_before = [m for m in modifiers if isinstance(m, ModifierBefore)]
-        self.converter = converter or _get_converter(entity_type, id_field)
+        self.converter = converter or get_converter(entity_type, id_field)
         self.id_field = id_field
         self.kwargs = kwargs
 
@@ -69,7 +72,7 @@ class AddBatchMethodAsync[T: Dataclass]:
         self.session = session
         self.modifiers_after = [m for m in modifiers if isinstance(m, ModifierAfter)]
         self.modifiers_before = [m for m in modifiers if isinstance(m, ModifierBefore)]
-        self.converter = converter or _get_converter(entity_type, id_field)
+        self.converter = converter or get_converter(entity_type, id_field)
         self.id_field = id_field
         self.kwargs = kwargs
 
@@ -112,7 +115,7 @@ class GetAllMethodAsync[T: Dataclass]:
         self.owner = owner
         self.session = session
         self.modifiers_before = [m for m in modifiers if isinstance(m, ModifierBefore)]
-        self.converter = converter or _get_converter(entity_type, id_field)
+        self.converter = converter or get_converter(entity_type, id_field)
         self.kwargs = kwargs
 
     async def __call__(self, **filters: t.Any) -> t.AsyncGenerator[T, None]:
@@ -142,7 +145,7 @@ class GetListMethodAsync[T: Dataclass]:
         self.session = session
         self.modifiers_after = [m for m in modifiers if isinstance(m, ModifierAfter)]
         self.modifiers_before = [m for m in modifiers if isinstance(m, ModifierBefore)]
-        self.converter = converter or _get_converter(entity_type, id_field)
+        self.converter = converter or get_converter(entity_type, id_field)
         self.kwargs = kwargs
 
     async def __call__(self, offset: int = 0, limit: int = 20, **filters: t.Any) -> list[T]:
@@ -178,7 +181,7 @@ class GetMethodAsync[T: Dataclass]:
         self.session = session
         self.modifiers_after = [m for m in modifiers if isinstance(m, ModifierAfter)]
         self.modifiers_before = [m for m in modifiers if isinstance(m, ModifierBefore)]
-        self.converter = converter or _get_converter(entity_type, id_field)
+        self.converter = converter or get_converter(entity_type, id_field)
         self.id_field = id_field
         self.kwargs = kwargs
 
@@ -242,7 +245,7 @@ class UpdateMethodAsync[T: Dataclass]:
         self.session: AsyncIOMotorClientSession | None = None
         self.modifiers_after = [m for m in modifiers if isinstance(m, ModifierAfter)]
         self.modifiers_before = [m for m in modifiers if isinstance(m, ModifierBefore)]
-        self.converter = converter or _get_converter(entity_type, id_field)
+        self.converter = converter or get_converter(entity_type, id_field)
         self.kwargs = kwargs
 
     async def __call__(self, entity: T, **filters: t.Any) -> T | None:
@@ -284,7 +287,7 @@ class UpdateListFieldMethodAsync[T: Dataclass]:
         self.field_type = fields.get(field_name, None)
         self.field_converter = None
         if is_dataclass(self.field_type):
-            self.field_converter = _get_converter(fields[field_name])
+            self.field_converter = get_converter(fields[field_name])
         self.owner = owner
         self.action = action
         self.session = session
@@ -382,7 +385,7 @@ class GetListValuesMethodAsync[T: Dataclass]:
         self.owner = owner
         self.field_converter = None
         if is_dataclass(self.field_type):
-            self.field_converter = _get_converter(fields[field_name])
+            self.field_converter = get_converter(fields[field_name])
         self.session = session
         self.modifiers_after = [m for m in modifiers if isinstance(m, ModifierAfter)]
         self.modifiers_before = [m for m in modifiers if isinstance(m, ModifierBefore)]
@@ -435,7 +438,7 @@ class PopListMethodAsync[T: Dataclass]:
         self.field_type = fields.get(field_name, None)
         self.field_converter = None
         if is_dataclass(self.field_type):
-            self.field_converter = _get_converter(fields[field_name])
+            self.field_converter = get_converter(fields[field_name])
         self.session = session
         self.modifiers_after = [m for m in modifiers if isinstance(m, ModifierAfter)]
         self.modifiers_before = [m for m in modifiers if isinstance(m, ModifierBefore)]

@@ -1,7 +1,10 @@
 import functools
 from dataclasses import dataclass, field
 
-from mongorepo.utils import _get_converter, _nested_convert_to_dto
+from mongorepo.utils.entity_converters import (
+    _nested_convert_to_dto,
+    get_converter,
+)
 
 
 def test_nested_converts_to_dto() -> None:
@@ -73,7 +76,7 @@ class User:
     friends: list['User'] = field(default_factory=list)
 
 
-to_user = functools.partial(_get_converter(User), User)
+to_user = functools.partial(get_converter(User), User)
 
 dct = {
     'id': '1',

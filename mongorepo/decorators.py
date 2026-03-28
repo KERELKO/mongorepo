@@ -1,14 +1,14 @@
 from typing import Callable, Iterable
 
-from mongorepo._base import Access
 from mongorepo._handlers import (
     _handle_async_mongo_repository,
     _handle_mongo_repository,
 )
+from mongorepo.types import MethodAccess, RepositoryConfig
 
 
 def mongo_repository(
-    cls: type | None = None,
+    config: RepositoryConfig,
     add: bool = True,
     add_batch: bool = True,
     get: bool = True,
@@ -18,19 +18,12 @@ def mongo_repository(
     delete: bool = True,
     integer_fields: Iterable[str] | None = None,
     list_fields: Iterable[str] | None = None,
-    method_access: Access | None = None,
+    method_access: MethodAccess | None = None,
 ) -> type | Callable:
     """Decorator for creating a synchronous MongoDB repository.
 
     This decorator enhances a class with common repository methods for handling
     MongoDB collections using `pymongo`'s `Collection`.
-
-    ## Requirements:
-    The decorated class must define a nested `Meta` class with:
-    - `entity`: A dataclass representing the document schema.
-    - `collection`: An instance of `Collection` from `pymongo`.
-    - `method_access` (optional): Specifies the access level for repository methods
-      using `mongorepo.Access`.
 
     ## Parameters:
     - `add` (bool): Enables the `add` method to insert a document (default: True).
@@ -48,7 +41,7 @@ def mongo_repository(
       - `{field}__remove`: Removes an item from the list.
       - `{field}__pop`: Pops an item from the list.
       - `{field}__list`: Retrieves the list field values.
-    - `method_access` (`mongorepo.Access`, optional): Defines method access level
+    - `method_access` (`mongorepo.MethodAccess`, optional): Defines method access level
       (`PUBLIC`, `PROTECTED`, `PRIVATE`).
 
     ## Example Usage:
@@ -58,7 +51,7 @@ def mongo_repository(
         class Meta:
             entity = UserDTO
             collection: Collection = db["users"]
-            method_access = mongorepo.Access.PUBLIC
+            method_access = mongorepo.MethodAccess.PUBLIC
 
     repo = MongoRepository()
 
@@ -72,6 +65,7 @@ def mongo_repository(
     def wrapper(cls) -> type:
         return _handle_mongo_repository(
             cls=cls,
+            config=config,
             add=add,
             add_batch=add_batch,
             get_all=get_all,
@@ -84,14 +78,11 @@ def mongo_repository(
             method_access=method_access,
         )
 
-    if cls is None:
-        return wrapper
-
-    return wrapper(cls)
+    return wrapper
 
 
 def async_mongo_repository(
-    cls: type | None = None,
+    config: RepositoryConfig,
     add: bool = True,
     add_batch: bool = True,
     get: bool = True,
@@ -101,19 +92,12 @@ def async_mongo_repository(
     delete: bool = True,
     integer_fields: list[str] | None = None,
     list_fields: list[str] | None = None,
-    method_access: Access | None = None,
+    method_access: MethodAccess | None = None,
 ) -> type | Callable:
     """Decorator for creating an asynchronous MongoDB repository.
 
     This decorator enhances a class with common repository methods for handling
     MongoDB collections using `motor`'s `AsyncIOMotorCollection`.
-
-    ## Requirements:
-    The decorated class must define a nested `Meta` class with:
-    - `entity`: A dataclass representing the document schema.
-    - `collection`: An instance of `AsyncIOMotorCollection`.
-    - `method_access` (optional): Specifies the access level for repository methods
-      using `mongorepo.Access`.
 
     ## Parameters:
     - `add` (bool): Enables the `add` method to insert a document (default: True).
@@ -131,7 +115,7 @@ def async_mongo_repository(
       - `{field}__remove`: Removes an item from the list.
       - `{field}__pop`: Pops an item from the list.
       - `{field}__list`: Retrieves the list field values.
-    - `method_access` (`mongorepo.Access`, optional): Defines method access level
+    - `method_access` (`mongorepo.MethodAccess`, optional): Defines method access level
       (`PUBLIC`, `PROTECTED`, `PRIVATE`).
 
     ## Example Usage:
@@ -141,7 +125,7 @@ def async_mongo_repository(
         class Meta:
             entity = ExampleDTO
             collection: AsyncIOMotorCollection = db["example"]
-            method_access = mongorepo.Access.PUBLIC
+            method_access = mongorepo.MethodAccess.PUBLIC
 
     repo = MongoRepository()
 
@@ -154,6 +138,7 @@ def async_mongo_repository(
     def wrapper(cls) -> type:
         return _handle_async_mongo_repository(
             cls=cls,
+            config=config,
             add=add,
             update=update,
             get_all=get_all,
@@ -166,7 +151,4 @@ def async_mongo_repository(
             method_access=method_access,
         )
 
-    if cls is None:
-        return wrapper
-
-    return wrapper(cls)
+    return wrapper
