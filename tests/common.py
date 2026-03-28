@@ -80,9 +80,9 @@ def r() -> int:
 
 @asynccontextmanager
 async def in_async_collection(entity: str | type) -> AsyncGenerator[AsyncIOMotorCollection, None]:
-    dto_name = entity if isinstance(entity, str) else entity.__name__
+    entity_name = entity if isinstance(entity, str) else entity.__name__
     try:
-        collection = async_mongo_client()[f'{dto_name}_db'][dto_name]
+        collection = async_mongo_client()[f'{entity_name}_db'][entity_name]
         yield collection
     finally:
         await collection.drop()

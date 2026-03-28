@@ -29,29 +29,27 @@ def implement[T: type](
 
     ```python
     class IRepo:
-        async def get(self, title: str) -> SomeDataclass:
+        async def get(self, title: str) -> Article:
             ...
 
-        async def add(self, model: SomeDataclass) -> SomeDataclass:
+        async def add(self, model: Article) -> Article:
             ...
 
     @implement(
         GetMethod(IRepo.get, filters=['title']),
         AddMethod(IRepo.add, entity='model'),
+        config=RepositoryConfig(entity_type=Article, collection=collection_factory())
     )
     class MongoRepo:
-        class Meta:
-            collection = some_collection()
-            entity = SomeDataclass
 
     repo: IRepo = MongoRepo()
 
     # Adding a new entry
-    await repo.add(SomeDataclass('some title'))
+    await repo.add(Article('some title'))
 
     # Retrieving the entry
     entity = await repo.get(title='some title')
-    print(entity)  # SomeDataclass(title='some title')
+    print(entity)  # Article(title='some title')
     ```
 
     ### Raises:

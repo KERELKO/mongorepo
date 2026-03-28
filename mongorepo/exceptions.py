@@ -14,33 +14,30 @@ class MongorepoException(Exception):
         return self.message or super().__str__()
 
 
-class NoMetaException(MongorepoException):
-    def __str__(self) -> str:
-        if self.message:
-            return self.message
-        return 'Class does not have "Meta" class inside'
-
-
-class NoDTOTypeException(MongorepoException):
-    def __init__(self, message: str | None = None, with_meta: bool = True):
-        self.with_meta: bool = with_meta
-        self.message = message
+class RepositoryConfigNotFound(MongorepoException):
+    def __init__(self, message: str):
+        self.message: str = message
 
     def __str__(self) -> str:
-        if self.message:
-            return self.message
-        return 'Entity type was not provided' + ' in "Meta" class' if self.with_meta else ''
+        return self.message
+
+
+class MongorepoDictNotFound(MongorepoException):
+    def __init__(self, message: str):
+        self.message: str = message
+
+    def __str__(self) -> str:
+        return self.message
 
 
 class NoCollectionException(MongorepoException):
-    def __init__(self, message: str | None = None, with_meta: bool = True):
-        self.with_meta: bool = with_meta
+    def __init__(self, message: str | None = None):
         self.message = message
 
     def __str__(self) -> str:
         if self.message:
             return self.message
-        return 'Collection was not provided' + ' in "Meta" class' if self.with_meta else ''
+        return 'Collection was not provided'
 
 
 class NotDataClass(MongorepoException):

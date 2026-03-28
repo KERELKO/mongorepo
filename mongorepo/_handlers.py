@@ -1,4 +1,4 @@
-from typing import Iterable
+from typing import Any, Iterable
 
 from motor.motor_asyncio import (
     AsyncIOMotorClientSession,
@@ -37,12 +37,9 @@ from mongorepo._methods.impl_async import (
 )
 from mongorepo._mongorepo_dict import MongorepoDict
 from mongorepo.collection_provider import CollectionProvider
-from mongorepo.types import (
-    MethodAccess,
-    RepositoryConfig,
-    get_method_access_prefix,
-)
+from mongorepo.types import RepositoryConfig, get_method_access_prefix
 from mongorepo.utils.entity_converters import get_converter
+from mongorepo.utils.mongorepo_dict import get_or_create_mongorepo_dict
 from mongorepo.utils.type_hints import check_valid_field_type
 
 
@@ -58,22 +55,18 @@ def _handle_mongo_repository(
     get_list: bool,
     list_fields: Iterable[str] | None,
     integer_fields: Iterable[str] | None,
-    method_access: MethodAccess | None,
 ) -> type:
     prefix = get_method_access_prefix(
-        access=config.method_access if not method_access else method_access, cls=cls,
+        access=config.method_access if not config.method_access else config.method_access, cls=cls,
     )
 
     converter = get_converter(config.entity_type, config.id_field)
 
-    if hasattr(cls, '__mongorepo__'):
-        __mongorepo__: MongorepoDict[ClientSession, Collection] = getattr(cls, '__mongorepo__')
-    else:
-        __mongorepo__ = MongorepoDict[ClientSession, Collection](
-            collection_provider=CollectionProvider(obj=cls, collection=config.collection),
-            methods={},
-            repository_config=config,
-        )
+    __mongorepo__: MongorepoDict[ClientSession, Collection[Any]] = get_or_create_mongorepo_dict(
+        cls,
+        CollectionProvider(obj=cls, collection=config.collection),
+        config,
+    )
 
     if add:
         key = f'{prefix}add'
@@ -176,27 +169,21 @@ def _handle_async_mongo_repository(
     delete: bool,
     integer_fields: Iterable[str] | None,
     list_fields: Iterable[str] | None,
-    method_access: MethodAccess | None,
 ) -> type:
     """Calls for functions that set different async methods and attributes to
     the class."""
 
     prefix = get_method_access_prefix(
-        access=config.method_access if not method_access else method_access, cls=cls,
+        access=config.method_access if not config.method_access else config.method_access, cls=cls,
     )
 
     converter = get_converter(config.entity_type, config.id_field)
 
-    if hasattr(cls, '__mongorepo__'):
-        __mongorepo__: MongorepoDict[AsyncIOMotorClientSession, AsyncIOMotorCollection] = getattr(
-            cls, '__mongorepo__',
-        )
-    else:
-        __mongorepo__ = MongorepoDict[AsyncIOMotorClientSession, AsyncIOMotorCollection](
-            collection_provider=CollectionProvider(obj=cls, collection=config.collection),
-            methods={},
-            repository_config=config,
-        )
+    __mongorepo__: MongorepoDict[AsyncIOMotorClientSession, AsyncIOMotorCollection] = get_or_create_mongorepo_dict(  # noqa
+        cls,
+        CollectionProvider(obj=cls, collection=config.collection),
+        config,
+    )
 
     if add:
         key = f'{prefix}add'

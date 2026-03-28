@@ -4,7 +4,7 @@ from mongorepo._handlers import (
     _handle_async_mongo_repository,
     _handle_mongo_repository,
 )
-from mongorepo.types import MethodAccess, RepositoryConfig
+from mongorepo.types import RepositoryConfig
 
 
 def mongo_repository(
@@ -18,7 +18,6 @@ def mongo_repository(
     delete: bool = True,
     integer_fields: Iterable[str] | None = None,
     list_fields: Iterable[str] | None = None,
-    method_access: MethodAccess | None = None,
 ) -> type | Callable:
     """Decorator for creating a synchronous MongoDB repository.
 
@@ -41,28 +40,23 @@ def mongo_repository(
       - `{field}__remove`: Removes an item from the list.
       - `{field}__pop`: Pops an item from the list.
       - `{field}__list`: Retrieves the list field values.
-    - `method_access` (`mongorepo.MethodAccess`, optional): Defines method access level
-      (`PUBLIC`, `PROTECTED`, `PRIVATE`).
 
     ## Example Usage:
     ```python
-    @mongo_repository(delete=False)
+    @mongo_repository(config=RepositoryConfig(entity_type=User, collection=db["users"]))
     class MongoRepository:
-        class Meta:
-            entity = UserDTO
-            collection: Collection = db["users"]
-            method_access = mongorepo.MethodAccess.PUBLIC
+        ...
 
     repo = MongoRepository()
 
-    repo.add(UserDTO(username="admin"))
+    repo.add(User(username="admin"))
 
-    admin = repo.get(username="admin")  # UserDTO(username="admin")
+    admin = repo.get(username="admin")  # User(username="admin")
     ```
 
     """
 
-    def wrapper(cls) -> type:
+    def wrapper[T](cls: type[T]) -> type[T]:
         return _handle_mongo_repository(
             cls=cls,
             config=config,
@@ -75,7 +69,6 @@ def mongo_repository(
             get=get,
             integer_fields=integer_fields,
             list_fields=list_fields,
-            method_access=method_access,
         )
 
     return wrapper
@@ -92,7 +85,6 @@ def async_mongo_repository(
     delete: bool = True,
     integer_fields: list[str] | None = None,
     list_fields: list[str] | None = None,
-    method_access: MethodAccess | None = None,
 ) -> type | Callable:
     """Decorator for creating an asynchronous MongoDB repository.
 
@@ -115,23 +107,18 @@ def async_mongo_repository(
       - `{field}__remove`: Removes an item from the list.
       - `{field}__pop`: Pops an item from the list.
       - `{field}__list`: Retrieves the list field values.
-    - `method_access` (`mongorepo.MethodAccess`, optional): Defines method access level
-      (`PUBLIC`, `PROTECTED`, `PRIVATE`).
 
     ## Example Usage:
     ```python
-    @async_mongo_repository(get_all=True, update=True)
+    @mongo_repository(config=RepositoryConfig(entity_type=User, collection=db["users"]))
     class MongoRepository:
-        class Meta:
-            entity = ExampleDTO
-            collection: AsyncIOMotorCollection = db["example"]
-            method_access = mongorepo.MethodAccess.PUBLIC
+        ...
 
     repo = MongoRepository()
 
-    await repo.add(ExampleDTO(key="value"))
+    await repo.add(User(username="admin"))
 
-    example = await repo.get(key="value")  # Returns ExampleDTO(key="value")
+    admin = await repo.get(username="admin")  # User(username="admin")
     ```
 
     """
@@ -148,7 +135,6 @@ def async_mongo_repository(
             add_batch=add_batch,
             integer_fields=integer_fields,
             list_fields=list_fields,
-            method_access=method_access,
         )
 
     return wrapper

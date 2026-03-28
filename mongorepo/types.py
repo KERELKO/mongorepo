@@ -46,7 +46,7 @@ class RepositoryConfig(Generic[CollectionType]):
     """Config for Mongorepo repository."""
     entity_type: type[Dataclass]
     """Type of the entity on which repository will operate."""
-    collection: CollectionType
+    collection: CollectionType | None = None
     """Collection which mongorepo will use to access DB."""
     method_access: MethodAccess | None = None
     """Access to mongorepo methods."""

@@ -24,4 +24,4 @@ class CollectionProvider(Generic[CollectionType]):
                 return collection
 
         # If no collection raise exception
-        raise exceptions.NoCollectionException('Collection cannot be found', with_meta=False)
+        raise exceptions.NoCollectionException('Collection cannot be found')

@@ -73,13 +73,11 @@ class MessageRepository(typing.Protocol):
 
 @implement(
     GetMethod(MessageRepository.get_message, filters=['id']),
-    AddMethod(MessageRepository.add_message, entity='message')
+    AddMethod(MessageRepository.add_message, entity='message'),
+    config=RepositoryConfig(entity_type=Message, collection=async_mongo_client().messages_db.messages)
 )
-@use_collection(async_mongo_client().messages_db.messages)
 class MongoMessageRepository:
-    class Meta:
-        entity = Message
-
+    ...
 
 repo: MessageRepository = MongoMessageRepository()
 

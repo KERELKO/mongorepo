@@ -164,11 +164,9 @@ class GetMethod(Method):
         def get(self, id: str) -> User:
             ...
 
-    @implement(GetMethod(Repo.get, filters=['id']))
+    @implement(GetMethod(Repo.get, filters=['id']), ...)
     class MongoRepo:
-        class Meta:
-            entity = User
-            collection = mongo_client().users.users_collection
+        ...
 
     repo = MongoRepo()
     user = repo.get(id='123')
@@ -208,11 +206,9 @@ class AddMethod(Method):
         def add(self, user: User) -> User:
             ...
 
-    @implement(AddMethod(Repo.add, entity='user'))
+    @implement(AddMethod(Repo.add, entity='user'), ...)
     class MongoRepo:
-        class Meta:
-            entity = User
-            collection = mongo_client().users.users_collection
+        ...
 
     repo = MongoRepo()
     added_user = repo.add(user=User(name='admin'))
@@ -256,11 +252,9 @@ class UpdateMethod(Method):
         def update_user(self, id: str, update_model: UpdateUser) -> User:
             ...
 
-    @implement(UpdateMethod(Repo.update_user, filters=['id'], entity='update_model'))
+    @implement(UpdateMethod(Repo.update_user, filters=['id'], entity='update_model'), ...)
     class MongoRepo:
-        class Meta:
-            entity = User
-            collection = mongo_client().users.users_collection
+        ...
 
     repo = MongoRepo()
     updated_user: User = repo.update_user(id='123', UpdateUser(name='admin_1'))
@@ -327,11 +321,9 @@ class DeleteMethod(Method):
         def remove_user(self, id: str) -> bool:
             ...
 
-    @implement(DeleteMethod(Repo.remove_user, filters=['id']))
+    @implement(DeleteMethod(Repo.remove_user, filters=['id']), ...)
     class MongoRepo:
-        class Meta:
-            entity = User
-            collection = mongo_client().users.users_collection
+        ...
 
     repo = MongoRepo()
     deleted: bool = repo.remove_user(id='1')  # True
@@ -364,11 +356,9 @@ class GetListMethod(Method):
         def get_list_of_books(self, category: str) -> list[Book]:
             ...
 
-    @implement(GetListMethod(BookRepo.get_list_of_books, filters=['category']))
+    @implement(GetListMethod(BookRepo.get_list_of_books, filters=['category']), ...)
     class MongoRepo:
-        class Meta:
-            entity = Book
-            collection = mongo_client().books.books_collection
+        ...
 
     repo = MongoRepo()
     books = repo.get_list_of_books(category='fiction')
@@ -412,12 +402,11 @@ class GetAllMethod(Method):
 
     @implement(
         GetAllMethod(BookRepo.get_all_books, filters=[]),
-        GetAllMethod(BookRepo.get_all_books_async, filters=['category'])
+        GetAllMethod(BookRepo.get_all_books_async, filters=['category']),
+        ...
     )
     class MongoRepo:
-        class Meta:
-            entity = Book
-            collection = mongo_client().books.books_collection
+        ...
 
     repo = MongoRepo()
     books = repo.get_all_books()
@@ -455,11 +444,9 @@ class AddBatchMethod(Method):
         def add_books(self, books: list[Book]) -> None:
             ...
 
-    @implement(AddBatchMethod(BookRepo.add_books, dto_list=['books']))
+    @implement(AddBatchMethod(BookRepo.add_books, dto_list=['books']), ...)
     class MongoRepo:
-        class Meta:
-            entity = Book
-            collection = mongo_client().books.books_collection
+        ...
 
     repo = MongoRepo()
     repo.add_books([
@@ -518,9 +505,7 @@ class ListAppendMethod(Method):
         ...
     )
     class MongoRepo:
-        class Meta:
-            entity = Cargo
-            collection = mongo_client().cargo.cargo_collection
+        ...
 
     repo = MongoRepo()
     repo.add_box_to_cargo(id='1', box=Box(weight=5))
@@ -582,9 +567,7 @@ class ListPopMethod(Method):
         ...
     )
     class MongoRepo:
-        class Meta:
-            entity = Cargo
-            collection = mongo_client().cargo.cargo_collection
+        ...
 
     repo = MongoRepo()
     cargo = repo.get(id='1')
@@ -650,9 +633,7 @@ class ListRemoveMethod(Method):
         ...
     )
     class MongoRepo:
-        class Meta:
-            entity = Cargo
-            collection = mongo_client().cargo.cargo_collection
+        ...
 
     repo = MongoRepo()
     cargo = repo.get(id='1')
@@ -722,9 +703,7 @@ class ListGetFieldValuesMethod(Method):
         ...
     )
     class MongoRepo:
-        class Meta:
-            entity = Cargo
-            collection = mongo_client().cargo.cargo_collection
+        ...
 
     repo = MongoRepo()
     cargo = repo.get(id='1')
@@ -792,9 +771,7 @@ class IncrementIntegerFieldMethod(Method):
         ...
     )
     class MongoRepo:
-        class Meta:
-            entity = Record
-            collection = mongo_client().records.record_collection
+        ...
 
     repo = MongoRepo()
     repo.add(Record(id='1', views=1000))
