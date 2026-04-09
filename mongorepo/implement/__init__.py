@@ -1,9 +1,9 @@
 from .decorator import implement
+from .field_alias import FieldAlias
 from .methods import (
     AddBatchMethod,
     AddMethod,
     DeleteMethod,
-    FieldAlias,
     GetAllMethod,
     GetListMethod,
     GetMethod,

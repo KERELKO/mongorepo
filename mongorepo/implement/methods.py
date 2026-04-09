@@ -1,62 +1,13 @@
 import inspect
-from typing import Any, Callable, Protocol
+from typing import Any, Callable, Iterable, Protocol
 
+from mongorepo._field import Field
 from mongorepo.modifiers.base import ModifierAfter, ModifierBefore
 
 from ._types import LParameter, MethodAction, ParameterEnum
+from .field_alias import FieldAlias
 
-Modifiers = list[ModifierBefore | ModifierAfter]
-
-
-class FieldAlias:
-    """Class that allow to set alias for `dataclass` field
-    ### Usage example:
-    ```
-    @dataclass
-    class User:
-        name: str
-
-    #                 User.name = username
-    username_alias = FieldAlias('name', 'username')
-
-    class UserRepository(ABC):
-        @abstractmethod
-        def get_user(self, username: str) -> User | None:
-            ...
-
-    @implement(GetMethod(UserRepository.get_user, filters=[username_alias]))
-    class MongoUserRepository:
-        ...
-
-    repo: UserRepository = MongoUserRepository()
-    user = repo.get_user(username='admin')
-    print(user)  # User(name='admin')
-    ```
-    """
-
-    __slots__ = ('name', 'aliases')
-
-    def __init__(self, field: str, *aliases: str) -> None:
-        self.name = field
-        self.aliases = aliases
-
-    def is_alias(self, string: str) -> bool:
-        return string in self.aliases
-
-    def __hash__(self) -> int:
-        return hash(self.name)
-
-    def __eq__(self, other) -> bool:
-        if isinstance(other, FieldAlias):
-            return self.name == other.name and self.aliases == other.aliases
-        return False
-
-    def __repr__(self) -> str:
-        aliases = ', '.join([f'"{a}"' for a in self.aliases])
-        return f'{self.__class__.__name__}("{self.name}", {aliases})'
-
-    def __str__(self) -> str:
-        return self.name
+Modifiers = Iterable[ModifierBefore | ModifierAfter]
 
 
 def _manage_filters(filters: list[str | FieldAlias]) -> dict[str | ParameterEnum, Any]:
@@ -90,7 +41,7 @@ class SpecificMethod(Protocol):
         mongorepo.implement.methods.ListAppendMethod
         mongorepo.implement.methods.ListPopMethod
         mongorepo.implement.methods.ListRemoveMethod
-        mongorepo.implement.methods.ListGetFieldValuesMethod
+        mongorepo.implement.methods.ListItemsMethod
 
     """
     name: str
@@ -105,7 +56,7 @@ class SpecificMethod(Protocol):
 
 
 class SpecificFieldMethod(SpecificMethod):
-    field_name: str
+    target_field: Field
     integer_weight: int | None
 
 
@@ -485,7 +436,7 @@ class ListAppendMethod(Method):
     class Box:
         weight: int
 
-    @dataclas
+    @dataclass
     class Cargo:
         id: str
         boxes: list[Box]
@@ -499,7 +450,7 @@ class ListAppendMethod(Method):
         ListAppendMethod(
             CargoRepo.add_box_to_cargo,
             field_name='boxes',  # Cargo.boxes
-            filters=['id'],
+            filters=['id'],  # The main filters used for searching target document
             value='box'
         ),
         ...
@@ -518,7 +469,7 @@ class ListAppendMethod(Method):
     def __init__(
         self,
         source: Callable,
-        field_name: str,
+        field: str | Field,
         value: str,
         filters: list[FieldAlias | str],
         modifiers: Modifiers | None = None,
@@ -526,7 +477,7 @@ class ListAppendMethod(Method):
         super().__init__(
             source, **{value: 'value'}, **_manage_filters(filters),  # type: ignore
         )
-        self.field_name = field_name
+        self.target_field = field if isinstance(field, Field) else Field(field)
         self.action = MethodAction.LIST_APPEND
         self.modifiers = modifiers or []
 
@@ -582,14 +533,14 @@ class ListPopMethod(Method):
     def __init__(
         self,
         source: Callable,
-        field_name: str,
+        field: str | Field,
         filters: list[FieldAlias | str],
         modifiers: Modifiers | None = None,
     ) -> None:
         super().__init__(
             source, **_manage_filters(filters),
         )
-        self.field_name = field_name
+        self.target_field = field if isinstance(field, Field) else Field(field)
         self.action = MethodAction.LIST_POP
         self.modifiers = modifiers or []
 
@@ -650,7 +601,7 @@ class ListRemoveMethod(Method):
     def __init__(
         self,
         source: Callable,
-        field_name: str,
+        field: str | Field,
         value: str,
         filters: list[FieldAlias | str],
         modifiers: Modifiers | None = None,
@@ -658,12 +609,12 @@ class ListRemoveMethod(Method):
         super().__init__(
             source, **{value: 'value'}, **_manage_filters(filters),  # type: ignore
         )
-        self.field_name = field_name
+        self.target_field = field if isinstance(field, Field) else Field(field)
         self.action = MethodAction.LIST_REMOVE
         self.modifiers = modifiers or []
 
 
-class ListGetFieldValuesMethod(Method):
+class ListItemsMethod(Method):
     """Class that represents `list[offset:limit]` as mongorepo method.
 
     ### Features
@@ -693,7 +644,7 @@ class ListGetFieldValuesMethod(Method):
             ...
 
     @implement(
-        ListGetFieldValuesMethod(
+        ListItemsMethod(
             CargoRepo.get_cargo_boxes,
             field_name='boxes',  # Cargo.boxes
             filters=['id'],
@@ -717,7 +668,7 @@ class ListGetFieldValuesMethod(Method):
     def __init__(
         self,
         source: Callable,
-        field_name: str,
+        field: str | Field,
         filters: list[FieldAlias | str],
         offset: str | None = None,
         limit: str | None = None,
@@ -733,7 +684,7 @@ class ListGetFieldValuesMethod(Method):
             **params,
             **_manage_filters(filters),
         )
-        self.field_name = field_name
+        self.target_field = field if isinstance(field, Field) else Field(field)
         self.action = MethodAction.LIST_FIELD_VALUES
         self.modifiers = modifiers or []
 
@@ -784,7 +735,7 @@ class IncrementIntegerFieldMethod(Method):
     def __init__(
         self,
         source: Callable,
-        field_name: str,
+        field: str | Field,
         filters: list[FieldAlias | str],
         weight: str | None = None,
         default_weight_value: int = 1,
@@ -795,6 +746,6 @@ class IncrementIntegerFieldMethod(Method):
             source, **params, **_manage_filters(filters),  # type: ignore
         )
         self.action = MethodAction.INTEGER_INCREMENT
-        self.field_name = field_name
+        self.target_field = field if isinstance(field, Field) else Field(field)
         self.integer_weight = default_weight_value
         self.modifiers = modifiers or []

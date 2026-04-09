@@ -1,6 +1,7 @@
-from typing import Callable
+from typing import Callable, get_type_hints
 
 from mongorepo import exceptions
+from mongorepo._field import Field
 from mongorepo._methods.impl import AddBatchMethod as CallableAddBatchMethod
 from mongorepo._methods.impl import AddMethod as CallableAddMethod
 from mongorepo._methods.impl import \
@@ -52,7 +53,7 @@ from mongorepo.implement.methods import (
     GetMethod,
     IncrementIntegerFieldMethod,
     ListAppendMethod,
-    ListGetFieldValuesMethod,
+    ListItemsMethod,
     ListPopMethod,
     ListRemoveMethod,
     ParameterEnum,
@@ -60,7 +61,6 @@ from mongorepo.implement.methods import (
     SpecificMethod,
     UpdateMethod,
 )
-from mongorepo.types import Dataclass
 
 from .exceptions import FieldDoesNotExist
 
@@ -90,7 +90,7 @@ def implement_mapper(specific_method: SpecificMethod) -> type:
             return CallableRemoveListMethodAsync if s.is_async else CallableRemoveListMethod
         case ListPopMethod.__name__:
             return CallablePopListMethodAsync if s.is_async else CallablePopListMethod
-        case ListGetFieldValuesMethod.__name__:
+        case ListItemsMethod.__name__:
             return CallableGetListValuesMethodAsync if s.is_async else CallableGetListValuesMethod
 
         case IncrementIntegerFieldMethod.__name__:
@@ -107,103 +107,91 @@ def implement_mapper(specific_method: SpecificMethod) -> type:
 def initialize_callable_mongorepo_method(
     mongorepo_method: type,
     owner: type,
-    entity_type: type[Dataclass],
-    field_name: str | None = None,
+    entity_type: type,
+    target_field: Field | None = None,
     integer_weight: int | None = None,
     **kwargs,
 ) -> Callable:
-    match (mcls := mongorepo_method.__name__):
-        case CallableAddMethod.__name__ | CallableAddMethodAsync.__name__:
-            return mongorepo_method(entity_type=entity_type, owner=owner, **kwargs)
-        case CallableGetMethod.__name__ | CallableGetMethodAsync.__name__:
-            return mongorepo_method(entity_type=entity_type, owner=owner, **kwargs)
-        case CallableGetListMethod.__name__ | CallableGetListMethodAsync.__name__:
-            return mongorepo_method(entity_type, owner=owner, **kwargs)
-        case CallableAddBatchMethod.__name__ | CallableAddBatchMethodAsync.__name__:
-            return mongorepo_method(entity_type=entity_type, owner=owner, **kwargs)
-        case CallableGetAllMethod.__name__ | CallableGetAllMethodAsync.__name__:
-            return mongorepo_method(entity_type=entity_type, owner=owner, **kwargs)
-        case CallableUpdateMethod.__name__ | CallableUpdateMethodAsync.__name__:
-            return mongorepo_method(entity_type=entity_type, owner=owner, **kwargs)
-        case CallableDeleteMethod.__name__ | CallableDeleteMethodAsync.__name__:
-            return mongorepo_method(entity_type=entity_type, owner=owner, **kwargs)
 
-        case CallablePopListMethod.__name__ | CallablePopListMethodAsync.__name__:
-            if not field_name:
-                raise exceptions.MongorepoException(
-                    f'Cannot initialize {mcls}: field_name was not provided',
-                )
-            return mongorepo_method(
-                entity_type=entity_type, owner=owner, field_name=field_name, **kwargs,
+    standard_methods = {
+        CallableAddMethod, CallableAddMethodAsync,
+        CallableGetMethod, CallableGetMethodAsync,
+        CallableGetListMethod, CallableGetListMethodAsync,
+        CallableAddBatchMethod, CallableAddBatchMethodAsync,
+        CallableGetAllMethod, CallableGetAllMethodAsync,
+        CallableUpdateMethod, CallableUpdateMethodAsync,
+        CallableDeleteMethod, CallableDeleteMethodAsync,
+    }
+
+    field_methods = {
+        CallablePopListMethod, CallablePopListMethodAsync,
+        CallableAppendListMethod, CallableAppendListMethodAsync,
+        CallableRemoveListMethod, CallableRemoveListMethodAsync,
+        CallableGetListValuesMethod, CallableGetListValuesMethodAsync,
+    }
+
+    increment_methods = {
+        CallableIncrementIntegerFieldMethod, CallableIncrementIntegerFieldMethodAsync,
+    }
+
+    mcls = mongorepo_method.__name__
+
+    if mongorepo_method in standard_methods:
+        return mongorepo_method(entity_type=entity_type, owner=owner, **kwargs)
+
+    if mongorepo_method in field_methods:
+        if not target_field:
+            raise exceptions.MongorepoException(
+                f'Cannot initialize {mcls}: target_field was not provided',
             )
-        case CallableAppendListMethod.__name__ | CallableAppendListMethodAsync.__name__:
-            if not field_name:
-                raise exceptions.MongorepoException(
-                    f'Cannot initialize {mcls}: field_name was not provided',
-                )
-            return mongorepo_method(
-                entity_type=entity_type, owner=owner, field_name=field_name, **kwargs,
+        return mongorepo_method(
+            entity_type=entity_type, owner=owner, target_field=target_field, **kwargs,
+        )
+
+    if mongorepo_method in increment_methods:
+        if not target_field or not integer_weight:
+            raise exceptions.MongorepoException(
+                f'Cannot initialize {mcls}: target_field or weight was not provided: '
+                f'{target_field=}, {integer_weight=}',
             )
-        case CallableRemoveListMethod.__name__ | CallableRemoveListMethodAsync.__name__:
-            if not field_name:
-                raise exceptions.MongorepoException(
-                    f'Cannot initialize {mcls}: field_name was not provided',
-                )
-            return mongorepo_method(
-                entity_type=entity_type, owner=owner, field_name=field_name, **kwargs,
-            )
-        case CallableGetListValuesMethod.__name__ | CallableGetListValuesMethodAsync.__name__:
-            if not field_name:
-                raise exceptions.MongorepoException(
-                    f'Cannot initialize {mcls}: field_name was not provided',
-                )
-            return mongorepo_method(
-                entity_type=entity_type, owner=owner, field_name=field_name, **kwargs,
-            )
+        return mongorepo_method(
+            entity_type=entity_type,
+            owner=owner,
+            target_field=target_field,
+            weight=integer_weight,
+            **kwargs,
+        )
 
-        case (
-            CallableIncrementIntegerFieldMethod.__name__
-            | CallableIncrementIntegerFieldMethodAsync.__name__
-        ):
-            if not field_name or not integer_weight:
-                raise exceptions.MongorepoException(
-                    f'Cannot initialize {mcls}: field_name or weight was not provided: '
-                    f'{field_name=}, {integer_weight=}',
-                )
-            return mongorepo_method(entity_type, owner, field_name, weight=integer_weight, **kwargs)
-
-    raise exceptions.MongorepoException(
-        f'Cannot initialize {mcls}: {mcls} is not implemented',
-    )
+    raise exceptions.MongorepoException(f'Cannot initialize {mcls}: {mcls} is not implemented')
 
 
-def field_exists(field_name: str | FieldAlias, entity: Dataclass | type[Dataclass]) -> bool:
+def field_exists(field_name: str | FieldAlias, entity_type: type) -> bool:
     """Checks whether `field_name` is a field in `entity`"""
-    for dto_field_name in entity.__dataclass_fields__.keys():
-        if isinstance(field_name, str) and field_name == dto_field_name:
+    for field_name in get_type_hints(entity_type).keys():
+        if isinstance(field_name, str) and field_name == field_name:
             return True
-        elif isinstance(field_name, FieldAlias) and field_name.name == dto_field_name:
+        elif isinstance(field_name, FieldAlias) and field_name.name == field_name:
             return True
     return False
 
 
 def validate_input_parameters(
-    specific_method: SpecificMethod | SpecificFieldMethod, dataclass: type[Dataclass],
+    specific_method: SpecificMethod | SpecificFieldMethod, entity_type: type,
 ):
     for param_name, value in specific_method.params.items():
         # Validate name of field passed as filter
-        if value == ParameterEnum.FILTER.value and field_exists(param_name, dataclass) is False:
+        if value == ParameterEnum.FILTER.value and field_exists(param_name, entity_type) is False:
             raise FieldDoesNotExist(
                 param_name,
-                correct_fields=list(dataclass.__dataclass_fields__.keys()),
-                entity=dataclass.__name__,
+                correct_fields=list(get_type_hints(entity_type).keys()),
+                entity=entity_type.__name__,
             )
         # Validate name of field passed as filter alias
         elif param_name == ParameterEnum.FILTER_ALIAS.value:
             for field in value.values():  # type: ignore
-                if field_exists(field, dataclass) is False:
+                if field_exists(field, entity_type) is False:
                     raise FieldDoesNotExist(
                         field,
-                        correct_fields=list(dataclass.__dataclass_fields__.keys()),
-                        entity=dataclass.__name__,
+                        correct_fields=list(get_type_hints(entity_type).keys()),
+                        entity=entity_type.__name__,
                     )

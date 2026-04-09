@@ -1,6 +1,7 @@
-from dataclasses import Field, dataclass
+from dataclasses import Field as DataclassField
+from dataclasses import dataclass
 from enum import Enum
-from typing import Any, ClassVar, Generic, Protocol, TypeVar
+from typing import Any, Callable, ClassVar, Protocol, TypeVar
 
 from motor.motor_asyncio import (
     AsyncIOMotorClientSession,
@@ -11,12 +12,14 @@ from pymongo.collection import Collection
 
 
 class Dataclass(Protocol):
-    __dataclass_fields__: ClassVar[dict[str, Field[Any]]]
+    __dataclass_fields__: ClassVar[dict[str, DataclassField[Any]]]
 
 
-Entity = TypeVar("Entity", bound=Dataclass)
+Entity = TypeVar("Entity")
 CollectionType = TypeVar('CollectionType', AsyncIOMotorCollection, Collection[Any])
 SessionType = TypeVar('SessionType', AsyncIOMotorClientSession, ClientSession)
+ToEntityConverter = Callable[[dict[str, Any], type[Entity]], Entity]
+ToDocumentConverter = Callable[[Entity], dict[str, Any]]
 
 
 class MethodAccess(int, Enum):
@@ -42,13 +45,14 @@ def get_method_access_prefix(access: MethodAccess | None, cls: type | None = Non
 
 
 @dataclass(slots=True)
-class RepositoryConfig(Generic[CollectionType]):
+class RepositoryConfig[CollectionType]:
     """Config for Mongorepo repository."""
-    entity_type: type[Dataclass]
+    entity_type: type
     """Type of the entity on which repository will operate."""
     collection: CollectionType | None = None
     """Collection which mongorepo will use to access DB."""
     method_access: MethodAccess | None = None
     """Access to mongorepo methods."""
-    id_field: str | None = None
-    """Field in which mongorepo will store Mongo ObjectID value."""
+
+    to_document_converter: Callable[[Any], dict] | None = None
+    to_entity_converter: Callable[[dict, type], Any] | None = None

@@ -1,3 +1,4 @@
+from dataclasses import asdict, is_dataclass
 from typing import Any, Iterable
 
 from motor.motor_asyncio import (
@@ -37,8 +38,9 @@ from mongorepo._methods.impl_async import (
 )
 from mongorepo._mongorepo_dict import MongorepoDict
 from mongorepo.collection_provider import CollectionProvider
+from mongorepo.exceptions import EntityIsNotDataclass
 from mongorepo.types import RepositoryConfig, get_method_access_prefix
-from mongorepo.utils.entity_converters import get_converter
+from mongorepo.utils.dataclass_converters import get_converter
 from mongorepo.utils.mongorepo_dict import get_or_create_mongorepo_dict
 from mongorepo.utils.type_hints import check_valid_field_type
 
@@ -60,7 +62,17 @@ def _handle_mongo_repository(
         access=config.method_access if not config.method_access else config.method_access, cls=cls,
     )
 
-    converter = get_converter(config.entity_type, config.id_field)
+    if not config.to_document_converter and not config.to_entity_converter and not is_dataclass(
+        config.entity_type,
+    ):
+        raise EntityIsNotDataclass(
+            f"Provided entity type '{config.entity_type.__name__}' does not implement "
+            "dataclass interface. For non dataclass entities provide converters explicitly, "
+            "otherwise there is no way to convert entity to document and from document to entity.",
+        )
+
+    to_document_converter = config.to_document_converter or asdict
+    to_entity_converter = config.to_entity_converter or get_converter(config.entity_type)
 
     __mongorepo__: MongorepoDict[ClientSession, Collection[Any]] = get_or_create_mongorepo_dict(
         cls,
@@ -71,46 +83,51 @@ def _handle_mongo_repository(
     if add:
         key = f'{prefix}add'
         add_method = AddMethod(
-            config.entity_type, owner=cls, id_field=config.id_field, converter=converter,
+            config.entity_type, owner=cls, to_document_converter=to_document_converter,
         )
         __mongorepo__['methods'][key] = add_method
         setattr(cls, key, __mongorepo__['methods'][key])
     if add_batch:
         key = f'{prefix}add_batch'
         add_batch_method = AddBatchMethod(
-            config.entity_type, cls, id_field=config.id_field, converter=converter,
+            config.entity_type, cls, to_document_converter=to_document_converter,
         )
         __mongorepo__['methods'][key] = add_batch_method
         setattr(cls, key, __mongorepo__['methods'][key])
     if get:
         key = f'{prefix}get'
         get_method = GetMethod(
-            config.entity_type, owner=cls, id_field=config.id_field, converter=converter,
+            config.entity_type, owner=cls, to_entity_converter=to_entity_converter,
         )
         __mongorepo__['methods'][key] = get_method
         setattr(cls, key, __mongorepo__['methods'][key])
     if get_all:
         key = f'{prefix}get_all'
         get_all_method = GetAllMethod(
-            config.entity_type, cls, converter=converter,
+            config.entity_type, cls, to_entity_converter=to_entity_converter,
         )
         __mongorepo__['methods'][key] = get_all_method
         setattr(cls, key, __mongorepo__['methods'][key])
     if get_list:
         key = f'{prefix}get_list'
         get_list_method = GetListMethod(
-            config.entity_type, cls, converter=converter,
+            config.entity_type, cls, to_entity_converter=to_entity_converter,
         )
         __mongorepo__['methods'][key] = get_list_method
         setattr(cls, key, __mongorepo__['methods'][key])
     if delete:
         key = f'{prefix}delete'
-        delete_method = DeleteMethod(config.entity_type, cls)
+        delete_method: DeleteMethod = DeleteMethod(config.entity_type, cls)
         __mongorepo__['methods'][key] = delete_method
         setattr(cls, key, __mongorepo__['methods'][key])
     if update:
         key = f'{prefix}update'
-        update_method = UpdateMethod(config.entity_type, cls, converter=converter)
+        update_method = UpdateMethod(
+            config.entity_type,
+            cls,
+            to_entity_converter=to_entity_converter,
+            to_document_converter=to_document_converter,
+        )
         __mongorepo__['methods'][key] = update_method
         setattr(cls, key, __mongorepo__['methods'][key])
 
@@ -118,7 +135,9 @@ def _handle_mongo_repository(
         for field in list_fields:
             check_valid_field_type(field, config.entity_type, list)
 
-            append_method = AppendListMethod(config.entity_type, owner=cls, field_name=field)
+            append_method = AppendListMethod(
+                config.entity_type, owner=cls, field_name=field,
+            )
             __mongorepo__['methods'][k := f'{prefix}{field}__append'] = append_method
             setattr(cls, k, __mongorepo__['methods'][k])
 
@@ -177,7 +196,17 @@ def _handle_async_mongo_repository(
         access=config.method_access if not config.method_access else config.method_access, cls=cls,
     )
 
-    converter = get_converter(config.entity_type, config.id_field)
+    if not config.to_document_converter and not config.to_entity_converter and not is_dataclass(
+        config.entity_type,
+    ):
+        raise EntityIsNotDataclass(
+            f"Provided entity type '{config.entity_type.__name__}' does not implement "
+            "dataclass interface. For non dataclass entities provide converters explicitly, "
+            "otherwise there is no way to convert entity to document and from document to entity.",
+        )
+
+    to_document_converter = config.to_document_converter or asdict
+    to_entity_converter = config.to_entity_converter or get_converter(config.entity_type)
 
     __mongorepo__: MongorepoDict[AsyncIOMotorClientSession, AsyncIOMotorCollection] = get_or_create_mongorepo_dict(  # noqa
         cls,
@@ -188,42 +217,52 @@ def _handle_async_mongo_repository(
     if add:
         key = f'{prefix}add'
         add_method = AddMethodAsync(
-            config.entity_type, owner=cls, id_field=config.id_field, converter=converter,
+            config.entity_type,
+            owner=cls,
+            to_document_converter=to_document_converter,
         )
         __mongorepo__['methods'][key] = add_method
-        setattr(cls, key, __mongorepo__['methods'][key])
-    if add_batch:
-        key = f'{prefix}add_batch'
-        add_batch_method = AddBatchMethodAsync(
-            config.entity_type, cls, id_field=config.id_field, converter=converter,
-        )
-        __mongorepo__['methods'][key] = add_batch_method
         setattr(cls, key, __mongorepo__['methods'][key])
     if get:
         key = f'{prefix}get'
         get_method = GetMethodAsync(
-            config.entity_type, owner=cls, id_field=config.id_field, converter=converter,
+            config.entity_type,
+            owner=cls,
+            to_entity_converter=to_entity_converter,
         )
         __mongorepo__['methods'][key] = get_method
         setattr(cls, key, __mongorepo__['methods'][key])
+    if add_batch:
+        key = f'{prefix}add_batch'
+        add_batch_method = AddBatchMethodAsync(
+            config.entity_type,
+            cls, to_document_converter=to_document_converter,
+        )
+        __mongorepo__['methods'][key] = add_batch_method
+        setattr(cls, key, __mongorepo__['methods'][key])
     if get_all:
         key = f'{prefix}get_all'
-        get_all_method = GetAllMethodAsync(config.entity_type, cls, converter=converter)
+        get_all_method = GetAllMethodAsync(config.entity_type, cls, to_entity_converter)
         __mongorepo__['methods'][key] = get_all_method
         setattr(cls, key, __mongorepo__['methods'][key])
     if get_list:
         key = f'{prefix}get_list'
-        get_list_method = GetListMethodAsync(config.entity_type, cls, converter=converter)
+        get_list_method = GetListMethodAsync(config.entity_type, cls, to_entity_converter)
         __mongorepo__['methods'][key] = get_list_method
         setattr(cls, key, __mongorepo__['methods'][key])
     if delete:
         key = f'{prefix}delete'
-        delete_method = DeleteMethodAsync(config.entity_type, cls)
+        delete_method: DeleteMethodAsync = DeleteMethodAsync(config.entity_type, cls)
         __mongorepo__['methods'][key] = delete_method
         setattr(cls, key, __mongorepo__['methods'][key])
     if update:
         key = f'{prefix}update'
-        update_method = UpdateMethodAsync(config.entity_type, cls, converter=converter)
+        update_method = UpdateMethodAsync(
+            config.entity_type,
+            cls,
+            to_entity_converter=to_entity_converter,
+            to_document_converter=to_document_converter,
+        )
         __mongorepo__['methods'][key] = update_method
         setattr(cls, key, __mongorepo__['methods'][key])
 

@@ -3,7 +3,7 @@ from mongorepo.implement import implement
 from mongorepo.implement.methods import (
     AddMethod,
     ListAppendMethod,
-    ListGetFieldValuesMethod,
+    ListItemsMethod,
     ListPopMethod,
     ListRemoveMethod,
 )
@@ -35,7 +35,7 @@ def test_can_change_order_of_repo_parameters_and_passed_arguments():
     with in_collection(NestedListEntity) as cl:
         @implement(
             AddMethod(IRepo.add, entity='entity'),
-            ListGetFieldValuesMethod(
+            ListItemsMethod(
                 IRepo.get_simple_dto_list_by_title,
                 field_name='dtos',
                 filters=['title'],

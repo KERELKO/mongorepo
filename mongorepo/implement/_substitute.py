@@ -1,17 +1,15 @@
 import inspect
+from dataclasses import asdict
 from typing import Any, Callable
 
 from mongorepo import exceptions
-from mongorepo.types import Dataclass
+from mongorepo.types import Dataclass, RepositoryConfig
+from mongorepo.utils.dataclass_converters import get_converter
 from mongorepo.utils.type_hints import get_function_default_values
 
 from ._types import MethodAction
 from ._types import ParameterEnum as MongorepoParameter
-from ._utils import (
-    implement_mapper,
-    initialize_callable_mongorepo_method,
-    validate_input_parameters,
-)
+from ._utils import implement_mapper, initialize_callable_mongorepo_method
 from .methods import Method, SpecificFieldMethod, SpecificMethod
 
 
@@ -19,28 +17,33 @@ def _substitute_specific_method(
     cls,
     method: SpecificMethod | SpecificFieldMethod,
     entity_type: type[Dataclass],
-    id_field: str | None = None,
-    field_name: str | None = None,
-    integer_weight: int | None = None,
+    config: RepositoryConfig,
     **kwargs,
 ) -> Callable:
-    validate_input_parameters(method, entity_type)
     is_async = inspect.iscoroutinefunction(method.source)
 
-    if hasattr(method, 'field_name'):
-        field_name = method.field_name  # type: ignore
+    if hasattr(method, 'target_field'):
+        target_field = method.target_field  # type: ignore[attr-defined]
+    else:
+        target_field = None
 
     if hasattr(method, 'integer_weight'):
-        integer_weight = method.integer_weight  # type: ignore
+        integer_weight = method.integer_weight  # type: ignore[attr-defined]
+    else:
+        integer_weight = None
 
     mapped_method = implement_mapper(method)
+    to_document_converter = config.to_document_converter or asdict
+    to_entity_converter = config.to_entity_converter or get_converter(config.entity_type)
+
     callable_mongorepo_method = initialize_callable_mongorepo_method(
         mongorepo_method=mapped_method,
         entity_type=entity_type,
         owner=cls,
-        id_field=id_field,
-        field_name=field_name,
+        target_field=target_field,
         integer_weight=integer_weight,
+        to_entity_converter=to_entity_converter,
+        to_document_converter=to_document_converter,
         modifiers=method.modifiers,
     )
 

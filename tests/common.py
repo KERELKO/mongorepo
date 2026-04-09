@@ -14,7 +14,7 @@ def mongo_client(mongo_uri: str = 'mongodb://mongodb:27017/') -> pymongo.MongoCl
 
 
 def async_mongo_client(mongo_uri: str = 'mongodb://mongodb:27017/') -> AsyncIOMotorClient:
-    async_client = AsyncIOMotorClient(mongo_uri)
+    async_client: AsyncIOMotorClient = AsyncIOMotorClient(mongo_uri)
     return async_client
 
 

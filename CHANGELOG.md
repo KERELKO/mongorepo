@@ -45,7 +45,7 @@
   - Removed support for base classes
 ### Added
   - Added support for custom convertors (not coupled with `asdict` anymore)
-  - Added ability to specify all required meta information (such as collection, entity_type) in decorators that provide methods
+  - Added ability to specify all required meta information (such as collection, entity_type) in decorators
   - Added `override` attribute to specify if override of existing repository methods required
 ### Changed
   - Renamed `dto`, `dto_type` to `entity`, `entity_type`

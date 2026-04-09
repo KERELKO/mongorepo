@@ -12,7 +12,7 @@ from mongorepo.implement.methods import (
     GetMethod,
     IncrementIntegerFieldMethod,
     ListAppendMethod,
-    ListGetFieldValuesMethod,
+    ListItemsMethod,
     ListPopMethod,
     ListRemoveMethod,
     UpdateMethod,
@@ -128,7 +128,7 @@ async def test_implement_list_methods_with_specific_method_protocol():
 
         @implement(
             AddMethod(IRepo.add, entity='entity'),
-            ListGetFieldValuesMethod(
+            ListItemsMethod(
                 source=IRepo.get_simple_dto_list_by_title, field_name='dtos',
                 offset='offset',
                 filters=['title'],

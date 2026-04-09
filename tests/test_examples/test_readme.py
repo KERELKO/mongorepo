@@ -1,3 +1,4 @@
+# mypy: disable-error-code="attr-defined"
 import typing
 from dataclasses import dataclass, field
 
@@ -8,10 +9,10 @@ from mongorepo.types import RepositoryConfig
 
 
 # Example with decorator
-async def test_async_repository():
+async def test_async_repository() -> None:
 
     def async_mongo_client(mongo_uri: str = 'mongodb://mongodb:27017/') -> AsyncIOMotorClient:
-        async_client = AsyncIOMotorClient(mongo_uri)
+        async_client: AsyncIOMotorClient = AsyncIOMotorClient(mongo_uri)
         return async_client
 
     @dataclass
@@ -40,12 +41,12 @@ async def test_async_repository():
 
 
 # example with implement decorator
-async def test_async_implement_decorator():
+async def test_async_implement_decorator() -> None:
     from mongorepo.implement import implement
     from mongorepo.implement.methods import AddMethod, GetMethod
 
     def async_mongo_client(mongo_uri: str = 'mongodb://mongodb:27017/') -> AsyncIOMotorClient:
-        async_client = AsyncIOMotorClient(mongo_uri)
+        async_client: AsyncIOMotorClient = AsyncIOMotorClient(mongo_uri)
         return async_client
 
     @dataclass
@@ -73,7 +74,7 @@ async def test_async_implement_decorator():
     class MongoMessageRepository:
         ...
 
-    repo: MessageRepository = MongoMessageRepository()
+    repo = typing.cast(MessageRepository, MongoMessageRepository())
 
     await repo.add_message(
         message=Message(id='1', body='hello', author=Author(name='friend')),

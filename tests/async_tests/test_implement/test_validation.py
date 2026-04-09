@@ -10,7 +10,7 @@ from mongorepo.implement.methods import FieldAlias
 from tests.common import in_collection
 
 
-def test_can_identify_incorrect_named_field():
+def test_can_identify_incorrect_named_field() -> None:
     @dataclass
     class Car:
         model: str
@@ -35,7 +35,7 @@ def test_can_identify_incorrect_named_field():
             repo.get(model='a', year=2016)
 
 
-def test_can_identify_incorrect_named_field_with_alias():
+def test_can_identify_incorrect_named_field_with_alias() -> None:
     @dataclass
     class Car:
         model: str

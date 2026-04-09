@@ -2,37 +2,34 @@ from dataclasses import is_dataclass
 from functools import partial
 from typing import Any, Callable
 
-from mongorepo.types import Dataclass, Entity
-from mongorepo.utils.type_hints import (
-    get_dataclass_type_hints,
-    has_dataclass_fields,
-)
+from mongorepo.types import Dataclass, Entity, ToEntityConverter
+from mongorepo.utils.type_hints import get_entity_type_hints, has_entity_fields
 
 
-def _convert_to_dto(entity_type: type[Entity], dct: dict[str, Any]) -> Entity:
+def _convert_to_dataclass[D: Dataclass](data: dict[str, Any], entity_type: type[D]) -> D:
     """Converts document to entity, does not include mongodb `_id`"""
-    dct.pop('_id') if dct.get('_id', None) else ...
-    return entity_type(**dct)
+    data.pop('_id') if data.get('_id', None) else ...
+    return entity_type(**data)
 
 
-def _convert_to_dto_with_id(
+def _convert_to_dataclass_with_id(
     id_field: str,
 ) -> Callable:
     """Converts document to entity, includes mongodb `_id` allows to set
     specific field where to store `_id`"""
-    def wrapper(entity_type: type[Entity], dct: dict[str, Any]) -> Entity:
-        dct[id_field] = str(dct.pop('_id'))
-        return entity_type(**dct)
+    def wrapper(data: dict[str, Any], entity_type: type[Entity]) -> Entity:
+        data[id_field] = str(data.pop('_id'))
+        return entity_type(**data)
     return wrapper
 
 
-def _nested_convert_to_dto[T: Dataclass](
-    dataclass_type: type[T], data: dict[str, Any], id_field: str | None = None,
+def _nested_convert_to_dataclass[T: Dataclass](
+    data: dict[str, Any], dataclass_type: type[T], id_field: str | None = None,
 ) -> T:
     def convert(
         data: dict[str, Any], dataclass_type: type[T], as_dataclass: bool = True,
     ) -> dict[str, Any] | T:
-        type_hints = get_dataclass_type_hints(dataclass_type)
+        type_hints = get_entity_type_hints(dataclass_type)
         result = {}
         for key, value in data.items():
             is_dtcls = is_dataclass(h := type_hints[key])
@@ -56,10 +53,10 @@ def _nested_convert_to_dto[T: Dataclass](
     return dataclass_type(**result)
 
 
-def get_converter(
-    entity_type: type[Entity], id_field: str | None = None,
-) -> Callable[[type[Entity], dict[str, Any]], Entity]:
-    """Returns proper dataclass converter based on type hints of the dataclas.
+def get_converter[D: Dataclass](
+    entity_type: type[D], id_field: str | None = None,
+) -> ToEntityConverter[D]:
+    """Returns proper dataclass converter based on type hints of the dataclass.
 
     ## Usage example::
 
@@ -71,9 +68,9 @@ def get_converter(
             username: str
             friends: list['User'] = field(default_factory=list)
 
-        to_user = functools.partial(get_converter(User), User)  # just not to pass User every time
+        converter = get_converter(User)
 
-        dct = {
+        data = {
             'id': '1',
             'username': 'admin',
             'friends': [
@@ -84,7 +81,7 @@ def get_converter(
                 }
             ]
         }
-        user = to_user(dct)
+        user = converter(data, User)
 
         pprint.pprint(user)
         # User(id='1',
@@ -96,10 +93,10 @@ def get_converter(
 
     """
 
-    converter: Callable[[type[Entity], dict[str, Any]], Entity] | partial = _convert_to_dto
-    r = has_dataclass_fields(entity_type=entity_type)
+    converter: ToEntityConverter[D] | partial = _convert_to_dataclass
+    r = has_entity_fields(entity_type=entity_type)
     if r:
-        converter = partial(_nested_convert_to_dto, id_field=id_field)
+        converter = partial(_nested_convert_to_dataclass, id_field=id_field)
     elif id_field is not None:
-        converter = _convert_to_dto_with_id(id_field=id_field)
+        converter = _convert_to_dataclass_with_id(id_field=id_field)
     return converter

@@ -7,6 +7,24 @@ from mongorepo import exceptions
 from mongorepo.types import Dataclass, Entity
 
 
+def is_entity_field(value: Any, field_owner: type) -> bool:
+    """Returns `True` if `value` is an entity field, `False` otherwise."""
+
+    # Check on primitive types
+    if type(value) in (str, int, float, bool, bytes):
+        return False
+
+    # Dataclass is entity field
+    if is_dataclass(value):
+        return True
+
+    # If value is the type is field owner it is entity field
+    if type(value) is type(field_owner):
+        return True
+
+    return False
+
+
 def get_first_arg(type_hint) -> Any:
     """Returns first argument of the type hint if it exists."""
     first_list_arg = get_args(type_hint)[0]
@@ -17,13 +35,11 @@ def get_first_arg(type_hint) -> Any:
     return first_list_arg
 
 
-def get_dataclass_type_hints(dataclass: type[Dataclass]) -> dict[str, Any]:
+def get_entity_type_hints(entity: type) -> dict[str, Any]:
     type_hints: dict[str, Any] = {}
 
-    for field_name, hint in get_type_hints(dataclass).items():
-        if is_dataclass(hint):
-            type_hints[field_name] = hint
-        elif (org := get_origin(hint)) is list:
+    for field_name, hint in get_type_hints(entity).items():
+        if (org := get_origin(hint)) is list:
             first_left_arg = get_first_arg(hint)
             type_hints[field_name] = first_left_arg
         elif org is types.UnionType:
@@ -34,11 +50,11 @@ def get_dataclass_type_hints(dataclass: type[Dataclass]) -> dict[str, Any]:
     return type_hints
 
 
-def has_dataclass_fields(entity_type: type[Entity]) -> bool:
-    """Checks if entity type has nested dataclass fields."""
-    type_hints = get_dataclass_type_hints(entity_type)
+def has_entity_fields(entity_type: type[Dataclass]) -> bool:
+    """Checks if entity type has nested entity fields."""
+    type_hints = get_entity_type_hints(entity_type)
     for v in type_hints.values():
-        if is_dataclass(v):
+        if is_entity_field(v, entity_type):
             return True
     return False
 

@@ -40,7 +40,7 @@ class NoCollectionException(MongorepoException):
         return 'Collection was not provided'
 
 
-class NotDataClass(MongorepoException):
+class EntityIsNotDataclass(MongorepoException):
     def __str__(self) -> str:
         if self.message:
             return self.message

@@ -1,29 +1,27 @@
 import typing as t
 from dataclasses import asdict, is_dataclass
 
-from bson import ObjectId
 from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
 from pymongo.results import InsertManyResult, UpdateResult
 
 from mongorepo._mongorepo_dict import HasMongorepoDict
 from mongorepo.modifiers.base import ModifierAfter, ModifierBefore
-from mongorepo.types import Dataclass
-from mongorepo.utils.entity_converters import (
+from mongorepo.types import ToDocumentConverter, ToEntityConverter
+from mongorepo.utils.dataclass_converters import (
     get_converter,
-    get_dataclass_type_hints,
+    get_entity_type_hints,
 )
 
 
-class AddMethod[T: Dataclass]:
+class AddMethod[T]:
     def __init__(
         self,
         entity_type: type[T],
         owner: HasMongorepoDict[ClientSession, Collection],
+        to_document_converter: ToDocumentConverter[T],
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
-        converter: t.Callable[[type[T], dict[str, t.Any]], T] | None = None,
         session: ClientSession | None = None,
-        id_field: str | None = None,
         **kwargs,
     ) -> None:
         self.entity_type = entity_type
@@ -31,8 +29,7 @@ class AddMethod[T: Dataclass]:
         self.session = session
         self.modifiers_after = [m for m in modifiers if isinstance(m, ModifierAfter)]
         self.modifiers_before = [m for m in modifiers if isinstance(m, ModifierBefore)]
-        self.converter = converter or get_converter(entity_type, id_field)
-        self.id_field = id_field
+        self.to_document_converter = to_document_converter
         self.kwargs = kwargs
 
     def __call__(self, entity: T) -> T:
@@ -41,12 +38,7 @@ class AddMethod[T: Dataclass]:
         for modifier_before in self.modifiers_before:
             entity = modifier_before.modify(entity)
 
-        extra = {}
-        object_id = ObjectId()
-        if self.id_field:
-            entity.__dict__[self.id_field] = str(object_id)
-            extra['_id'] = object_id
-        collection.insert_one({**asdict(entity), **extra}, session=self.session)
+        collection.insert_one(self.to_document_converter(entity), session=self.session)
 
         for modifier_after in self.modifiers_after:
             entity = modifier_after.modify(entity)
@@ -54,15 +46,14 @@ class AddMethod[T: Dataclass]:
         return entity
 
 
-class AddBatchMethod[T: Dataclass]:
+class AddBatchMethod[T]:
     def __init__(
         self,
         entity_type: type[T],
         owner: HasMongorepoDict[ClientSession, Collection],
+        to_document_converter: ToDocumentConverter[T],
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
-        converter: t.Callable[[type[T], dict[str, t.Any]], T] | None = None,
         session: ClientSession | None = None,
-        id_field: str | None = None,
         **kwargs,
     ) -> None:
         self.entity_type = entity_type
@@ -70,8 +61,7 @@ class AddBatchMethod[T: Dataclass]:
         self.session = session
         self.modifiers_after = [m for m in modifiers if isinstance(m, ModifierAfter)]
         self.modifiers_before = [m for m in modifiers if isinstance(m, ModifierBefore)]
-        self.converter = converter or get_converter(entity_type, id_field)
-        self.id_field = id_field
+        self.to_document_converter = to_document_converter
         self.kwargs = kwargs
 
     def __call__(self, dto_list: list[T]) -> InsertManyResult:
@@ -80,15 +70,9 @@ class AddBatchMethod[T: Dataclass]:
         for modifier_before in self.modifiers_before:
             dto_list = modifier_before.modify(dto_list)
 
-        if self.id_field:
-            batch: list[dict[str, t.Any]] = []
-            for entity in dto_list:
-                object_id = ObjectId()
-                entity.__dict__[self.id_field] = str(object_id)
-                batch.append({**asdict(entity), '_id': object_id})
-            result = collection.insert_many(batch, session=self.session)
-        else:
-            result = collection.insert_many([asdict(d) for d in dto_list], session=self.session)
+        result = collection.insert_many(
+            [self.to_document_converter(d) for d in dto_list], session=self.session,
+        )
 
         for modifier_after in self.modifiers_after:
             result = modifier_after.modify(result)
@@ -96,22 +80,22 @@ class AddBatchMethod[T: Dataclass]:
         return result
 
 
-class GetAllMethod[T: Dataclass]:
+class GetAllMethod[T]:
     def __init__(
         self,
         entity_type: type[T],
         owner: HasMongorepoDict[ClientSession, Collection],
-        modifiers: tuple[ModifierBefore, ...] = (),
-        converter: t.Callable[[type[T], dict[str, t.Any]], T] | None = None,
+        to_entity_converter: ToEntityConverter[T],
+        modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
         session: ClientSession | None = None,
-        id_field: str | None = None,
         **kwargs,
     ) -> None:
         self.entity_type = entity_type
         self.owner = owner
         self.session = session
+        self.to_entity_converter = to_entity_converter
         self.modifiers_before = [m for m in modifiers if isinstance(m, ModifierBefore)]
-        self.converter = converter or get_converter(entity_type, id_field)
+        self.modifiers_after = [m for m in modifiers if isinstance(m, ModifierAfter)]
         self.kwargs = kwargs
 
     def __call__(self, **filters: t.Any) -> t.Generator[T, None, None]:
@@ -121,19 +105,23 @@ class GetAllMethod[T: Dataclass]:
             filters = modifier_before.modify(**filters)
 
         cursor = collection.find(filters)
-        for dct in cursor:
-            yield self.converter(self.entity_type, dct)
+        for data in cursor:
+            entity = self.to_entity_converter(data, self.entity_type)
+
+            for modifier_after in self.modifiers_after:
+                entity = modifier_after.modify(entity)
+
+            yield entity
 
 
-class GetListMethod[T: Dataclass]:
+class GetListMethod[T]:
     def __init__(
         self,
         entity_type: type[T],
         owner: HasMongorepoDict[ClientSession, Collection],
+        to_entity_converter: ToEntityConverter[T],
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
-        converter: t.Callable[[type[T], dict[str, t.Any]], T] | None = None,
         session: ClientSession | None = None,
-        id_field: str | None = None,
         **kwargs,
     ) -> None:
         self.entity_type = entity_type
@@ -141,8 +129,8 @@ class GetListMethod[T: Dataclass]:
         self.session = session
         self.modifiers_after = [m for m in modifiers if isinstance(m, ModifierAfter)]
         self.modifiers_before = [m for m in modifiers if isinstance(m, ModifierBefore)]
-        self.converter = converter or get_converter(entity_type, id_field)
         self.kwargs = kwargs
+        self.to_entity_converter = to_entity_converter
 
     def __call__(self, offset: int = 0, limit: int = 20, **filters: t.Any) -> list[T]:
         collection: Collection = self.owner.__mongorepo__['collection_provider'].provide()
@@ -151,7 +139,7 @@ class GetListMethod[T: Dataclass]:
             offset, limit, filters = modifier_before.modify(offset, limit, **filters)
 
         cursor = collection.find(filter=filters).skip(offset).limit(limit)
-        result = [self.converter(self.entity_type, doc) for doc in cursor]
+        result = [self.to_entity_converter(doc, self.entity_type) for doc in cursor]
 
         for modifier_after in self.modifiers_after:
             result = modifier_after.modify(result)
@@ -159,24 +147,22 @@ class GetListMethod[T: Dataclass]:
         return result
 
 
-class GetMethod[T: Dataclass]:
+class GetMethod[T]:
     def __init__(
         self,
         entity_type: type[T],
         owner: HasMongorepoDict[ClientSession, Collection],
+        to_entity_converter: ToEntityConverter[T],
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
-        converter: t.Callable[[type[T], dict[str, t.Any]], T] | None = None,
         session: ClientSession | None = None,
-        id_field: str | None = None,
         **kwargs,
     ) -> None:
         self.entity_type = entity_type
         self.owner = owner
         self.session = session
+        self.to_entity_converter = to_entity_converter
         self.modifiers_after = [m for m in modifiers if isinstance(m, ModifierAfter)]
         self.modifiers_before = [m for m in modifiers if isinstance(m, ModifierBefore)]
-        self.converter = converter or get_converter(entity_type, id_field)
-        self.id_field = id_field
         self.kwargs = kwargs
 
     def __call__(self, **filters: t.Any) -> T | None:
@@ -186,7 +172,7 @@ class GetMethod[T: Dataclass]:
             filters = modifier_before.modify(**filters)
 
         result = collection.find_one(filters)
-        entity = self.converter(self.entity_type, result) if result else None
+        entity = self.to_entity_converter(result, self.entity_type) if result else None
 
         for modifier_after in self.modifiers_after:
             entity = modifier_after.modify(entity)
@@ -194,7 +180,7 @@ class GetMethod[T: Dataclass]:
         return entity
 
 
-class DeleteMethod[T: Dataclass]:
+class DeleteMethod[T]:
     def __init__(
         self,
         entity_type: type[T],
@@ -224,23 +210,24 @@ class DeleteMethod[T: Dataclass]:
         return True if deleted else False
 
 
-class UpdateMethod[T: Dataclass]:
+class UpdateMethod[T]:
     def __init__(
         self,
         entity_type: type[T],
         owner: HasMongorepoDict[ClientSession, Collection],
+        to_entity_converter: ToEntityConverter[T],
+        to_document_converter: ToDocumentConverter[T],
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
-        converter: t.Callable[[type[T], dict[str, t.Any]], T] | None = None,
         session: ClientSession | None = None,
-        id_field: str | None = None,
         **kwargs,
     ) -> None:
         self.entity_type = entity_type
         self.owner = owner
         self.session = session
+        self.to_entity_converter = to_entity_converter
+        self.to_document_converter = to_document_converter
         self.modifiers_after = [m for m in modifiers if isinstance(m, ModifierAfter)]
         self.modifiers_before = [m for m in modifiers if isinstance(m, ModifierBefore)]
-        self.converter = converter or get_converter(entity_type, id_field)
         self.kwargs = kwargs
 
     def __call__(self, entity: T, **filters: t.Any) -> T | None:
@@ -250,13 +237,15 @@ class UpdateMethod[T: Dataclass]:
             entity, filters = modifier_before.modify(entity, **filters)
 
         data: dict[str, dict[str, t.Any]] = {'$set': {}}
-        for field, value in asdict(entity).items():
+        for field, value in self.to_document_converter(entity).items():
             data['$set'][field] = value
         updated_document: dict[str, t.Any] | None = collection.find_one_and_update(
             filter=filters, update=data, return_document=True, session=self.session,
         )
 
-        result = self.converter(self.entity_type, updated_document) if updated_document else None
+        result = self.to_entity_converter(
+            updated_document, self.entity_type,
+        ) if updated_document else None
 
         for modifier_after in self.modifiers_after:
             result = modifier_after.modify(result)
@@ -264,7 +253,7 @@ class UpdateMethod[T: Dataclass]:
         return result
 
 
-class UpdateListFieldMethod[T: Dataclass]:
+class UpdateListFieldMethod[T]:
     def __init__(
         self,
         entity_type: type[T],
@@ -273,18 +262,16 @@ class UpdateListFieldMethod[T: Dataclass]:
         action: t.Literal['$push', '$pull'],
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
         session: ClientSession | None = None,
-        id_field: str | None = None,
         **kwargs,
     ) -> None:
         self.entity_type = entity_type
         self.field_name = field_name
-        self.field_type = get_dataclass_type_hints(entity_type).get(field_name, None)
+        self.field_type = get_entity_type_hints(entity_type).get(field_name, None)
         self.owner = owner
         self.action = action
         self.session = session
         self.modifiers_after = [m for m in modifiers if isinstance(m, ModifierAfter)]
         self.modifiers_before = [m for m in modifiers if isinstance(m, ModifierBefore)]
-        self.id_field = id_field
         self.kwargs = kwargs
 
     def __call__(self, value: t.Any, **filters: t.Any) -> UpdateResult:
@@ -305,7 +292,7 @@ class UpdateListFieldMethod[T: Dataclass]:
         return res
 
 
-class AppendListMethod[T: Dataclass](UpdateListFieldMethod[T]):
+class AppendListMethod[T](UpdateListFieldMethod[T]):
     def __init__(
         self,
         entity_type: type[T],
@@ -331,7 +318,7 @@ class AppendListMethod[T: Dataclass](UpdateListFieldMethod[T]):
         return super().__call__(value, **filters)
 
 
-class RemoveListMethod[T: Dataclass](UpdateListFieldMethod[T]):
+class RemoveListMethod[T](UpdateListFieldMethod[T]):
     def __init__(
         self,
         entity_type: type[T],
@@ -357,7 +344,7 @@ class RemoveListMethod[T: Dataclass](UpdateListFieldMethod[T]):
         return super().__call__(value, **filters)
 
 
-class GetListValuesMethod[T: Dataclass]:
+class GetListValuesMethod[T]:
     def __init__(
         self,
         entity_type: type[T],
@@ -369,7 +356,7 @@ class GetListValuesMethod[T: Dataclass]:
     ) -> None:
         self.entity_type = entity_type
         self.field_name = field_name
-        fields = get_dataclass_type_hints(entity_type)
+        fields = get_entity_type_hints(entity_type)
         self.field_type = fields.get(field_name, None)
         self.owner = owner
         self.field_converter = None
@@ -406,7 +393,7 @@ class GetListValuesMethod[T: Dataclass]:
         return result
 
 
-class PopListMethod[T: Dataclass]:
+class PopListMethod[T]:
     def __init__(
         self,
         entity_type: type[T],
@@ -419,7 +406,7 @@ class PopListMethod[T: Dataclass]:
         self.entity_type = entity_type
         self.field_name = field_name
         self.owner = owner
-        fields = get_dataclass_type_hints(entity_type)
+        fields = get_entity_type_hints(entity_type)
         self.field_type = fields.get(field_name, None)
         self.owner = owner
         self.field_converter = None
@@ -454,7 +441,7 @@ class PopListMethod[T: Dataclass]:
         return result
 
 
-class IncrementIntegerFieldMethod[T: Dataclass]:
+class IncrementIntegerFieldMethod[T]:
     def __init__(
         self,
         entity_type: type[T],

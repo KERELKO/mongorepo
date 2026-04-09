@@ -1,8 +1,7 @@
-import functools
 from dataclasses import dataclass, field
 
-from mongorepo.utils.entity_converters import (
-    _nested_convert_to_dto,
+from mongorepo.utils.dataclass_converters import (
+    _nested_convert_to_dataclass,
     get_converter,
 )
 
@@ -28,29 +27,29 @@ def test_nested_converts_to_dto() -> None:
         dtos: list[NestedListEntity]
 
     simple_dto = SimpleEntity(x='123', y=5)
-    assert _nested_convert_to_dto(SimpleEntity, {'x': '123', 'y': 5}) == simple_dto
+    assert _nested_convert_to_dataclass({'x': '123', 'y': 5}, SimpleEntity) == simple_dto
 
     nested_dto = NestedEntity(title='.', simple=simple_dto)
-    assert _nested_convert_to_dto(
-        NestedEntity, {'title': '.', 'simple': {'x': '123', 'y': 5}},
+    assert _nested_convert_to_dataclass(
+        {'title': '.', 'simple': {'x': '123', 'y': 5}},
+        NestedEntity,
     ) == nested_dto
     nested_list_dto = NestedListEntity(title='...', dtos=[simple_dto, simple_dto, simple_dto])
-    convert = _nested_convert_to_dto(
-        NestedListEntity,
-        data={
+    convert = _nested_convert_to_dataclass(
+        {
             'title': '...', 'dtos': [
                 {'x': '123', 'y': 5}, {'x': '123', 'y': 5}, {'x': '123', 'y': 5},
             ],
         },
+        NestedListEntity,
     )
     assert convert == nested_list_dto, convert
 
     recursive_dto = VeryNestedDTO(
         dtos=[nested_list_dto, nested_list_dto],
     )
-    final_conv = _nested_convert_to_dto(
-        VeryNestedDTO,
-        data={
+    final_conv = _nested_convert_to_dataclass(
+        {
             'dtos': [
                 {
                     'title': '...', 'dtos': [
@@ -64,6 +63,7 @@ def test_nested_converts_to_dto() -> None:
                 },
             ],
         },
+        VeryNestedDTO,
     )
 
     assert recursive_dto == final_conv, final_conv
@@ -76,7 +76,7 @@ class User:
     friends: list['User'] = field(default_factory=list)
 
 
-to_user = functools.partial(get_converter(User), User)
+convert = get_converter(User)
 
 dct = {
     'id': '1',
@@ -90,6 +90,6 @@ dct = {
         },
     ],
 }
-user = to_user(dct)
+user = convert(dct, User)
 
 assert user.friends[1].friends[0].id == 4

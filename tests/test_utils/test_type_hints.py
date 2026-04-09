@@ -1,11 +1,11 @@
 from dataclasses import dataclass, field
 
-from mongorepo.utils.type_hints import get_dataclass_type_hints, get_first_arg
+from mongorepo.utils.type_hints import get_entity_type_hints, get_first_arg
 from tests.common import NestedEntity, SimpleEntity
 
 
 def test_can_get_nested_dto_type_hints() -> None:
-    type_hints = get_dataclass_type_hints(NestedEntity)
+    type_hints = get_entity_type_hints(NestedEntity)
 
     assert 'title' in type_hints
     assert 'simple' in type_hints
@@ -34,7 +34,7 @@ def different_cases_of_type_hints() -> None:
         friends: list['User'] = field(default_factory=list)
         messages: list[Message | None] = field(default_factory=list)
 
-    type_hints = get_dataclass_type_hints(User)
+    type_hints = get_entity_type_hints(User)
     assert type_hints['id'] is str
     assert type_hints['profile'] is Profile
     assert type_hints['other'] is list
