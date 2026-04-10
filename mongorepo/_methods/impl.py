@@ -1,17 +1,13 @@
-import typing as t
-from dataclasses import asdict, is_dataclass
+from typing import Any, Generator, Literal
 
 from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
 from pymongo.results import InsertManyResult, UpdateResult
 
+from mongorepo._field import Field
 from mongorepo._mongorepo_dict import HasMongorepoDict
 from mongorepo.modifiers.base import ModifierAfter, ModifierBefore
 from mongorepo.types import ToDocumentConverter, ToEntityConverter
-from mongorepo.utils.dataclass_converters import (
-    get_converter,
-    get_entity_type_hints,
-)
 
 
 class AddMethod[T]:
@@ -33,7 +29,7 @@ class AddMethod[T]:
         self.kwargs = kwargs
 
     def __call__(self, entity: T) -> T:
-        collection: Collection[t.Any] = self.owner.__mongorepo__['collection_provider'].provide()
+        collection: Collection[Any] = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
             entity = modifier_before.modify(entity)
@@ -98,7 +94,7 @@ class GetAllMethod[T]:
         self.modifiers_after = [m for m in modifiers if isinstance(m, ModifierAfter)]
         self.kwargs = kwargs
 
-    def __call__(self, **filters: t.Any) -> t.Generator[T, None, None]:
+    def __call__(self, **filters: Any) -> Generator[T, None, None]:
         collection: Collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
@@ -132,7 +128,7 @@ class GetListMethod[T]:
         self.kwargs = kwargs
         self.to_entity_converter = to_entity_converter
 
-    def __call__(self, offset: int = 0, limit: int = 20, **filters: t.Any) -> list[T]:
+    def __call__(self, offset: int = 0, limit: int = 20, **filters: Any) -> list[T]:
         collection: Collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
@@ -165,7 +161,7 @@ class GetMethod[T]:
         self.modifiers_before = [m for m in modifiers if isinstance(m, ModifierBefore)]
         self.kwargs = kwargs
 
-    def __call__(self, **filters: t.Any) -> T | None:
+    def __call__(self, **filters: Any) -> T | None:
         collection: Collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
@@ -196,7 +192,7 @@ class DeleteMethod[T]:
         self.modifiers_before = [m for m in modifiers if isinstance(m, ModifierBefore)]
         self.kwargs = kwargs
 
-    def __call__(self, **filters: t.Any) -> bool:
+    def __call__(self, **filters: Any) -> bool:
         collection: Collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
@@ -230,16 +226,16 @@ class UpdateMethod[T]:
         self.modifiers_before = [m for m in modifiers if isinstance(m, ModifierBefore)]
         self.kwargs = kwargs
 
-    def __call__(self, entity: T, **filters: t.Any) -> T | None:
+    def __call__(self, entity: T, **filters: Any) -> T | None:
         collection: Collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
             entity, filters = modifier_before.modify(entity, **filters)
 
-        data: dict[str, dict[str, t.Any]] = {'$set': {}}
+        data: dict[str, dict[str, Any]] = {'$set': {}}
         for field, value in self.to_document_converter(entity).items():
             data['$set'][field] = value
-        updated_document: dict[str, t.Any] | None = collection.find_one_and_update(
+        updated_document: dict[str, Any] | None = collection.find_one_and_update(
             filter=filters, update=data, return_document=True, session=self.session,
         )
 
@@ -258,15 +254,14 @@ class UpdateListFieldMethod[T]:
         self,
         entity_type: type[T],
         owner: HasMongorepoDict[ClientSession, Collection],
-        field_name: str,
-        action: t.Literal['$push', '$pull'],
+        target_field: Field,
+        action: Literal['$push', '$pull'],
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
         session: ClientSession | None = None,
         **kwargs,
     ) -> None:
         self.entity_type = entity_type
-        self.field_name = field_name
-        self.field_type = get_entity_type_hints(entity_type).get(field_name, None)
+        self.target_field = target_field
         self.owner = owner
         self.action = action
         self.session = session
@@ -274,16 +269,16 @@ class UpdateListFieldMethod[T]:
         self.modifiers_before = [m for m in modifiers if isinstance(m, ModifierBefore)]
         self.kwargs = kwargs
 
-    def __call__(self, value: t.Any, **filters: t.Any) -> UpdateResult:
+    def __call__(self, value: Any, **filters: Any) -> UpdateResult:
         collection: Collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
             value, filters = modifier_before.modify(value, **filters)
 
-        value = value if not is_dataclass(self.field_type) else asdict(value)
-
         res = collection.update_one(
-            filter=filters, update={self.action: {self.field_name: value}}, session=self.session,
+            filter=filters,
+            update={self.action: {self.target_field.name: self.target_field.to_document(value)}},
+            session=self.session,
         )
 
         for modifier_aftert in self.modifiers_after:
@@ -297,24 +292,22 @@ class AppendListMethod[T](UpdateListFieldMethod[T]):
         self,
         entity_type: type[T],
         owner: HasMongorepoDict[ClientSession, Collection],
-        field_name: str,
+        target_field: Field,
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
         session: ClientSession | None = None,
-        id_field: str | None = None,
         **kwargs,
     ) -> None:
         super().__init__(
             entity_type=entity_type,
             owner=owner,
-            field_name=field_name,
+            target_field=target_field,
             action='$push',
             modifiers=modifiers,
             session=session,
-            id_field=id_field,
             **kwargs,
         )
 
-    def __call__(self, value: t.Any, **filters: t.Any) -> UpdateResult:
+    def __call__(self, value: Any, **filters: Any) -> UpdateResult:
         return super().__call__(value, **filters)
 
 
@@ -323,24 +316,22 @@ class RemoveListMethod[T](UpdateListFieldMethod[T]):
         self,
         entity_type: type[T],
         owner: HasMongorepoDict[ClientSession, Collection],
-        field_name: str,
+        target_field: Field,
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
         session: ClientSession | None = None,
-        id_field: str | None = None,
         **kwargs,
     ) -> None:
         super().__init__(
             entity_type=entity_type,
             owner=owner,
-            field_name=field_name,
+            target_field=target_field,
             action='$pull',
             modifiers=modifiers,
             session=session,
-            id_field=id_field,
             **kwargs,
         )
 
-    def __call__(self, value: t.Any, **filters: t.Any) -> UpdateResult:
+    def __call__(self, value: Any, **filters: Any) -> UpdateResult:
         return super().__call__(value, **filters)
 
 
@@ -349,43 +340,32 @@ class GetListValuesMethod[T]:
         self,
         entity_type: type[T],
         owner: HasMongorepoDict[ClientSession, Collection],
-        field_name: str,
+        target_field: Field,
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
         session: ClientSession | None = None,
         **kwargs,
     ) -> None:
         self.entity_type = entity_type
-        self.field_name = field_name
-        fields = get_entity_type_hints(entity_type)
-        self.field_type = fields.get(field_name, None)
         self.owner = owner
-        self.field_converter = None
-        if is_dataclass(self.field_type):
-            self.field_converter = get_converter(fields[field_name])
+        self.target_field = target_field
         self.session = session
         self.modifiers_after = [m for m in modifiers if isinstance(m, ModifierAfter)]
         self.modifiers_before = [m for m in modifiers if isinstance(m, ModifierBefore)]
         self.kwargs = kwargs
 
-    def __call__(self, offset: int, limit: int, **filters: t.Any) -> list[T] | list[t.Any] | None:
+    def __call__(self, offset: int, limit: int, **filters: Any) -> list[T] | list[Any] | None:
         collection: Collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
             offset, limit, filters = modifier_before.modify(offset, limit, **filters)
 
         document = collection.find_one(
-            filters, {self.field_name: {'$slice': [offset, limit]}},
+            filters, {self.target_field.name: {'$slice': [offset, limit]}},
         )
         if document is None:
             result = None
-
-        elif is_dataclass(self.field_type):
-            result = [
-                self.field_converter(self.field_type, d)  # type: ignore
-                for d in document[self.field_name]
-            ]
         else:
-            result = document[self.field_name]
+            result = [self.target_field.to_value(d) for d in document[self.target_field.name]]
 
         for modifier_aftert in self.modifiers_after:
             result = modifier_aftert.modify(result)
@@ -398,42 +378,32 @@ class PopListMethod[T]:
         self,
         entity_type: type[T],
         owner: HasMongorepoDict[ClientSession, Collection],
-        field_name: str,
+        target_field: Field,
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
         session: ClientSession | None = None,
         **kwargs,
     ) -> None:
         self.entity_type = entity_type
-        self.field_name = field_name
+        self.target_field = target_field
         self.owner = owner
-        fields = get_entity_type_hints(entity_type)
-        self.field_type = fields.get(field_name, None)
-        self.owner = owner
-        self.field_converter = None
-        if is_dataclass(self.field_type):
-            self.field_converter = get_converter(fields[field_name])
         self.session = session
         self.modifiers_after = [m for m in modifiers if isinstance(m, ModifierAfter)]
         self.modifiers_before = [m for m in modifiers if isinstance(m, ModifierBefore)]
         self.kwargs = kwargs
 
-    def __call__(self, **filters: t.Any) -> T | t.Any:
+    def __call__(self, **filters: Any) -> T | Any:
         collection: Collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
             filters = modifier_before.modify(**filters)
 
         document = collection.find_one_and_update(
-            filter=filters, update={'$pop': {self.field_name: 1}}, session=self.session,
+            filter=filters, update={'$pop': {self.target_field.name: 1}}, session=self.session,
         )
         if document is None:
             result = None
-        elif is_dataclass(self.field_type):
-            result = self.field_converter(  # type: ignore
-                self.field_type, document[self.field_name][-1],  # type: ignore[arg-type]
-            )
         else:
-            result = document[self.field_name][-1]
+            result = self.target_field.to_value(document[self.target_field.name][-1])
 
         for modifier_aftert in self.modifiers_after:
             result = modifier_aftert.modify(result)
@@ -446,14 +416,13 @@ class IncrementIntegerFieldMethod[T]:
         self,
         entity_type: type[T],
         owner: HasMongorepoDict[ClientSession, Collection],
-        field_name: str,
+        target_field: Field,
         weight: int = 1,
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
         session: ClientSession | None = None,
-        id_field: str | None = None,
         **kwargs,
     ) -> None:
-        self.field_name = field_name
+        self.target_field = target_field
         self.owner = owner
         self.weight = weight
         self.session = session
@@ -469,7 +438,7 @@ class IncrementIntegerFieldMethod[T]:
 
         w = weight if weight is not None else self.weight
         result = collection.update_one(
-            filter=filters, update={'$inc': {self.field_name: w}}, session=self.session,
+            filter=filters, update={'$inc': {self.target_field.name: w}}, session=self.session,
         )
 
         for modifier_aftert in self.modifiers_after:

@@ -24,7 +24,7 @@ def test_can_identify_incorrect_named_field() -> None:
     with in_collection(Car) as cl:
         with pytest.raises(FieldDoesNotExist):
             @implement(
-                GetMethod(Repo.get, filters=['model', 'years']),
+                GetMethod(Repo.get, filters=['model', 'years']),  # No field 'years' in Car
                 config=RepositoryConfig(entity_type=Car, collection=cl),
             )
             class MongoRepo:

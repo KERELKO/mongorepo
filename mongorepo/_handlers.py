@@ -8,6 +8,7 @@ from motor.motor_asyncio import (
 from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
 
+from mongorepo._field import Field
 from mongorepo._methods.impl import (
     AddBatchMethod,
     AddMethod,
@@ -42,7 +43,11 @@ from mongorepo.exceptions import EntityIsNotDataclass
 from mongorepo.types import RepositoryConfig, get_method_access_prefix
 from mongorepo.utils.dataclass_converters import get_converter
 from mongorepo.utils.mongorepo_dict import get_or_create_mongorepo_dict
-from mongorepo.utils.type_hints import check_valid_field_type
+from mongorepo.utils.type_hints import (
+    check_valid_field_type,
+    get_entity_type_hints,
+    is_entity_field,
+)
 
 
 def _handle_mongo_repository(
@@ -71,8 +76,9 @@ def _handle_mongo_repository(
             "otherwise there is no way to convert entity to document and from document to entity.",
         )
 
-    to_document_converter = config.to_document_converter or asdict
-    to_entity_converter = config.to_entity_converter or get_converter(config.entity_type)
+    config.to_document_converter = config.to_document_converter or asdict
+    config.to_entity_converter = config.to_entity_converter or get_converter(config.entity_type)
+    entity_type_hints = get_entity_type_hints(config.entity_type)
 
     __mongorepo__: MongorepoDict[ClientSession, Collection[Any]] = get_or_create_mongorepo_dict(
         cls,
@@ -83,35 +89,35 @@ def _handle_mongo_repository(
     if add:
         key = f'{prefix}add'
         add_method = AddMethod(
-            config.entity_type, owner=cls, to_document_converter=to_document_converter,
+            config.entity_type, owner=cls, to_document_converter=config.to_document_converter,
         )
         __mongorepo__['methods'][key] = add_method
         setattr(cls, key, __mongorepo__['methods'][key])
     if add_batch:
         key = f'{prefix}add_batch'
         add_batch_method = AddBatchMethod(
-            config.entity_type, cls, to_document_converter=to_document_converter,
+            config.entity_type, cls, to_document_converter=config.to_document_converter,
         )
         __mongorepo__['methods'][key] = add_batch_method
         setattr(cls, key, __mongorepo__['methods'][key])
     if get:
         key = f'{prefix}get'
         get_method = GetMethod(
-            config.entity_type, owner=cls, to_entity_converter=to_entity_converter,
+            config.entity_type, owner=cls, to_entity_converter=config.to_entity_converter,
         )
         __mongorepo__['methods'][key] = get_method
         setattr(cls, key, __mongorepo__['methods'][key])
     if get_all:
         key = f'{prefix}get_all'
         get_all_method = GetAllMethod(
-            config.entity_type, cls, to_entity_converter=to_entity_converter,
+            config.entity_type, cls, to_entity_converter=config.to_entity_converter,
         )
         __mongorepo__['methods'][key] = get_all_method
         setattr(cls, key, __mongorepo__['methods'][key])
     if get_list:
         key = f'{prefix}get_list'
         get_list_method = GetListMethod(
-            config.entity_type, cls, to_entity_converter=to_entity_converter,
+            config.entity_type, cls, to_entity_converter=config.to_entity_converter,
         )
         __mongorepo__['methods'][key] = get_list_method
         setattr(cls, key, __mongorepo__['methods'][key])
@@ -125,8 +131,8 @@ def _handle_mongo_repository(
         update_method = UpdateMethod(
             config.entity_type,
             cls,
-            to_entity_converter=to_entity_converter,
-            to_document_converter=to_document_converter,
+            to_entity_converter=config.to_entity_converter,
+            to_document_converter=config.to_document_converter,
         )
         __mongorepo__['methods'][key] = update_method
         setattr(cls, key, __mongorepo__['methods'][key])
@@ -135,38 +141,67 @@ def _handle_mongo_repository(
         for field in list_fields:
             check_valid_field_type(field, config.entity_type, list)
 
-            append_method = AppendListMethod(
-                config.entity_type, owner=cls, field_name=field,
+            target_field: Field = Field(name=field)
+
+            if is_entity_field(
+                field_type := entity_type_hints[target_field.name],
+                config.entity_type,
+            ):
+                target_field.field_type = field_type
+                target_field.to_document_converter = config.to_document_converter
+                target_field.to_entity_converter = config.to_entity_converter
+                target_field.is_primitive = False
+            else:
+                target_field.is_primitive = True
+
+            append_method: AppendListMethod = AppendListMethod(
+                config.entity_type, owner=cls, target_field=target_field,
             )
             __mongorepo__['methods'][k := f'{prefix}{field}__append'] = append_method
             setattr(cls, k, __mongorepo__['methods'][k])
 
-            remove_method = RemoveListMethod(config.entity_type, owner=cls, field_name=field)
+            remove_method: RemoveListMethod = RemoveListMethod(
+                config.entity_type, owner=cls, target_field=target_field,
+            )
             __mongorepo__['methods'][k := f'{prefix}{field}__remove'] = remove_method
             setattr(cls, k, __mongorepo__['methods'][k])
 
-            pop_method = PopListMethod(config.entity_type, owner=cls, field_name=field)
+            pop_method: PopListMethod = PopListMethod(
+                config.entity_type, owner=cls, target_field=target_field,
+            )
             __mongorepo__['methods'][k := f'{prefix}{field}__pop'] = pop_method
             setattr(cls, k, __mongorepo__['methods'][k])
 
-            list_values_method = GetListValuesMethod(
-                config.entity_type, owner=cls, field_name=field,
+            list_values_method: GetListValuesMethod = GetListValuesMethod(
+                config.entity_type, owner=cls, target_field=target_field,
             )
             __mongorepo__['methods'][k := f'{prefix}{field}__list'] = list_values_method
             setattr(cls, k, __mongorepo__['methods'][k])
 
     if integer_fields:
         for field in integer_fields:
+
+            target_field = Field(name=field)
+            if is_entity_field(
+                field_type := entity_type_hints[target_field.name], config.entity_type,
+            ):
+                target_field.field_type = target_field.field_type or field_type
+                target_field.to_document_converter = config.to_document_converter
+                target_field.to_entity_converter = config.to_entity_converter
+                target_field.is_primitive = False
+            else:
+                target_field.is_primitive = True
+
             check_valid_field_type(field, config.entity_type, int)
 
-            increment_method = IncrementIntegerFieldMethod(
-                config.entity_type, cls, field_name=field, weight=1,
+            increment_method: IncrementIntegerFieldMethod = IncrementIntegerFieldMethod(
+                config.entity_type, cls, target_field=target_field, weight=1,
             )
             __mongorepo__['methods'][k := f'{prefix}incr__{field}'] = increment_method
             setattr(cls, k, __mongorepo__['methods'][k])
 
-            decrement_method = IncrementIntegerFieldMethod(
-                config.entity_type, cls, field_name=field, weight=-1,
+            decrement_method: IncrementIntegerFieldMethod = IncrementIntegerFieldMethod(
+                config.entity_type, cls, target_field=target_field, weight=-1,
             )
             __mongorepo__['methods'][k := f'{prefix}decr__{field}'] = decrement_method
             setattr(cls, k, __mongorepo__['methods'][k])
@@ -205,8 +240,9 @@ def _handle_async_mongo_repository(
             "otherwise there is no way to convert entity to document and from document to entity.",
         )
 
-    to_document_converter = config.to_document_converter or asdict
-    to_entity_converter = config.to_entity_converter or get_converter(config.entity_type)
+    config.to_document_converter = config.to_document_converter or asdict
+    config.to_entity_converter = config.to_entity_converter or get_converter(config.entity_type)
+    entity_type_hints = get_entity_type_hints(config.entity_type)
 
     __mongorepo__: MongorepoDict[AsyncIOMotorClientSession, AsyncIOMotorCollection] = get_or_create_mongorepo_dict(  # noqa
         cls,
@@ -219,7 +255,7 @@ def _handle_async_mongo_repository(
         add_method = AddMethodAsync(
             config.entity_type,
             owner=cls,
-            to_document_converter=to_document_converter,
+            to_document_converter=config.to_document_converter,
         )
         __mongorepo__['methods'][key] = add_method
         setattr(cls, key, __mongorepo__['methods'][key])
@@ -228,7 +264,7 @@ def _handle_async_mongo_repository(
         get_method = GetMethodAsync(
             config.entity_type,
             owner=cls,
-            to_entity_converter=to_entity_converter,
+            to_entity_converter=config.to_entity_converter,
         )
         __mongorepo__['methods'][key] = get_method
         setattr(cls, key, __mongorepo__['methods'][key])
@@ -236,18 +272,18 @@ def _handle_async_mongo_repository(
         key = f'{prefix}add_batch'
         add_batch_method = AddBatchMethodAsync(
             config.entity_type,
-            cls, to_document_converter=to_document_converter,
+            cls, to_document_converter=config.to_document_converter,
         )
         __mongorepo__['methods'][key] = add_batch_method
         setattr(cls, key, __mongorepo__['methods'][key])
     if get_all:
         key = f'{prefix}get_all'
-        get_all_method = GetAllMethodAsync(config.entity_type, cls, to_entity_converter)
+        get_all_method = GetAllMethodAsync(config.entity_type, cls, config.to_entity_converter)
         __mongorepo__['methods'][key] = get_all_method
         setattr(cls, key, __mongorepo__['methods'][key])
     if get_list:
         key = f'{prefix}get_list'
-        get_list_method = GetListMethodAsync(config.entity_type, cls, to_entity_converter)
+        get_list_method = GetListMethodAsync(config.entity_type, cls, config.to_entity_converter)
         __mongorepo__['methods'][key] = get_list_method
         setattr(cls, key, __mongorepo__['methods'][key])
     if delete:
@@ -260,8 +296,8 @@ def _handle_async_mongo_repository(
         update_method = UpdateMethodAsync(
             config.entity_type,
             cls,
-            to_entity_converter=to_entity_converter,
-            to_document_converter=to_document_converter,
+            to_entity_converter=config.to_entity_converter,
+            to_document_converter=config.to_document_converter,
         )
         __mongorepo__['methods'][key] = update_method
         setattr(cls, key, __mongorepo__['methods'][key])
@@ -270,20 +306,37 @@ def _handle_async_mongo_repository(
         for field in list_fields:
             check_valid_field_type(field, config.entity_type, list)
 
-            append_method = AppendListMethodAsync(config.entity_type, owner=cls, field_name=field)
+            target_field: Field = Field(name=field)
+            if is_entity_field(
+                field_type := entity_type_hints[target_field.name], config.entity_type,
+            ):
+                target_field.field_type = field_type
+                target_field.to_document_converter = config.to_document_converter
+                target_field.to_entity_converter = config.to_entity_converter
+                target_field.is_primitive = False
+            else:
+                target_field.is_primitive = True
+
+            append_method: AppendListMethodAsync = AppendListMethodAsync(
+                config.entity_type, owner=cls, target_field=target_field,
+            )
             __mongorepo__['methods'][k := f'{prefix}{field}__append'] = append_method
             setattr(cls, k, __mongorepo__['methods'][k])
 
-            remove_method = RemoveListMethodAsync(config.entity_type, owner=cls, field_name=field)
+            remove_method: RemoveListMethodAsync = RemoveListMethodAsync(
+                config.entity_type, owner=cls, target_field=target_field,
+            )
             __mongorepo__['methods'][k := f'{prefix}{field}__remove'] = remove_method
             setattr(cls, k, __mongorepo__['methods'][k])
 
-            pop_method = PopListMethodAsync(config.entity_type, owner=cls, field_name=field)
+            pop_method: PopListMethodAsync = PopListMethodAsync(
+                config.entity_type, owner=cls, target_field=target_field,
+            )
             __mongorepo__['methods'][k := f'{prefix}{field}__pop'] = pop_method
             setattr(cls, k, __mongorepo__['methods'][k])
 
-            list_values_method = GetListValuesMethodAsync(
-                config.entity_type, owner=cls, field_name=field,
+            list_values_method: GetListValuesMethodAsync = GetListValuesMethodAsync(
+                config.entity_type, owner=cls, target_field=target_field,
             )
             __mongorepo__['methods'][k := f'{prefix}{field}__list'] = list_values_method
             setattr(cls, k, __mongorepo__['methods'][k])
@@ -292,14 +345,25 @@ def _handle_async_mongo_repository(
         for field in integer_fields:
             check_valid_field_type(field, config.entity_type, int)
 
-            increment_method = IncrementIntegerFieldMethodAsync(
-                config.entity_type, cls, field_name=field, weight=1,
+            target_field = Field(name=field)
+            if is_entity_field(
+                field_type := entity_type_hints[target_field.name], config.entity_type,
+            ):
+                target_field.field_type = field_type
+                target_field.to_document_converter = config.to_document_converter
+                target_field.to_entity_converter = config.to_entity_converter
+                target_field.is_primitive = False
+            else:
+                target_field.is_primitive = True
+
+            increment_method: IncrementIntegerFieldMethodAsync = IncrementIntegerFieldMethodAsync(
+                config.entity_type, cls, target_field=target_field, weight=1,
             )
             __mongorepo__['methods'][k := f'{prefix}incr__{field}'] = increment_method
             setattr(cls, k, __mongorepo__['methods'][k])
 
-            decrement_method = IncrementIntegerFieldMethodAsync(
-                config.entity_type, cls, field_name=field, weight=-1,
+            decrement_method: IncrementIntegerFieldMethodAsync = IncrementIntegerFieldMethodAsync(
+                config.entity_type, cls, target_field=target_field, weight=-1,
             )
             __mongorepo__['methods'][k := f'{prefix}decr__{field}'] = decrement_method
             setattr(cls, k, __mongorepo__['methods'][k])

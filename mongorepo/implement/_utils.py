@@ -167,10 +167,10 @@ def initialize_callable_mongorepo_method(
 
 def field_exists(field_name: str | FieldAlias, entity_type: type) -> bool:
     """Checks whether `field_name` is a field in `entity`"""
-    for field_name in get_type_hints(entity_type).keys():
-        if isinstance(field_name, str) and field_name == field_name:
+    for entity_field_type_hint in get_type_hints(entity_type).keys():
+        if isinstance(field_name, str) and field_name == entity_field_type_hint:
             return True
-        elif isinstance(field_name, FieldAlias) and field_name.name == field_name:
+        elif isinstance(field_name, FieldAlias) and field_name.name == entity_field_type_hint:
             return True
     return False
 
@@ -188,7 +188,7 @@ def validate_input_parameters(
             )
         # Validate name of field passed as filter alias
         elif param_name == ParameterEnum.FILTER_ALIAS.value:
-            for field in value.values():  # type: ignore
+            for field in value.values():  # type: ignore[union-attr]
                 if field_exists(field, entity_type) is False:
                     raise FieldDoesNotExist(
                         field,

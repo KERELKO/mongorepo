@@ -1,5 +1,8 @@
+import datetime
+import decimal
 import inspect
 import types
+import uuid
 from dataclasses import is_dataclass
 from typing import Any, Callable, get_args, get_origin, get_type_hints
 
@@ -7,22 +10,35 @@ from mongorepo import exceptions
 from mongorepo.types import Dataclass, Entity
 
 
-def is_entity_field(value: Any, field_owner: type) -> bool:
-    """Returns `True` if `value` is an entity field, `False` otherwise."""
+def is_entity_field(field_type: type, field_owner_type: type) -> bool:
+    """Returns `True` if `field_type` is an entity field, `False` otherwise.
 
-    # Check on primitive types
-    if type(value) in (str, int, float, bool, bytes):
+    If it cannot be
+    determined by code - returns `True` as a fallback
+
+    """
+
+    primitives = frozenset([
+        str, int, float, bool, bytes, type(None),
+        datetime.datetime, datetime.date, datetime.time,
+        uuid.UUID, decimal.Decimal,
+    ])
+
+    if field_type in primitives:
         return False
 
-    # Dataclass is entity field
-    if is_dataclass(value):
+    # If it's not a type/class by this point (e.g., a string forward ref that wasn't resolved),
+    # fail safely
+    if not isinstance(field_type, type):
+        return False
+
+    if field_type is field_owner_type:
         return True
 
-    # If value is the type is field owner it is entity field
-    if type(value) is type(field_owner):
+    if is_dataclass(field_type):
         return True
 
-    return False
+    return True
 
 
 def get_first_arg(type_hint) -> Any:

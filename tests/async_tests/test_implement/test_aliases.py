@@ -131,7 +131,7 @@ async def test_implement_list_methods_with_specific_method_protocol():
         @implement(
             AddMethod(IRepo.add, entity='entity'),
             ListItemsMethod(
-                source=IRepo.get_simple_dto_list_by_title, field_name='dtos',
+                source=IRepo.get_simple_dto_list_by_title, field='dtos',
                 offset='offset',
                 filters=[FA('title', 'nested_list_dto_title')],
                 limit='limit',
@@ -190,10 +190,10 @@ async def test_implement_integer_methods_with_specific_method_protocol() -> None
             AddMethod(IRepo.add, entity='entity'),
             GetMethod(IRepo.get, filters=[f := FA('id', 'mix_id')]),
             IncrementIntegerFieldMethod(
-                IRepo.update_year_with_weight, field_name='year', filters=[f], weight='weight',
+                IRepo.update_year_with_weight, field='year', filters=[f], weight='weight',
             ),
             IncrementIntegerFieldMethod(
-                IRepo.update_year, field_name='year', filters=[FA('id', 'mix_dto_id')],
+                IRepo.update_year, field='year', filters=[FA('id', 'mix_dto_id')],
                 default_weight_value=-1,
             ),
             config=RepositoryConfig(entity_type=MixedEntity, collection=cl),

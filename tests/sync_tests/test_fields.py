@@ -13,7 +13,7 @@ def test_can_convert_to_datetime() -> None:
 
     with in_collection(Subscription) as cl:
         @mongorepo.repository(
-            config=mongorepo.RepositoryConfig(entity_type=Subscription, collection=cl, id_field='id'),
+            config=mongorepo.RepositoryConfig(entity_type=Subscription, collection=cl),
         )
         class Repository:
             ...

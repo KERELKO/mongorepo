@@ -293,7 +293,6 @@ class AppendListMethodAsync[T](UpdateListFieldMethodAsync[T]):
         target_field: Field,
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
         session: AsyncIOMotorClientSession | None = None,
-        id_field: str | None = None,
         **kwargs,
     ) -> None:
         super().__init__(
@@ -303,7 +302,6 @@ class AppendListMethodAsync[T](UpdateListFieldMethodAsync[T]):
             action='$push',
             modifiers=modifiers,
             session=session,
-            id_field=id_field,
             **kwargs,
         )
 
@@ -319,17 +317,15 @@ class RemoveListMethodAsync[T](UpdateListFieldMethodAsync[T]):
         target_field: Field,
         modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
         session: AsyncIOMotorClientSession | None = None,
-        id_field: str | None = None,
         **kwargs,
     ) -> None:
         super().__init__(
             entity_type=entity_type,
             owner=owner,
-            atrget_field=target_field,
+            target_field=target_field,
             action='$pull',
             modifiers=modifiers,
             session=session,
-            id_field=id_field,
             **kwargs,
         )
 

@@ -37,17 +37,17 @@ def test_can_change_order_of_repo_parameters_and_passed_arguments():
             AddMethod(IRepo.add, entity='entity'),
             ListItemsMethod(
                 IRepo.get_simple_dto_list_by_title,
-                field_name='dtos',
+                field='dtos',
                 filters=['title'],
                 offset='offset',
                 limit='limit',
             ),
-            ListPopMethod(IRepo.pop_dto_by_title, field_name='dtos', filters=['title']),
+            ListPopMethod(IRepo.pop_dto_by_title, field='dtos', filters=['title']),
             ListAppendMethod(
-                IRepo.append_dto_by_title, filters=['title'], field_name='dtos', value='entity',
+                IRepo.append_dto_by_title, filters=['title'], field='dtos', value='entity',
             ),
             ListRemoveMethod(
-                IRepo.remove_dto_by_title, value='entity', field_name='dtos', filters=['title'],
+                IRepo.remove_dto_by_title, value='entity', field='dtos', filters=['title'],
             ),
             config=RepositoryConfig(entity_type=NestedListEntity, collection=cl),
         )
