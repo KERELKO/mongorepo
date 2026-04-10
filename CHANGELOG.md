@@ -46,7 +46,6 @@
 ### Added
   - Added support for custom convertors (not coupled with `asdict` anymore)
   - Added ability to specify all required meta information (such as collection, entity_type) in decorators
-  - Added `override` attribute to specify if override of existing repository methods required
 ### Changed
   - Renamed `dto`, `dto_type` to `entity`, `entity_type`
   - Renamed `use_session` to `set_session`, `remove_session` to `unset_session`

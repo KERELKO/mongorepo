@@ -9,6 +9,8 @@ def get_or_create_mongorepo_dict(
     collection_provider: CollectionProvider[CollectionType] | None = None,
     repository_config: RepositoryConfig[CollectionType] | None = None,
 ) -> MongorepoDict[SessionType, CollectionType]:
+    """Returns existing `MongorepoDict` from `cls` if it exists or creates new
+    one."""
     if hasattr(cls, '__mongorepo__'):
         __mongorepo__: MongorepoDict = getattr(
             cls, '__mongorepo__',
