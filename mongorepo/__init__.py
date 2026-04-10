@@ -1,4 +1,4 @@
-from . import decorators, exceptions
+from . import exceptions
 from .decorators import async_mongo_repository as async_repository
 from .decorators import mongo_repository as repository
 from .types import Entity, MethodAccess, RepositoryConfig
@@ -17,6 +17,5 @@ __all__ = [
     'session_context',
     'repository',
     'async_repository',
-    'decorators',
     'exceptions',
 ]

@@ -62,41 +62,33 @@ from mongorepo.types import Field
 
 def implement_mapper(specific_method: SpecificMethod) -> type:
     """Map implement method to mongorepo implementation."""
-    s = specific_method
-    match specific_method.__class__.__name__:
-        case GetMethod.__name__:
-            return CallableGetMethodAsync if s.is_async else CallableGetMethod
-        case GetAllMethod.__name__:
-            return CallableGetAllMethodAsync if s.is_async else CallableGetAllMethod
-        case GetListMethod.__name__:
-            return CallableGetListMethodAsync if s.is_async else CallableGetListMethod
-        case AddBatchMethod.__name__:
-            return CallableAddBatchMethodAsync if s.is_async else CallableAddBatchMethod
-        case AddMethod.__name__:
-            return CallableAddMethodAsync if s.is_async else CallableAddMethod
-        case DeleteMethod.__name__:
-            return CallableDeleteMethodAsync if s.is_async else CallableDeleteMethod
-        case UpdateMethod.__name__:
-            return CallableUpdateMethodAsync if s.is_async else CallableUpdateMethod
+    method_mapping = {
+        GetMethod: (CallableGetMethod, CallableGetMethodAsync),
+        GetAllMethod: (CallableGetAllMethod, CallableGetAllMethodAsync),
+        GetListMethod: (CallableGetListMethod, CallableGetListMethodAsync),
+        AddBatchMethod: (CallableAddBatchMethod, CallableAddBatchMethodAsync),
+        AddMethod: (CallableAddMethod, CallableAddMethodAsync),
+        DeleteMethod: (CallableDeleteMethod, CallableDeleteMethodAsync),
+        UpdateMethod: (CallableUpdateMethod, CallableUpdateMethodAsync),
+        ListAppendMethod: (CallableAppendListMethod, CallableAppendListMethodAsync),
+        ListRemoveMethod: (CallableRemoveListMethod, CallableRemoveListMethodAsync),
+        ListPopMethod: (CallablePopListMethod, CallablePopListMethodAsync),
+        ListItemsMethod: (CallableGetListValuesMethod, CallableGetListValuesMethodAsync),
+        IncrementIntegerFieldMethod: (
+            CallableIncrementIntegerFieldMethod, CallableIncrementIntegerFieldMethodAsync,
+        ),
+    }
 
-        case ListAppendMethod.__name__:
-            return CallableAppendListMethodAsync if s.is_async else CallableAppendListMethod
-        case ListRemoveMethod.__name__:
-            return CallableRemoveListMethodAsync if s.is_async else CallableRemoveListMethod
-        case ListPopMethod.__name__:
-            return CallablePopListMethodAsync if s.is_async else CallablePopListMethod
-        case ListItemsMethod.__name__:
-            return CallableGetListValuesMethodAsync if s.is_async else CallableGetListValuesMethod
+    method_type = type(specific_method)
 
-        case IncrementIntegerFieldMethod.__name__:
-            if s.is_async:
-                return CallableIncrementIntegerFieldMethodAsync
-            else:
-                return CallableIncrementIntegerFieldMethod
+    if method_type not in method_mapping:
+        raise exceptions.MongorepoException(
+            f'Cannot map specific method {method_type} to mongorepo implementation',
+        )
 
-    raise exceptions.MongorepoException(
-        f'Cannot map specific method {specific_method.__class__} to mongorepo implementation',
-    )
+    sync_callable, async_callable = method_mapping[method_type]
+
+    return async_callable if specific_method.is_async else sync_callable
 
 
 def initialize_callable_mongorepo_method(

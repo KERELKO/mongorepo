@@ -7,8 +7,8 @@ from mongorepo.types import Dataclass, RepositoryConfig
 from mongorepo.utils.dataclass_converters import get_converter
 from mongorepo.utils.type_hints import get_function_default_values
 
-from ._types import MethodAction
-from ._types import ParameterEnum as MongorepoParameter
+from .enums import MethodAction
+from .enums import ParameterEnum as MongorepoParameter
 from .method_mapper_utils import (
     implement_mapper,
     initialize_callable_mongorepo_method,

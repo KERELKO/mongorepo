@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Any, Callable
 
-from mongorepo.types.method_access import MethodAccess
+from .method_access import MethodAccess
 
 
 @dataclass(slots=True)

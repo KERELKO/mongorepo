@@ -1,28 +1,15 @@
-from typing import get_type_hints
+from dataclasses import is_dataclass
 
-from mongorepo.implement._types import ParameterEnum
-from mongorepo.implement.exceptions import FieldDoesNotExist
-from mongorepo.implement.methods import SpecificFieldMethod, SpecificMethod
-from mongorepo.utils.type_hints import field_exists
+from mongorepo.exceptions import EntityIsNotDataclass
+from mongorepo.types.repository_config import RepositoryConfig
 
 
-def validate_specific_method_input_parameters(
-    specific_method: SpecificMethod | SpecificFieldMethod, entity_type: type,
-):
-    for param_name, value in specific_method.params.items():
-        # Validate name of field passed as filter
-        if value == ParameterEnum.FILTER.value and field_exists(param_name, entity_type) is False:
-            raise FieldDoesNotExist(
-                param_name,
-                correct_fields=list(get_type_hints(entity_type).keys()),
-                entity=entity_type.__name__,
-            )
-        # Validate name of field passed as filter alias
-        elif param_name == ParameterEnum.FILTER_ALIAS.value:
-            for field in value.values():  # type: ignore[union-attr]
-                if field_exists(field, entity_type) is False:
-                    raise FieldDoesNotExist(
-                        field,
-                        correct_fields=list(get_type_hints(entity_type).keys()),
-                        entity=entity_type.__name__,
-                    )
+def validate_repository_config_converters(config: RepositoryConfig):
+    if not config.to_document_converter and not config.to_entity_converter and not is_dataclass(
+        config.entity_type,
+    ):
+        raise EntityIsNotDataclass(
+            f"Provided entity type '{config.entity_type.__name__}' does not implement "
+            "dataclass interface. For non dataclass entities provide converters explicitly, "
+            "otherwise there is no way to convert entity to document and from document to entity.",
+        )

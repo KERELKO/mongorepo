@@ -84,7 +84,7 @@ class GetAllMethodAsync[T]:
         entity_type: type[T],
         owner: HasMongorepoDict[AsyncIOMotorClientSession, AsyncIOMotorCollection],
         to_entity_converter: ToEntityConverter[T],
-        modifiers: tuple[ModifierBefore, ...] = (),
+        modifiers: tuple[ModifierBefore | ModifierAfter, ...] = (),
         session: AsyncIOMotorClientSession | None = None,
         **kwargs,
     ) -> None:
@@ -92,6 +92,7 @@ class GetAllMethodAsync[T]:
         self.owner = owner
         self.session = session
         self.modifiers_before = [m for m in modifiers if isinstance(m, ModifierBefore)]
+        self.modifiers_after = [m for m in modifiers if isinstance(m, ModifierAfter)]
         self.to_entity = to_entity_converter
         self.kwargs = kwargs
 
@@ -103,7 +104,12 @@ class GetAllMethodAsync[T]:
 
         cursor = collection.find(filters)
         async for data in cursor:
-            yield self.to_entity(data, self.entity_type)
+            entity = self.to_entity(data, self.entity_type)
+
+            for modifier_after in self.modifiers_after:
+                entity = modifier_after.modify(entity)
+
+            yield entity
 
 
 class GetListMethodAsync[T]:

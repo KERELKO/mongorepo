@@ -1,4 +1,4 @@
-from dataclasses import asdict, is_dataclass
+from dataclasses import asdict
 from typing import Any, Iterable
 
 from motor.motor_asyncio import (
@@ -36,7 +36,6 @@ from mongorepo._methods.impl_async import (
     RemoveListMethodAsync,
     UpdateMethodAsync,
 )
-from mongorepo.exceptions import EntityIsNotDataclass
 from mongorepo.types import (
     CollectionProvider,
     Field,
@@ -45,12 +44,13 @@ from mongorepo.types import (
     get_method_access_prefix,
 )
 from mongorepo.utils.dataclass_converters import get_converter
+from mongorepo.utils.field_factory import build_validated_field
 from mongorepo.utils.mongorepo_dict import get_or_create_mongorepo_dict
 from mongorepo.utils.type_hints import (
     check_valid_field_type,
     get_entity_type_hints,
-    is_entity_field,
 )
+from mongorepo.utils.validations import validate_repository_config_converters
 
 
 def _handle_mongo_repository(
@@ -66,18 +66,10 @@ def _handle_mongo_repository(
     list_fields: Iterable[str] | None,
     integer_fields: Iterable[str] | None,
 ) -> type:
+    validate_repository_config_converters(config)
     prefix = get_method_access_prefix(
         access=config.method_access if not config.method_access else config.method_access, cls=cls,
     )
-
-    if not config.to_document_converter and not config.to_entity_converter and not is_dataclass(
-        config.entity_type,
-    ):
-        raise EntityIsNotDataclass(
-            f"Provided entity type '{config.entity_type.__name__}' does not implement "
-            "dataclass interface. For non dataclass entities provide converters explicitly, "
-            "otherwise there is no way to convert entity to document and from document to entity.",
-        )
 
     config.to_document_converter = config.to_document_converter or asdict
     config.to_entity_converter = config.to_entity_converter or get_converter(config.entity_type)
@@ -143,19 +135,8 @@ def _handle_mongo_repository(
     if list_fields:
         for field in list_fields:
             check_valid_field_type(field, config.entity_type, list)
-
             target_field: Field = Field(name=field)
-
-            if is_entity_field(
-                field_type := entity_type_hints[target_field.name],
-                config.entity_type,
-            ):
-                target_field.field_type = field_type
-                target_field.to_document_converter = config.to_document_converter
-                target_field.to_entity_converter = config.to_entity_converter
-                target_field.is_primitive = False
-            else:
-                target_field.is_primitive = True
+            build_validated_field(target_field, entity_type_hints[target_field.name], config)
 
             append_method: AppendListMethod = AppendListMethod(
                 config.entity_type, owner=cls, target_field=target_field,
@@ -183,19 +164,10 @@ def _handle_mongo_repository(
 
     if integer_fields:
         for field in integer_fields:
+            check_valid_field_type(field, config.entity_type, int)
 
             target_field = Field(name=field)
-            if is_entity_field(
-                field_type := entity_type_hints[target_field.name], config.entity_type,
-            ):
-                target_field.field_type = target_field.field_type or field_type
-                target_field.to_document_converter = config.to_document_converter
-                target_field.to_entity_converter = config.to_entity_converter
-                target_field.is_primitive = False
-            else:
-                target_field.is_primitive = True
-
-            check_valid_field_type(field, config.entity_type, int)
+            build_validated_field(target_field, entity_type_hints[target_field.name], config)
 
             increment_method: IncrementIntegerFieldMethod = IncrementIntegerFieldMethod(
                 config.entity_type, cls, target_field=target_field, weight=1,
@@ -229,19 +201,11 @@ def _handle_async_mongo_repository(
 ) -> type:
     """Calls for functions that set different async methods and attributes to
     the class."""
+    validate_repository_config_converters(config)
 
     prefix = get_method_access_prefix(
         access=config.method_access if not config.method_access else config.method_access, cls=cls,
     )
-
-    if not config.to_document_converter and not config.to_entity_converter and not is_dataclass(
-        config.entity_type,
-    ):
-        raise EntityIsNotDataclass(
-            f"Provided entity type '{config.entity_type.__name__}' does not implement "
-            "dataclass interface. For non dataclass entities provide converters explicitly, "
-            "otherwise there is no way to convert entity to document and from document to entity.",
-        )
 
     config.to_document_converter = config.to_document_converter or asdict
     config.to_entity_converter = config.to_entity_converter or get_converter(config.entity_type)
@@ -310,15 +274,7 @@ def _handle_async_mongo_repository(
             check_valid_field_type(field, config.entity_type, list)
 
             target_field: Field = Field(name=field)
-            if is_entity_field(
-                field_type := entity_type_hints[target_field.name], config.entity_type,
-            ):
-                target_field.field_type = field_type
-                target_field.to_document_converter = config.to_document_converter
-                target_field.to_entity_converter = config.to_entity_converter
-                target_field.is_primitive = False
-            else:
-                target_field.is_primitive = True
+            build_validated_field(target_field, entity_type_hints[target_field.name], config)
 
             append_method: AppendListMethodAsync = AppendListMethodAsync(
                 config.entity_type, owner=cls, target_field=target_field,
@@ -349,15 +305,7 @@ def _handle_async_mongo_repository(
             check_valid_field_type(field, config.entity_type, int)
 
             target_field = Field(name=field)
-            if is_entity_field(
-                field_type := entity_type_hints[target_field.name], config.entity_type,
-            ):
-                target_field.field_type = field_type
-                target_field.to_document_converter = config.to_document_converter
-                target_field.to_entity_converter = config.to_entity_converter
-                target_field.is_primitive = False
-            else:
-                target_field.is_primitive = True
+            build_validated_field(target_field, entity_type_hints[target_field.name], config)
 
             increment_method: IncrementIntegerFieldMethodAsync = IncrementIntegerFieldMethodAsync(
                 config.entity_type, cls, target_field=target_field, weight=1,

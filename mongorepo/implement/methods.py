@@ -5,7 +5,7 @@ from mongorepo.modifiers.base import ModifierAfter, ModifierBefore
 from mongorepo.types.field import Field
 from mongorepo.types.field_alias import FieldAlias
 
-from ._types import LParameter, MethodAction, ParameterEnum
+from .enums import LParameter, MethodAction, ParameterEnum
 
 Modifiers = Iterable[ModifierBefore | ModifierAfter]
 
