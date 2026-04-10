@@ -3,17 +3,20 @@ from .methods import (
     AddBatchMethod,
     AddMethod,
     DeleteMethod,
-    FieldAlias,
     GetAllMethod,
     GetListMethod,
     GetMethod,
+    IncrementIntegerFieldMethod,
+    ListAppendMethod,
+    ListItemsMethod,
+    ListPopMethod,
+    ListRemoveMethod,
     Method,
     SpecificMethod,
     UpdateMethod,
 )
 
 __all__ = [
-    'FieldAlias',
     'implement',
     'AddBatchMethod',
     'AddMethod',
@@ -24,4 +27,9 @@ __all__ = [
     'Method',
     'SpecificMethod',
     'UpdateMethod',
+    'ListAppendMethod',
+    'ListItemsMethod',
+    'ListPopMethod',
+    'ListRemoveMethod',
+    'IncrementIntegerFieldMethod',
 ]

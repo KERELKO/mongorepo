@@ -1,44 +1,18 @@
-# type: ignore[reportAttributeAccessIssue]
+# mypy: disable-error-code="attr-defined"
 import typing
 from dataclasses import dataclass, field
 
-import pymongo
 from motor.motor_asyncio import AsyncIOMotorClient
 
-from mongorepo import use_collection
-from mongorepo.classes import BaseMongoRepository
-
-
-# Example with base class
-def test_sync_base_mongo_repository():
-    def mongo_client(mongo_uri: str = 'mongodb://mongodb:27017/') -> pymongo.MongoClient:
-        client: pymongo.MongoClient = pymongo.MongoClient(mongo_uri)
-        return client
-
-    @dataclass
-    class UserDTO:
-        username: str = ''
-        password: str = ''
-
-    @use_collection(collection=mongo_client().users_db.users)
-    class SimpleMongoRepository(BaseMongoRepository[UserDTO]):
-        ...
-
-    repo = SimpleMongoRepository()
-
-    new_user = UserDTO(username='admin', password='1234')
-    repo.add(new_user)
-
-    user = repo.get(username='admin')
-    print(user)  # UserDTO(username='admin', password='1234')
+import mongorepo
+from mongorepo.types import RepositoryConfig
 
 
 # Example with decorator
-async def test_async_repository():
-    import mongorepo
+async def test_async_repository() -> None:
 
     def async_mongo_client(mongo_uri: str = 'mongodb://mongodb:27017/') -> AsyncIOMotorClient:
-        async_client = AsyncIOMotorClient(mongo_uri)
+        async_client: AsyncIOMotorClient = AsyncIOMotorClient(mongo_uri)
         return async_client
 
     @dataclass
@@ -47,11 +21,12 @@ async def test_async_repository():
         name: str
         skills: list[str] = field(default_factory=list)
 
-    @mongorepo.async_repository(list_fields=['skills'])
+    @mongorepo.async_repository(
+        list_fields=['skills'],
+        config=RepositoryConfig(entity_type=Person, collection=async_mongo_client().people_db.people),
+    )
     class MongoRepository:
-        class Meta:
-            dto = Person
-            collection = async_mongo_client().people_db.people
+        ...
 
     repo = MongoRepository()
 
@@ -66,12 +41,12 @@ async def test_async_repository():
 
 
 # example with implement decorator
-async def test_async_implement_decorator():
+async def test_async_implement_decorator() -> None:
     from mongorepo.implement import implement
     from mongorepo.implement.methods import AddMethod, GetMethod
 
     def async_mongo_client(mongo_uri: str = 'mongodb://mongodb:27017/') -> AsyncIOMotorClient:
-        async_client = AsyncIOMotorClient(mongo_uri)
+        async_client: AsyncIOMotorClient = AsyncIOMotorClient(mongo_uri)
         return async_client
 
     @dataclass
@@ -93,14 +68,13 @@ async def test_async_implement_decorator():
 
     @implement(
         GetMethod(MessageRepository.get_message, filters=['id']),
-        AddMethod(MessageRepository.add_message, dto='message'),
+        AddMethod(MessageRepository.add_message, entity='message'),
+        config=RepositoryConfig(entity_type=Message, collection=async_mongo_client().messages_db.messages),
     )
     class MongoMessageRepository:
-        class Meta:
-            dto = Message
-            collection = async_mongo_client().messages_db.messages
+        ...
 
-    repo: MessageRepository = MongoMessageRepository()
+    repo = typing.cast(MessageRepository, MongoMessageRepository())
 
     await repo.add_message(
         message=Message(id='1', body='hello', author=Author(name='friend')),

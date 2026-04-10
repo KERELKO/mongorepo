@@ -1,5 +1,4 @@
 import random
-import warnings
 from contextlib import asynccontextmanager, contextmanager
 from dataclasses import dataclass, field
 from typing import Any, AsyncGenerator, Generator
@@ -15,25 +14,25 @@ def mongo_client(mongo_uri: str = 'mongodb://mongodb:27017/') -> pymongo.MongoCl
 
 
 def async_mongo_client(mongo_uri: str = 'mongodb://mongodb:27017/') -> AsyncIOMotorClient:
-    async_client = AsyncIOMotorClient(mongo_uri)
+    async_client: AsyncIOMotorClient = AsyncIOMotorClient(mongo_uri)
     return async_client
 
 
 @dataclass
-class SimpleDTO:
+class SimpleEntity:
     x: str
     y: int
 
 
 @dataclass
-class DTOWithID:
+class EntityWithID:
     x: str
     y: int
     _id: str = field(default='', kw_only=True)
 
 
 @dataclass
-class ComplicatedDTO:
+class MultiFieldEntity:
     x: str
     y: bool = False
     name: str = 'Hello World!'
@@ -41,19 +40,19 @@ class ComplicatedDTO:
 
 
 @dataclass
-class NestedDTO:
+class NestedEntity:
     title: str
-    simple: SimpleDTO
+    simple: SimpleEntity
 
 
 @dataclass
-class NestedListDTO:
-    title: str = 'Nested DTO'
-    dtos: list[SimpleDTO] = field(default_factory=list)
+class NestedListEntity:
+    title: str = 'Nested Entity'
+    dtos: list[SimpleEntity] = field(default_factory=list)
 
 
 @dataclass
-class DictDTO:
+class DictEntity:
     oid: str = ''
     records: dict[str, Any] = field(default_factory=dict)
 
@@ -65,7 +64,7 @@ class Box:
 
 
 @dataclass
-class MixDTO:
+class MixedEntity:
     id: str
     name: str
     year: int
@@ -74,54 +73,33 @@ class MixDTO:
     boxs: list[Box] = field(default_factory=list)
 
 
-def collection_for_complicated_dto(async_client: bool = False):
-    warnings.warn('"collection_for_complicated_dto" is deprecated, use "custom_collection" instead')
-    if async_client:
-        return async_mongo_client()['dto_complicated_db']['dto']
-    return mongo_client()['dto_complicated_db']['dto']
-
-
-def collection_for_simple_dto(async_client: bool = False):
-    warnings.warn('"collection_for_simple_dto" is deprecated, use "custom_collection" instead')
-    if async_client:
-        return async_mongo_client()['dto_simple_db']['dto']
-    return mongo_client()['dto_simple_db']['dto']
-
-
-def collection_for_dto_with_id(async_client: bool = False):
-    warnings.warn('"collection_for_dto_with_id" is deprecated, use "custom_collection" instead')
-    if async_client:
-        return async_mongo_client()['dto_with_id_db']['dto']
-    return mongo_client()['dto_with_id_db']['dto']
-
-
-def custom_collection(dto: str | type, async_client: bool = False):
-    dto_name = dto if isinstance(dto, str) else dto.__name__
-    if async_client:
-        return async_mongo_client()[f'{dto_name}_db'][dto_name]
-    return mongo_client()[f'{dto_name}_db'][dto_name]
-
-
 def r() -> int:
     """Returns random integer."""
-    return random.randint(1, 123456)
+    return random.randint(1, 123456789)
 
 
 @asynccontextmanager
-async def in_async_collection(dto: str | type) -> AsyncGenerator[AsyncIOMotorCollection, None]:
-    dto_name = dto if isinstance(dto, str) else dto.__name__
+async def in_async_collection(entity: str | type) -> AsyncGenerator[AsyncIOMotorCollection, None]:
+    entity_name = entity if isinstance(entity, str) else entity.__name__
     try:
-        collection = async_mongo_client()[f'{dto_name}_db'][dto_name]
+        collection = async_mongo_client()[f'{entity_name}_db'][entity_name]
         yield collection
     finally:
         await collection.drop()
 
 
 @contextmanager
-def in_collection(dto: str | type) -> Generator[pymongo.collection.Collection, None, None]:
-    dto_name = dto if isinstance(dto, str) else dto.__name__
+def in_collection(entity_type: str | type) -> Generator[pymongo.collection.Collection, None, None]:
+    entity_name = entity_type if isinstance(entity_type, str) else entity_type.__name__
     try:
-        collection = mongo_client()[f'{dto_name}_db'][dto_name]
+        collection = mongo_client()[f'{entity_name}_db'][entity_name]
         yield collection
     finally:
         collection.drop()
+
+
+def custom_collection(entity: str | type, async_client: bool = False):
+    entity_name = entity if isinstance(entity, str) else entity.__name__
+    if async_client:
+        return async_mongo_client()[f'{entity_name}_db'][entity_name]
+    return mongo_client()[f'{entity_name}_db'][entity_name]

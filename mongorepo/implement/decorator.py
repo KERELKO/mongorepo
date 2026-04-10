@@ -1,10 +1,15 @@
 from typing import Callable
 
+from mongorepo.types import RepositoryConfig
+
 from ._handlers import _handle_implement_specific_methods
 from .methods import SpecificMethod
 
 
-def implement[T: type](*specific_methods: SpecificMethod) -> Callable[[T], T]:
+def implement[T: type](
+    *specific_methods: SpecificMethod,
+    config: RepositoryConfig,
+) -> Callable[[T], T]:
     """## Implements Methods from an Interface or Base Class
 
     This decorator dynamically implements specified methods from an interface or
@@ -14,7 +19,7 @@ def implement[T: type](*specific_methods: SpecificMethod) -> Callable[[T], T]:
     ### Features:
     - Dynamically injects method implementations from an interface or abstract class.
     - Enables clear separation of interface definitions and concrete repository implementations.
-    - Supports specifying filters and DTO mappings for enhanced type safety.
+    - Supports specifying filters and Entity mappings for enhanced type safety.
 
     ### Parameters:
     - `*specific_methods`: A list of method implementations (e.g., `GetMethod`, `AddMethod`)
@@ -24,29 +29,27 @@ def implement[T: type](*specific_methods: SpecificMethod) -> Callable[[T], T]:
 
     ```python
     class IRepo:
-        async def get(self, title: str) -> SomeDataclass:
+        async def get(self, title: str) -> Article:
             ...
 
-        async def add(self, model: SomeDataclass) -> SomeDataclass:
+        async def add(self, model: Article) -> Article:
             ...
 
     @implement(
         GetMethod(IRepo.get, filters=['title']),
-        AddMethod(IRepo.add, dto='model'),
+        AddMethod(IRepo.add, entity='model'),
+        config=RepositoryConfig(entity_type=Article, collection=collection_factory())
     )
     class MongoRepo:
-        class Meta:
-            collection = some_collection()
-            dto = SomeDataclass
 
     repo: IRepo = MongoRepo()
 
     # Adding a new entry
-    await repo.add(SomeDataclass('some title'))
+    await repo.add(Article('some title'))
 
     # Retrieving the entry
-    dto = await repo.get(title='some title')
-    print(dto)  # SomeDataclass(title='some title')
+    entity = await repo.get(title='some title')
+    print(entity)  # Article(title='some title')
     ```
 
     ### Raises:
@@ -57,5 +60,5 @@ def implement[T: type](*specific_methods: SpecificMethod) -> Callable[[T], T]:
         raise ValueError('No methods to implement')
 
     def wrapper(cls: T) -> T:
-        return _handle_implement_specific_methods(cls, *specific_methods)
+        return _handle_implement_specific_methods(cls, *specific_methods, config=config)
     return wrapper

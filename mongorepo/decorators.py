@@ -1,14 +1,14 @@
 from typing import Callable, Iterable
 
-from mongorepo._base import Access
 from mongorepo._handlers import (
     _handle_async_mongo_repository,
     _handle_mongo_repository,
 )
+from mongorepo.types import RepositoryConfig
 
 
 def mongo_repository(
-    cls: type | None = None,
+    config: RepositoryConfig,
     add: bool = True,
     add_batch: bool = True,
     get: bool = True,
@@ -18,22 +18,11 @@ def mongo_repository(
     delete: bool = True,
     integer_fields: Iterable[str] | None = None,
     list_fields: Iterable[str] | None = None,
-    method_access: Access | None = None,
 ) -> type | Callable:
     """Decorator for creating a synchronous MongoDB repository.
 
     This decorator enhances a class with common repository methods for handling
     MongoDB collections using `pymongo`'s `Collection`.
-
-    ## Requirements:
-    The decorated class must define a nested `Meta` class with:
-    - `dto`: A dataclass representing the document schema.
-    - `collection`: An instance of `Collection` from `pymongo`.
-    - `index` (optional): Either:
-      - A string representing the indexed field.
-      - An instance of `mongorepo.Index` for advanced indexing options.
-    - `method_access` (optional): Specifies the access level for repository methods
-      using `mongorepo.Access`.
 
     ## Parameters:
     - `add` (bool): Enables the `add` method to insert a document (default: True).
@@ -44,38 +33,33 @@ def mongo_repository(
     - `update` (bool): Enables document updates (default: True).
     - `delete` (bool): Enables document deletion (default: True).
     - `integer_fields` (Iterable[str], optional): Fields that support atomic increment/decrement:
-      - `increment_{field}`: Increments the field.
-      - `decrement_{field}`: Decrements the field.
+      - `increment__{field}`: Increments the field.
+      - `decrement__{field}`: Decrements the field.
     - `list_fields` (Iterable[str], optional): Fields treated as lists, enabling:
       - `{field}__append`: Appends an item to the list.
       - `{field}__remove`: Removes an item from the list.
       - `{field}__pop`: Pops an item from the list.
       - `{field}__list`: Retrieves the list field values.
-    - `method_access` (`mongorepo.Access`, optional): Defines method access level
-      (`PUBLIC`, `PROTECTED`, `PRIVATE`).
 
     ## Example Usage:
     ```python
-    @mongo_repository(delete=False)
+    @mongo_repository(config=RepositoryConfig(entity_type=User, collection=db["users"]))
     class MongoRepository:
-        class Meta:
-            dto = UserDTO
-            collection: Collection = db["users"]
-            index = mongorepo.Index(field="name")
-            method_access = mongorepo.Access.PUBLIC
+        ...
 
     repo = MongoRepository()
 
-    repo.add(UserDTO(username="admin"))
+    repo.add(User(username="admin"))
 
-    admin = repo.get(username="admin")  # UserDTO(username="admin")
+    admin = repo.get(username="admin")  # User(username="admin")
     ```
 
     """
 
-    def wrapper(cls) -> type:
+    def wrapper[T](cls: type[T]) -> type[T]:
         return _handle_mongo_repository(
             cls=cls,
+            config=config,
             add=add,
             add_batch=add_batch,
             get_all=get_all,
@@ -85,17 +69,13 @@ def mongo_repository(
             get=get,
             integer_fields=integer_fields,
             list_fields=list_fields,
-            method_access=method_access,
         )
 
-    if cls is None:
-        return wrapper
-
-    return wrapper(cls)
+    return wrapper
 
 
 def async_mongo_repository(
-    cls: type | None = None,
+    config: RepositoryConfig,
     add: bool = True,
     add_batch: bool = True,
     get: bool = True,
@@ -105,22 +85,11 @@ def async_mongo_repository(
     delete: bool = True,
     integer_fields: list[str] | None = None,
     list_fields: list[str] | None = None,
-    method_access: Access | None = None,
 ) -> type | Callable:
     """Decorator for creating an asynchronous MongoDB repository.
 
     This decorator enhances a class with common repository methods for handling
     MongoDB collections using `motor`'s `AsyncIOMotorCollection`.
-
-    ## Requirements:
-    The decorated class must define a nested `Meta` class with:
-    - `dto`: A dataclass representing the document schema.
-    - `collection`: An instance of `AsyncIOMotorCollection`.
-    - `index` (optional): Either:
-      - A string representing the indexed field.
-      - An instance of `mongorepo.Index` for advanced indexing options.
-    - `method_access` (optional): Specifies the access level for repository methods
-      using `mongorepo.Access`.
 
     ## Parameters:
     - `add` (bool): Enables the `add` method to insert a document (default: True).
@@ -138,30 +107,25 @@ def async_mongo_repository(
       - `{field}__remove`: Removes an item from the list.
       - `{field}__pop`: Pops an item from the list.
       - `{field}__list`: Retrieves the list field values.
-    - `method_access` (`mongorepo.Access`, optional): Defines method access level
-      (`PUBLIC`, `PROTECTED`, `PRIVATE`).
 
     ## Example Usage:
     ```python
-    @async_mongo_repository(get_all=True, update=True)
+    @mongo_repository(config=RepositoryConfig(entity_type=User, collection=db["users"]))
     class MongoRepository:
-        class Meta:
-            dto = ExampleDTO
-            collection: AsyncIOMotorCollection = db["example"]
-            index = mongorepo.Index(field="id_field")
-            method_access = mongorepo.Access.PUBLIC
+        ...
 
     repo = MongoRepository()
 
-    await repo.add(ExampleDTO(key="value"))
+    await repo.add(User(username="admin"))
 
-    example = await repo.get(key="value")  # Returns ExampleDTO(key="value")
+    admin = await repo.get(username="admin")  # User(username="admin")
     ```
 
     """
     def wrapper(cls) -> type:
         return _handle_async_mongo_repository(
             cls=cls,
+            config=config,
             add=add,
             update=update,
             get_all=get_all,
@@ -171,10 +135,6 @@ def async_mongo_repository(
             add_batch=add_batch,
             integer_fields=integer_fields,
             list_fields=list_fields,
-            method_access=method_access,
         )
 
-    if cls is None:
-        return wrapper
-
-    return wrapper(cls)
+    return wrapper

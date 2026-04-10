@@ -1,62 +1,13 @@
 import inspect
-from typing import Any, Callable, Protocol
+from typing import Any, Callable, Iterable, Protocol
 
 from mongorepo.modifiers.base import ModifierAfter, ModifierBefore
+from mongorepo.types.field import Field
+from mongorepo.types.field_alias import FieldAlias
 
-from ._types import LParameter, MethodAction, ParameterEnum
+from .enums import LParameter, MethodAction, ParameterEnum
 
-Modifiers = list[ModifierBefore | ModifierAfter]
-
-
-class FieldAlias:
-    """Class that allow to set alias for `dataclass` field
-    ### Usage example:
-    ```
-    @dataclass
-    class User:
-        name: str
-
-    #                 User.name = username
-    username_alias = FieldAlias('name', 'username')
-
-    class UserRepository(ABC):
-        @abstractmethod
-        def get_user(self, username: str) -> User | None:
-            ...
-
-    @implement(GetMethod(UserRepository.get_user, filters=[username_alias]))
-    class MongoUserRepository:
-        ...
-
-    repo: UserRepository = MongoUserRepository()
-    user = repo.get_user(username='admin')
-    print(user)  # User(name='admin')
-    ```
-    """
-
-    __slots__ = ('name', 'aliases')
-
-    def __init__(self, field: str, *aliases: str) -> None:
-        self.name = field
-        self.aliases = aliases
-
-    def is_alias(self, string: str) -> bool:
-        return string in self.aliases
-
-    def __hash__(self) -> int:
-        return hash(self.name)
-
-    def __eq__(self, other) -> bool:
-        if isinstance(other, FieldAlias):
-            return self.name == other.name and self.aliases == other.aliases
-        return False
-
-    def __repr__(self) -> str:
-        aliases = ', '.join([f'"{a}"' for a in self.aliases])
-        return f'{self.__class__.__name__}("{self.name}", {aliases})'
-
-    def __str__(self) -> str:
-        return self.name
+Modifiers = Iterable[ModifierBefore | ModifierAfter]
 
 
 def _manage_filters(filters: list[str | FieldAlias]) -> dict[str | ParameterEnum, Any]:
@@ -68,7 +19,7 @@ def _manage_filters(filters: list[str | FieldAlias]) -> dict[str | ParameterEnum
             for alias in fa.aliases
         },
     }
-    return {**params, **aliases}  # type: ignore
+    return {**params, **aliases}  # type: ignore[dict-item]
 
 
 class SpecificMethod(Protocol):
@@ -90,7 +41,7 @@ class SpecificMethod(Protocol):
         mongorepo.implement.methods.ListAppendMethod
         mongorepo.implement.methods.ListPopMethod
         mongorepo.implement.methods.ListRemoveMethod
-        mongorepo.implement.methods.ListGetFieldValuesMethod
+        mongorepo.implement.methods.ListItemsMethod
 
     """
     name: str
@@ -105,12 +56,12 @@ class SpecificMethod(Protocol):
 
 
 class SpecificFieldMethod(SpecificMethod):
-    field_name: str
+    target_field: Field
     integer_weight: int | None
 
 
 class Method:
-    """Base class that represents mongorepo method."""
+    """Base class that represents Mongorepo method."""
 
     def __init__(
         self,
@@ -160,17 +111,15 @@ class GetMethod(Method):
     class User:
         id: str
 
-    class Repo(typing.Protocol):
+    class UserRepo(typing.Protocol):
         def get(self, id: str) -> User:
             ...
 
-    @implement(GetMethod(Repo.get, filters=['id']))
-    class MongoRepo:
-        class Meta:
-            dto = User
-            collection = mongo_client().users.users_collection
+    @implement(GetMethod(UserRepo.get, filters=['id']), ...)
+    class MongoUserRepo:
+        ...
 
-    repo = MongoRepo()
+    repo = MongoUserRepo()
     user = repo.get(id='123')
     ```
 
@@ -182,9 +131,9 @@ class GetMethod(Method):
         filters: list[FieldAlias | str],
         modifiers: Modifiers | None = None,
     ) -> None:
-        super().__init__(source, **_manage_filters(filters))  # type: ignore
+        super().__init__(source, **_manage_filters(filters))
         self.action = MethodAction.GET
-        self.modifiers = modifiers or []
+        self.modifiers = modifiers or ()
 
 
 class AddMethod(Method):
@@ -204,17 +153,15 @@ class AddMethod(Method):
     class User:
         name: str
 
-    class Repo(typing.Protocol):
+    class UserRepo(typing.Protocol):
         def add(self, user: User) -> User:
             ...
 
-    @implement(AddMethod(Repo.add, dto='user'))
-    class MongoRepo:
-        class Meta:
-            dto = User
-            collection = mongo_client().users.users_collection
+    @implement(AddMethod(UserRepo.add, entity='user'), ...)
+    class UserMongoRepo:
+        ...
 
-    repo = MongoRepo()
+    repo = UserMongoRepo()
     added_user = repo.add(user=User(name='admin'))
     ```
 
@@ -223,10 +170,10 @@ class AddMethod(Method):
     def __init__(
         self,
         source: Callable,
-        dto: str,
+        entity: str,
         modifiers: Modifiers | None = None,
     ) -> None:
-        super().__init__(source, **{dto: 'dto'})  # type: ignore
+        super().__init__(source, **{entity: 'entity'})  # type: ignore[arg-type]
         self.action = MethodAction.ADD
         self.modifiers = modifiers or []
 
@@ -256,11 +203,9 @@ class UpdateMethod(Method):
         def update_user(self, id: str, update_model: UpdateUser) -> User:
             ...
 
-    @implement(UpdateMethod(Repo.update_user, filters=['id'], dto='update_model'))
+    @implement(UpdateMethod(Repo.update_user, filters=['id'], entity='update_model'), ...)
     class MongoRepo:
-        class Meta:
-            dto = User
-            collection = mongo_client().users.users_collection
+        ...
 
     repo = MongoRepo()
     updated_user: User = repo.update_user(id='123', UpdateUser(name='admin_1'))
@@ -286,7 +231,9 @@ class UpdateMethod(Method):
     print(updated_user)  # User(id=None, name='creator')
 
     # To avoid this use UpdateSkipModifier
-    # (from mongorepo.modifiers import UpdateSkipModifier) class
+    # (from mongorepo.modifiers import UpdateSkipModifier) class.
+    # Note: UpdateSkipModifier will work only with dataclass entities,
+    # for other types of entities (pydantic, msgspec, etc.) need to implement custom modifier
     @implement(
         UpdateMethod(modifiers=[UpdateSkipModifier(skip_if_value=None)], ...)
     )
@@ -300,12 +247,12 @@ class UpdateMethod(Method):
     def __init__(
         self,
         source: Callable,
-        dto: str,
+        entity: str,
         filters: list[FieldAlias | str],
         modifiers: Modifiers | None = None,
     ) -> None:
         super().__init__(
-            source, **{dto: 'dto'}, **_manage_filters(filters),  # type: ignore
+            source, **{entity: 'entity'}, **_manage_filters(filters),  # type: ignore[arg-type]
         )
         self.action = MethodAction.UPDATE
         self.modifiers = modifiers or []
@@ -327,11 +274,9 @@ class DeleteMethod(Method):
         def remove_user(self, id: str) -> bool:
             ...
 
-    @implement(DeleteMethod(Repo.remove_user, filters=['id']))
+    @implement(DeleteMethod(Repo.remove_user, filters=['id']), ...)
     class MongoRepo:
-        class Meta:
-            dto = User
-            collection = mongo_client().users.users_collection
+        ...
 
     repo = MongoRepo()
     deleted: bool = repo.remove_user(id='1')  # True
@@ -364,11 +309,12 @@ class GetListMethod(Method):
         def get_list_of_books(self, category: str) -> list[Book]:
             ...
 
-    @implement(GetListMethod(BookRepo.get_list_of_books, filters=['category']))
+    # Often can be useful to pass offset, limit arguments to repository method.
+    # offset=0, limit=20 is used by default in the method and cannot be changed
+    # if source method does not contain parameters that represent them.
+    @implement(GetListMethod(BookRepo.get_list_of_books, filters=['category']), ...)
     class MongoRepo:
-        class Meta:
-            dto = Book
-            collection = mongo_client().books.books_collection
+        ...
 
     repo = MongoRepo()
     books = repo.get_list_of_books(category='fiction')
@@ -385,7 +331,7 @@ class GetListMethod(Method):
         modifiers: Modifiers | None = None,
     ) -> None:
         super().__init__(
-            source, **{offset: 'offset', limit: 'limit'},  # type: ignore
+            source, **{offset: 'offset', limit: 'limit'},  # type: ignore[arg-type]
             **_manage_filters(filters),
         )
         self.action = MethodAction.GET_LIST
@@ -412,12 +358,11 @@ class GetAllMethod(Method):
 
     @implement(
         GetAllMethod(BookRepo.get_all_books, filters=[]),
-        GetAllMethod(BookRepo.get_all_books_async, filters=['category'])
+        GetAllMethod(BookRepo.get_all_books_async, filters=['category']),
+        ...
     )
     class MongoRepo:
-        class Meta:
-            dto = Book
-            collection = mongo_client().books.books_collection
+        ...
 
     repo = MongoRepo()
     books = repo.get_all_books()
@@ -455,11 +400,9 @@ class AddBatchMethod(Method):
         def add_books(self, books: list[Book]) -> None:
             ...
 
-    @implement(AddBatchMethod(BookRepo.add_books, dto_list=['books']))
+    @implement(AddBatchMethod(BookRepo.add_books, entity_list=['books']), ...)
     class MongoRepo:
-        class Meta:
-            dto = Book
-            collection = mongo_client().books.books_collection
+        ...
 
     repo = MongoRepo()
     repo.add_books([
@@ -473,10 +416,10 @@ class AddBatchMethod(Method):
     def __init__(
         self,
         source: Callable,
-        dto_list: str,
+        entity_list: str,
         modifiers: Modifiers | None = None,
     ) -> None:
-        super().__init__(source, **{dto_list: 'dto_list'})  # type: ignore
+        super().__init__(source, **{entity_list: 'entity_list'})  # type: ignore[arg-type]
         self.action = MethodAction.ADD_BATCH
         self.modifiers = modifiers or []
 
@@ -489,7 +432,7 @@ class ListAppendMethod(Method):
     (:class:`mongorepo.modifiers.ModifierBefore`, :class:`mongorepo.modifiers.ModifierAfter`)
     * Support :class:`FieldAlias`
     * Support asynchronous functions
-    * Works with dataclass types and standard types (e.g. str, int, etc.)
+    * Works with with nested entity fields
 
     ## Usage example:
     ```
@@ -498,7 +441,7 @@ class ListAppendMethod(Method):
     class Box:
         weight: int
 
-    @dataclas
+    @dataclass
     class Cargo:
         id: str
         boxes: list[Box]
@@ -511,16 +454,14 @@ class ListAppendMethod(Method):
     @implement(
         ListAppendMethod(
             CargoRepo.add_box_to_cargo,
-            field_name='boxes',  # Cargo.boxes
-            filters=['id'],
-            value='box'
+            field='boxes',  # Cargo.boxes
+            filters=['id'],  # The main filters used for searching target document
+            value='box'  # parameter name that represents value that should be appended
         ),
         ...
     )
     class MongoRepo:
-        class Meta:
-            dto = Cargo
-            collection = mongo_client().cargo.cargo_collection
+        ...
 
     repo = MongoRepo()
     repo.add_box_to_cargo(id='1', box=Box(weight=5))
@@ -533,15 +474,15 @@ class ListAppendMethod(Method):
     def __init__(
         self,
         source: Callable,
-        field_name: str,
+        field: str | Field,
         value: str,
         filters: list[FieldAlias | str],
         modifiers: Modifiers | None = None,
     ) -> None:
         super().__init__(
-            source, **{value: 'value'}, **_manage_filters(filters),  # type: ignore
+            source, **{value: 'value'}, **_manage_filters(filters),  # type: ignore[arg-type]
         )
-        self.field_name = field_name
+        self.target_field = field if isinstance(field, Field) else Field(field)
         self.action = MethodAction.LIST_APPEND
         self.modifiers = modifiers or []
 
@@ -554,7 +495,7 @@ class ListPopMethod(Method):
     (:class:`mongorepo.modifiers.ModifierBefore`, :class:`mongorepo.modifiers.ModifierAfter`)
     * Support :class:`FieldAlias`
     * Support asynchronous functions
-    * Works with dataclass types and standard types (e.g. str, int, etc.)
+    * Works with nested entity types
 
     ## Usage example:
     ```
@@ -570,21 +511,19 @@ class ListPopMethod(Method):
 
     class CargoRepo(typing.Protocol):
         # this method can be also asynchronous
-        def pop_box(self, id: str) -> Box:  # or raises mongorepo.exceptions.NotFoundException
+        def pop_box(self, id: str) -> Box:
             ...
 
     @implement(
         ListPopMethod(
             CargoRepo.pop_box,
-            field_name='boxes',  # Cargo.boxes
+            field='boxes',  # Cargo.boxes
             filters=['id'],
         ),
         ...
     )
     class MongoRepo:
-        class Meta:
-            dto = Cargo
-            collection = mongo_client().cargo.cargo_collection
+        ...
 
     repo = MongoRepo()
     cargo = repo.get(id='1')
@@ -599,14 +538,14 @@ class ListPopMethod(Method):
     def __init__(
         self,
         source: Callable,
-        field_name: str,
+        field: str | Field,
         filters: list[FieldAlias | str],
         modifiers: Modifiers | None = None,
     ) -> None:
         super().__init__(
             source, **_manage_filters(filters),
         )
-        self.field_name = field_name
+        self.target_field = field if isinstance(field, Field) else Field(field)
         self.action = MethodAction.LIST_POP
         self.modifiers = modifiers or []
 
@@ -643,16 +582,14 @@ class ListRemoveMethod(Method):
     @implement(
         ListRemoveMethod(
             CargoRepo.pop_box,
-            field_name='boxes',  # Cargo.boxes
+            field='boxes',  # Cargo.boxes
             value='box'
             filters=['id'],
         ),
         ...
     )
     class MongoRepo:
-        class Meta:
-            dto = Cargo
-            collection = mongo_client().cargo.cargo_collection
+        ...
 
     repo = MongoRepo()
     cargo = repo.get(id='1')
@@ -669,7 +606,7 @@ class ListRemoveMethod(Method):
     def __init__(
         self,
         source: Callable,
-        field_name: str,
+        field: str | Field,
         value: str,
         filters: list[FieldAlias | str],
         modifiers: Modifiers | None = None,
@@ -677,20 +614,21 @@ class ListRemoveMethod(Method):
         super().__init__(
             source, **{value: 'value'}, **_manage_filters(filters),  # type: ignore
         )
-        self.field_name = field_name
+        self.target_field = field if isinstance(field, Field) else Field(field)
         self.action = MethodAction.LIST_REMOVE
         self.modifiers = modifiers or []
 
 
-class ListGetFieldValuesMethod(Method):
-    """Class that represents `list[offset:limit]` as mongorepo method.
+class ListItemsMethod(Method):
+    """Class that represents `list slice (e.g. list[offset:limit])` as
+    mongorepo method.
 
     ### Features
     * Support modifiers
     (:class:`mongorepo.modifiers.ModifierBefore`, :class:`mongorepo.modifiers.ModifierAfter`)
     * Support :class:`FieldAlias`
     * Support asynchronous functions
-    * Works with dataclass types and standard types (e.g. str, int, etc.)
+    * Works with nested entity types
 
     ## Usage example:
     ```
@@ -712,9 +650,9 @@ class ListGetFieldValuesMethod(Method):
             ...
 
     @implement(
-        ListGetFieldValuesMethod(
+        ListItemsMethod(
             CargoRepo.get_cargo_boxes,
-            field_name='boxes',  # Cargo.boxes
+            field='boxes',  # Cargo.boxes
             filters=['id'],
             limit='limit',
             # offset='...',
@@ -722,9 +660,7 @@ class ListGetFieldValuesMethod(Method):
         ...
     )
     class MongoRepo:
-        class Meta:
-            dto = Cargo
-            collection = mongo_client().cargo.cargo_collection
+        ...
 
     repo = MongoRepo()
     cargo = repo.get(id='1')
@@ -738,7 +674,7 @@ class ListGetFieldValuesMethod(Method):
     def __init__(
         self,
         source: Callable,
-        field_name: str,
+        field: str | Field,
         filters: list[FieldAlias | str],
         offset: str | None = None,
         limit: str | None = None,
@@ -754,7 +690,7 @@ class ListGetFieldValuesMethod(Method):
             **params,
             **_manage_filters(filters),
         )
-        self.field_name = field_name
+        self.target_field = field if isinstance(field, Field) else Field(field)
         self.action = MethodAction.LIST_FIELD_VALUES
         self.modifiers = modifiers or []
 
@@ -786,15 +722,13 @@ class IncrementIntegerFieldMethod(Method):
     @implement(
         IncrementIntegerFieldMethod(
             RecordRepo.increment_views,
-            field_name='views',  # Record.views
+            field='views',  # Record.views
             filters=['id'],
         ),
         ...
     )
     class MongoRepo:
-        class Meta:
-            dto = Record
-            collection = mongo_client().records.record_collection
+        ...
 
     repo = MongoRepo()
     repo.add(Record(id='1', views=1000))
@@ -807,7 +741,7 @@ class IncrementIntegerFieldMethod(Method):
     def __init__(
         self,
         source: Callable,
-        field_name: str,
+        field: str | Field,
         filters: list[FieldAlias | str],
         weight: str | None = None,
         default_weight_value: int = 1,
@@ -818,6 +752,6 @@ class IncrementIntegerFieldMethod(Method):
             source, **params, **_manage_filters(filters),  # type: ignore
         )
         self.action = MethodAction.INTEGER_INCREMENT
-        self.field_name = field_name
+        self.target_field = field if isinstance(field, Field) else Field(field)
         self.integer_weight = default_weight_value
         self.modifiers = modifiers or []

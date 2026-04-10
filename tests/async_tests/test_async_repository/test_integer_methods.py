@@ -1,0 +1,27 @@
+# mypy: disable-error-code="attr-defined"
+from mongorepo import RepositoryConfig, async_repository
+from tests.common import SimpleEntity, in_async_collection
+
+
+async def test_can_increment_and_decrement_field_with_decorator() -> None:
+    async with in_async_collection(SimpleEntity) as cl:
+        @async_repository(
+            integer_fields=['y'],
+            config=RepositoryConfig(entity_type=SimpleEntity, collection=cl),
+        )
+        class Repository:
+            ...
+
+        repo = Repository()
+
+        await repo.add(SimpleEntity(x='admin', y=10))
+
+        await repo.incr__y(x='admin')
+        await repo.incr__y(x='admin')
+        await repo.incr__y(x='admin')
+        await repo.incr__y(x='admin')
+
+        await repo.decr__y(x='admin')
+
+        entity = await repo.get(x='admin')
+        assert entity.y == 13

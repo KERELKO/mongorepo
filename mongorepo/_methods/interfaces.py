@@ -1,6 +1,6 @@
 import typing as t
 
-from mongorepo._base import Dataclass, SessionType
+from mongorepo.types.base import Dataclass, SessionType
 
 if t.TYPE_CHECKING:
     from pymongo.results import InsertManyResult, UpdateResult
@@ -21,22 +21,22 @@ class IGetMethodAsync[T: Dataclass](t.Protocol):
 
 
 class IAddMethod[T: Dataclass](t.Protocol):
-    def __call__(self, dto: T) -> T:
+    def __call__(self, entity: T) -> T:
         ...
 
 
 class IAddMethodAsync[T: Dataclass](t.Protocol):
-    async def __call__(self, dto: T) -> T:
+    async def __call__(self, entity: T) -> T:
         ...
 
 
 class IAddBatchMethod[T: Dataclass](t.Protocol):
-    def __call__(self, dto_list: list[T]) -> 'InsertManyResult':
+    def __call__(self, entity_list: list[T]) -> 'InsertManyResult':
         ...
 
 
 class IAddBatchMethodAsync[T: Dataclass](t.Protocol):
-    async def __call__(self, dto_list: list[T]) -> 'InsertManyResult':
+    async def __call__(self, entity_list: list[T]) -> 'InsertManyResult':
         ...
 
 
@@ -71,12 +71,12 @@ class IDeleteMethodAsync(t.Protocol):
 
 
 class IUpdateMethod[T: Dataclass](t.Protocol):
-    def __call__(self, dto: T, **filters: t.Any) -> T | None:
+    def __call__(self, entity: T, **filters: t.Any) -> T | None:
         ...
 
 
 class IUpdateMethodAsync[T: Dataclass](t.Protocol):
-    async def __call__(self, dto: T, **filters: t.Any) -> T | None:
+    async def __call__(self, entity: T, **filters: t.Any) -> T | None:
         ...
 
 

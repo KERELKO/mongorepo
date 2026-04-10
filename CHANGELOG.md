@@ -12,7 +12,7 @@
   - Add ability to write custom __implement__ modifiers, `ModifierBefore` and `ModifierAfter`
   - Add `use_collection` decorator. Allows to set collection for any __mongorepo__ repository in any place of a program
   - Add more correct type hints
-  - Add `use_session`, `remove_session` and `session_context` to add mongodb session to mongorepo methods 
+  - Add `set_session`, `unset_session` and `session_context` to add mongodb session to mongorepo methods 
 
 ### Removed
   - Removed legacy way to implement methods with __implement__ decorator (__substitute__ dictionary in __Meta__ class, using __mongorepo.implement.methods.Method__, using keyword argumenst in __implement__ decorator) 
@@ -37,3 +37,15 @@
   - Now, when an invalid dataclass field name is passed to specific methods __(filters and aliases)__, a `FieldDoesNotExist` exception will be raised.
 ### Fixed
   - Fixed bug where multiple alises do not work on specific method filters
+
+## 4.0.0
+### Removed
+  - Removed support for `Meta` attributes in decorated classes
+  - Removed support for index creation
+  - Removed support for base classes
+### Added
+  - Added support for custom convertors (not coupled with `asdict` anymore)
+  - Added ability to specify all required meta information (such as collection, entity_type) in decorators
+### Changed
+  - Renamed `dto`, `dto_type` to `entity`, `entity_type`
+  - Renamed `use_session` to `set_session`, `remove_session` to `unset_session`

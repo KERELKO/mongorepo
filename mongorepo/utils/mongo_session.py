@@ -1,28 +1,16 @@
 from contextlib import contextmanager
-from typing import Any, Generic, Protocol, TypedDict
+from typing import Any
 
-from ._base import CollectionProvider, CollectionType, SessionType
-from ._methods.interfaces import MongorepoMethod
-
-
-class MongorepoDict(Generic[SessionType, CollectionType], TypedDict, total=True):
-    methods: dict[str, MongorepoMethod[SessionType]]
-    collection_provider: CollectionProvider[CollectionType]
-
-
-class HasMongorepoDict(Generic[SessionType, CollectionType], Protocol):
-    __mongorepo__: MongorepoDict[SessionType, CollectionType]
+from mongorepo.exceptions import MongorepoException
+from mongorepo.types import (
+    CollectionType,
+    HasMongorepoDict,
+    MongorepoDict,
+    SessionType,
+)
 
 
-def default_mongorepo_dict(
-    collection_provider: CollectionProvider[CollectionType],
-    methods: dict[str, MongorepoMethod[SessionType]] | None = None,
-) -> MongorepoDict[SessionType, CollectionType]:
-    methods = methods or {}
-    return MongorepoDict(collection_provider=collection_provider, methods=methods)
-
-
-def use_session(
+def set_session(
     session: SessionType,
     *mongorepo_repositories: HasMongorepoDict[SessionType, CollectionType] | Any,
 ):
@@ -32,7 +20,7 @@ def use_session(
             repo, '__mongorepo__', None,
         )
         if not __mongorepo__:
-            raise TypeError(
+            raise MongorepoException(
                 f'Invalid class for mongorepo repository: {type(repo)}: '
                 f'"{type(repo).__name__}" does not implement {str(HasMongorepoDict)} protocol',
             )
@@ -41,7 +29,7 @@ def use_session(
             method.session = session
 
 
-def remove_session(
+def unset_session(
     *mongorepo_repositories: HasMongorepoDict[SessionType, CollectionType] | Any,
 ):
     """Function to remove session from mongorepo methods."""
@@ -50,7 +38,7 @@ def remove_session(
             repo, '__mongorepo__', None,
         )
         if not __mongorepo__:
-            raise TypeError(
+            raise MongorepoException(
                 f'Invalid class for mongorepo repository: {type(repo)}: '
                 f'"{type(repo).__name__}" does not implement {str(HasMongorepoDict)} protocol',
             )
@@ -87,7 +75,7 @@ def session_context(
 
     """
     try:
-        use_session(session, *mongorepo_repositories)
+        set_session(session, *mongorepo_repositories)
         yield
     finally:
-        remove_session(*mongorepo_repositories)
+        unset_session(*mongorepo_repositories)

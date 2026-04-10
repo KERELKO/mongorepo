@@ -14,7 +14,7 @@ services:
     command: python3 -m http.server 8000
 
   mongodb:
-    container_name: mongo-main
+    container_name: mongodb
     image: mongo:6-jammy
     volumes:
       - ../data:/data/db

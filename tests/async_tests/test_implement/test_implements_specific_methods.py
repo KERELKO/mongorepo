@@ -1,6 +1,7 @@
 # mypy: disable-error-code="empty-body"
 from typing import AsyncGenerator
 
+from mongorepo import RepositoryConfig
 from mongorepo.implement import implement
 from mongorepo.implement.methods import (
     AddBatchMethod,
@@ -11,16 +12,16 @@ from mongorepo.implement.methods import (
     GetMethod,
     IncrementIntegerFieldMethod,
     ListAppendMethod,
-    ListGetFieldValuesMethod,
+    ListItemsMethod,
     ListPopMethod,
     ListRemoveMethod,
     UpdateMethod,
 )
 from tests.common import (
     Box,
-    MixDTO,
-    NestedListDTO,
-    SimpleDTO,
+    MixedEntity,
+    NestedListEntity,
+    SimpleEntity,
     in_async_collection,
 )
 
@@ -29,71 +30,70 @@ async def test_implement_crud_with_specific_method_protocol():
     """Test `@implement` decorator with classes that implement `SpecificMethod`
     protocol."""
 
-    async with in_async_collection(NestedListDTO) as c:
-        class IRepo:
-            async def get(self, title: str) -> NestedListDTO:
-                ...
+    class IRepo:
+        async def get(self, title: str) -> NestedListEntity:
+            ...
 
-            async def add(self, model: NestedListDTO) -> NestedListDTO:
-                ...
+        async def add(self, model: NestedListEntity) -> NestedListEntity:
+            ...
 
-            async def update(self, model: NestedListDTO, title: str) -> NestedListDTO:
-                ...
+        async def update(self, model: NestedListEntity, title: str) -> NestedListEntity:
+            ...
 
-            async def delete(self, title: str) -> bool:
-                ...
+        async def delete(self, title: str) -> bool:
+            ...
 
-            async def add_batch(self, models: list[NestedListDTO]) -> None:
-                ...
+        async def add_batch(self, models: list[NestedListEntity]) -> None:
+            ...
 
-            async def get_all_by_title(self, title: str) -> AsyncGenerator[NestedListDTO, None]:
-                ...
+        async def get_all_by_title(self, title: str) -> AsyncGenerator[NestedListEntity, None]:
+            ...
 
-            async def get_model_list(
-                self, title: str, limit: int, offset: int = 20,
-            ) -> list[NestedListDTO]:
-                ...
+        async def get_model_list(
+            self, title: str, limit: int, offset: int = 20,
+        ) -> list[NestedListEntity]:
+            ...
 
+    async with in_async_collection(NestedListEntity) as cl:
         @implement(
-            AddMethod(IRepo.add, dto='model'),
+            AddMethod(IRepo.add, entity='model'),
             GetMethod(IRepo.get, filters=['title']),
-            UpdateMethod(IRepo.update, dto='model', filters=['title']),
-            AddBatchMethod(IRepo.add_batch, dto_list='models'),
+            UpdateMethod(IRepo.update, entity='model', filters=['title']),
+            AddBatchMethod(IRepo.add_batch, entity_list='models'),
             GetAllMethod(IRepo.get_all_by_title, filters=['title']),
             GetListMethod(IRepo.get_model_list, offset='offset', limit='limit', filters=['title']),
             DeleteMethod(IRepo.delete, filters=['title']),
+            config=RepositoryConfig(entity_type=NestedListEntity, collection=cl),
         )
         class MongoRepo:
-            class Meta:
-                collection = c
-                dto = NestedListDTO
+            ...
 
         r: IRepo = MongoRepo()  # type: ignore
-        await r.add(NestedListDTO('...', dtos=[SimpleDTO(x='1', y=1), SimpleDTO(x='1', y=1)]))
+        await r.add(NestedListEntity('...', dtos=[SimpleEntity(x='1', y=1), SimpleEntity(x='1', y=1)]))
         assert True
 
-        dto = await r.get(title='...')
-        assert dto is not None
-        assert dto.title
-        assert len(dto.dtos) == 2
+        entity = await r.get(title='...')
+        assert entity is not None
+        assert entity.title
+        assert len(entity.dtos) == 2
 
-        dto.title = 'Updated title'
-        updated_dto = await r.update(model=dto, title='...')
+        entity.title = 'Updated title'
+        updated_dto = await r.update(model=entity, title='...')
         assert updated_dto.title == 'Updated title'
 
         await r.add_batch(
             [
-                NestedListDTO(title='1', dtos=[SimpleDTO(x='1', y=1)]),
-                NestedListDTO(title='2', dtos=[SimpleDTO(x='2', y=2)]),
+                NestedListEntity(title='1', dtos=[SimpleEntity(x='1', y=1)]),
+                NestedListEntity(title='2', dtos=[SimpleEntity(x='2', y=2)]),
             ],
         )
 
-        async for dto in r.get_all_by_title(title='1'):  # type: ignore
-            assert dto.title == '1'
+        async for entity in r.get_all_by_title(title='1'):  # type: ignore
+            assert entity.title == '1'
 
-        dto_list = await r.get_model_list(title='2', limit=5, offset=0)
-        assert len(dto_list) == 1
-        assert dto_list[0].title == '2'
+        entity_list = await r.get_model_list(title='2', limit=5, offset=0)
+        assert len(entity_list) == 1
+        assert entity_list[0].title == '2'
 
         deleted = await r.delete(title='1')
         assert deleted is True
@@ -105,47 +105,46 @@ async def test_implement_crud_with_specific_method_protocol():
 async def test_implement_list_methods_with_specific_method_protocol():
 
     class IRepo:
-        async def add(self, dto: NestedListDTO) -> None:
+        async def add(self, entity: NestedListEntity) -> None:
             ...
 
         # Change order of offset and remove its default value
         async def get_simple_dto_list_by_title(
             self, offset: int, title: str, limit: int = 20,
-        ) -> list[SimpleDTO]:
+        ) -> list[SimpleEntity]:
             ...
 
-        async def pop_dto_by_title(self, title: str) -> SimpleDTO:
+        async def pop_dto_by_title(self, title: str) -> SimpleEntity:
             ...
 
-        # Set dto as a second parameter
-        async def append_dto_by_title(self, title: str, dto: SimpleDTO) -> None:
+        # Set entity as a second parameter
+        async def append_dto_by_title(self, title: str, entity: SimpleEntity) -> None:
             ...
 
-        async def remove_dto_by_title(self, dto: SimpleDTO, title: str) -> None:
+        async def remove_dto_by_title(self, entity: SimpleEntity, title: str) -> None:
             ...
 
-    async with in_async_collection(NestedListDTO) as c:
+    async with in_async_collection(NestedListEntity) as cl:
 
         @implement(
-            AddMethod(IRepo.add, dto='dto'),
-            ListGetFieldValuesMethod(
-                source=IRepo.get_simple_dto_list_by_title, field_name='dtos',
+            AddMethod(IRepo.add, entity='entity'),
+            ListItemsMethod(
+                source=IRepo.get_simple_dto_list_by_title, field='dtos',
                 offset='offset',
                 filters=['title'],
                 limit='limit',
             ),
             ListPopMethod(IRepo.pop_dto_by_title, 'dtos', filters=['title']),
-            ListAppendMethod(IRepo.append_dto_by_title, 'dtos', value='dto', filters=['title']),
-            ListRemoveMethod(IRepo.remove_dto_by_title, 'dtos', value='dto', filters=['title']),
+            ListAppendMethod(IRepo.append_dto_by_title, 'dtos', value='entity', filters=['title']),
+            ListRemoveMethod(IRepo.remove_dto_by_title, 'dtos', value='entity', filters=['title']),
+            config=RepositoryConfig(entity_type=NestedListEntity, collection=cl),
         )
         class MongoRepo:
-            class Meta:
-                collection = c
-                dto = NestedListDTO
+            ...
 
         r: IRepo = MongoRepo()  # type: ignore
         title = '...'
-        await r.add(NestedListDTO(title, dtos=[SimpleDTO(x='1', y=1), SimpleDTO(x='1', y=1)]))
+        await r.add(NestedListEntity(title, dtos=[SimpleEntity(x='1', y=1), SimpleEntity(x='1', y=1)]))
 
         # All arguments are keywords arguments
         _ = await r.get_simple_dto_list_by_title(offset=0, title=title, limit=20)
@@ -154,26 +153,26 @@ async def test_implement_list_methods_with_specific_method_protocol():
         # All arguments are keyword arguments + random order
         _ = await r.get_simple_dto_list_by_title(limit=5, title=title, offset=1)
 
-        await r.append_dto_by_title(title=title, dto=SimpleDTO(x='3', y=3))
-        await r.append_dto_by_title(title, SimpleDTO(x='2', y=2))
-        await r.append_dto_by_title(dto=SimpleDTO(x='2', y=2), title=title)
+        await r.append_dto_by_title(title=title, entity=SimpleEntity(x='3', y=3))
+        await r.append_dto_by_title(title, SimpleEntity(x='2', y=2))
+        await r.append_dto_by_title(entity=SimpleEntity(x='2', y=2), title=title)
 
         _ = await r.pop_dto_by_title(title)
         _ = await r.pop_dto_by_title(title=title)
 
-        await r.remove_dto_by_title(title=title, dto=SimpleDTO(x='1', y=1))
-        await r.remove_dto_by_title(SimpleDTO(x='1', y=3), title)
-        await r.remove_dto_by_title(SimpleDTO(x='1', y=1), title=title)
+        await r.remove_dto_by_title(title=title, entity=SimpleEntity(x='1', y=1))
+        await r.remove_dto_by_title(SimpleEntity(x='1', y=3), title)
+        await r.remove_dto_by_title(SimpleEntity(x='1', y=1), title=title)
 
         assert True
 
 
 async def test_implement_integer_methods_with_specific_method_protocol() -> None:
     class IRepo:
-        async def get(self, id: str) -> MixDTO | None:
+        async def get(self, id: str) -> MixedEntity | None:
             ...
 
-        async def add(self, dto: MixDTO) -> None:
+        async def add(self, entity: MixedEntity) -> None:
             ...
 
         async def update_year_with_weight(self, id: str, weight: int) -> None:
@@ -182,24 +181,23 @@ async def test_implement_integer_methods_with_specific_method_protocol() -> None
         async def update_year(self, id: str) -> None:
             ...
 
-    async with in_async_collection(MixDTO) as coll:
+    async with in_async_collection(MixedEntity) as cl:
         @implement(
-            AddMethod(IRepo.add, dto='dto'),
+            AddMethod(IRepo.add, entity='entity'),
             GetMethod(IRepo.get, filters=['id']),
             IncrementIntegerFieldMethod(
-                IRepo.update_year_with_weight, field_name='year', filters=['id'], weight='weight',
+                IRepo.update_year_with_weight, field='year', filters=['id'], weight='weight',
             ),
             IncrementIntegerFieldMethod(
-                IRepo.update_year, field_name='year', filters=['id'], default_weight_value=-1,
+                IRepo.update_year, field='year', filters=['id'], default_weight_value=-1,
             ),
+            config=RepositoryConfig(entity_type=MixedEntity, collection=cl),
         )
         class MongoRepo:
-            class Meta:
-                dto = MixDTO
-                collection = coll
+            ...
 
     repo: IRepo = MongoRepo()  # type: ignore
-    dto = MixDTO(
+    entity = MixedEntity(
         id='1',
         name='box',
         year=2025,
@@ -207,7 +205,7 @@ async def test_implement_integer_methods_with_specific_method_protocol() -> None
         records=[1, 2, 3],
         boxs=[Box('box_list_1', 'car'), Box('box_list_2', 'table')],
     )
-    await repo.add(dto=dto)
+    await repo.add(entity=entity)
 
     await repo.update_year_with_weight(id='1', weight=5)
 

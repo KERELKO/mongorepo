@@ -1,36 +1,5 @@
 # mongorepo
-Simple lib for python &amp; mongodb, provides auto repository factory based on DTO type
-
-## Example with **BaseMongoRepository**
-```python
-from mongorepo.classes import BaseMongoRepository
-from mongorepo import use_collection
-
-
-def mongo_client(mongo_uri: str = 'mongodb://mongodb:27017/') -> pymongo.MongoClient:
-    client: pymongo.MongoClient = pymongo.MongoClient(mongo_uri)
-    return client
-
-
-@dataclass
-class UserDTO:
-    username: str = ''
-    password: str = ''
-
-
-@use_collection(mongo_client().users_db.users)
-class SimpleMongoRepository(BaseMongoRepository[UserDTO]):
-    ...
-
-
-repo = SimpleMongoRepository()
-
-new_user = UserDTO(username='admin', password='1234')
-repo.add(new_user)
-
-user = repo.get(username='admin')
-print(user)  # UserDTO(username='admin', password='1234')
-```
+Simple lib for python &amp; mongodb, provides auto repository factory based on Entity type
 
 ## Example with **mongorepo.async_repository**
 ```python
@@ -49,11 +18,12 @@ class Person:
     skills: list[str] = field(default_factory=list)    
 
 
-@mongorepo.async_repository(array_fields=['skills'])
+@mongorepo.async_repository(
+    array_fields=['skills'],
+    config=RepositoryConfig(entity_type=Person, collection=async_mongo_client().people_db.people)
+)
 class MongoRepository:
-    class Meta:
-        dto = Person
-        collection = async_mongo_client().people_db.people
+    ...
 
 
 repo = MongoRepository()
@@ -103,13 +73,11 @@ class MessageRepository(typing.Protocol):
 
 @implement(
     GetMethod(MessageRepository.get_message, filters=['id']),
-    AddMethod(MessageRepository.add_message, dto='message')
+    AddMethod(MessageRepository.add_message, entity='message'),
+    config=RepositoryConfig(entity_type=Message, collection=async_mongo_client().messages_db.messages)
 )
-@use_collection(async_mongo_client().messages_db.messages)
 class MongoMessageRepository:
-    class Meta:
-        dto = Message
-
+    ...
 
 repo: MessageRepository = MongoMessageRepository()
 
