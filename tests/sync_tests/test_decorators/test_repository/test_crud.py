@@ -1,6 +1,7 @@
+# mypy: disable-error-code="attr-defined"
 import random
 
-from mongorepo.decorators import mongo_repository
+from mongorepo import repository
 from mongorepo.types import MethodAccess, RepositoryConfig
 from tests.common import (
     EntityWithID,
@@ -11,9 +12,9 @@ from tests.common import (
 )
 
 
-def test_all_methods_with_decorator():
+def test_all_methods_with_decorator() -> None:
     with in_collection(SimpleEntity) as cl:
-        @mongo_repository(config=RepositoryConfig(entity_type=SimpleEntity, collection=cl))
+        @repository(config=RepositoryConfig(entity_type=SimpleEntity, collection=cl))
         class TestMongoRepository:
             ...
 
@@ -39,10 +40,10 @@ def test_all_methods_with_decorator():
         assert entity is None
 
 
-def test_can_get_dto_with_id():
+def test_can_get_dto_with_id() -> None:
 
     with in_collection(EntityWithID) as cl:
-        @mongo_repository(RepositoryConfig(entity_type=EntityWithID, collection=cl))
+        @repository(RepositoryConfig(entity_type=EntityWithID, collection=cl))
         class TestMongoRepository:
             ...
 
@@ -56,10 +57,10 @@ def test_can_get_dto_with_id():
         assert entity._id is not None
 
 
-def test_can_handle_complicated_dto():
+def test_can_handle_complicated_dto() -> None:
 
     with in_collection(MultiFieldEntity) as cl:
-        @mongo_repository(RepositoryConfig(entity_type=MultiFieldEntity, collection=cl))
+        @repository(RepositoryConfig(entity_type=MultiFieldEntity, collection=cl))
         class TestMongoRepository:
             ...
 
@@ -70,10 +71,10 @@ def test_can_handle_complicated_dto():
         assert resolved_dto.skills == ['h', 'e'] and resolved_dto.x == 'comp'
 
 
-def test_can_update_partially():
+def test_can_update_partially() -> None:
 
     with in_collection(MultiFieldEntity) as cl:
-        @mongo_repository(RepositoryConfig(entity_type=MultiFieldEntity, collection=cl))
+        @repository(RepositoryConfig(entity_type=MultiFieldEntity, collection=cl))
         class TestMongoRepository:
             ...
 
@@ -85,9 +86,9 @@ def test_can_update_partially():
         assert updated_dto.skills == ['hello!']
 
 
-def test_can_search_with_id():
+def test_can_search_with_id() -> None:
     with in_collection(EntityWithID) as cl:
-        @mongo_repository(RepositoryConfig(entity_type=EntityWithID, collection=cl))
+        @repository(RepositoryConfig(entity_type=EntityWithID, collection=cl))
         class TestMongoRepository:
             ...
 
@@ -101,16 +102,16 @@ def test_can_search_with_id():
         assert entity.x == 'ID'
 
 
-def test_can_make_methods_protected():
+def test_can_make_methods_protected() -> None:
 
     with in_collection(SimpleEntity) as cl:
-        @mongo_repository(
+        @repository(
             RepositoryConfig(entity_type=SimpleEntity, method_access=MethodAccess.PROTECTED, collection=cl),
         )
         class TestMongoRepository:
             ...
 
-            def access_protected_method(self):
+            def access_protected_method(self) -> None:
                 _ = self._get(name='Antony')  # type: ignore
 
         repo = TestMongoRepository()
@@ -120,17 +121,17 @@ def test_can_make_methods_protected():
         repo.access_protected_method()
 
 
-def test_can_make_methods_private():
+def test_can_make_methods_private() -> None:
 
     with in_collection(SimpleEntity) as cl:
-        @mongo_repository(
+        @repository(
             RepositoryConfig(entity_type=SimpleEntity, collection=cl, method_access=MethodAccess.PRIVATE),
         )
         class TestMongoRepository:
             ...
 
             def get(self) -> bool:
-                _ = self.__get(id='370r-o0-o23')  # type: ignore
+                _ = self.__get(id='370r-o0-o23')  # type: ignore[attr-defined]
                 return True
 
         repo = TestMongoRepository()
@@ -141,10 +142,10 @@ def test_can_make_methods_private():
         assert repo.get() is True
 
 
-def test_can_access_dto_in_type_hints_decorator():
+def test_can_access_dto_in_type_hints_decorator() -> None:
 
     with in_collection(SimpleEntity) as cl:
-        @mongo_repository(delete=False, config=RepositoryConfig(entity_type=SimpleEntity, collection=cl))
+        @repository(delete=False, config=RepositoryConfig(entity_type=SimpleEntity, collection=cl))
         class TestMongoRepository:
             ...
 
@@ -154,10 +155,10 @@ def test_can_access_dto_in_type_hints_decorator():
         assert not hasattr(repo, 'delete')
 
 
-def test_get_list_method():
+def test_get_list_method() -> None:
 
     with in_collection(SimpleEntity) as cl:
-        @mongo_repository(get_list=True, config=RepositoryConfig(entity_type=SimpleEntity, collection=cl))
+        @repository(get_list=True, config=RepositoryConfig(entity_type=SimpleEntity, collection=cl))
         class TestMongoRepository:
             ...
 
@@ -179,10 +180,10 @@ def test_get_list_method():
         assert dtos[0].x == '123'
 
 
-def test_get_list_with_add_batch_methods_with_decorator():
+def test_get_list_with_add_batch_methods_with_decorator() -> None:
 
     with in_collection(SimpleEntity) as cl:
-        @mongo_repository(add_batch=True, get_list=True, config=RepositoryConfig(entity_type=SimpleEntity, collection=cl))
+        @repository(add_batch=True, get_list=True, config=RepositoryConfig(entity_type=SimpleEntity, collection=cl))
         class TestMongoRepository:
             ...
 
