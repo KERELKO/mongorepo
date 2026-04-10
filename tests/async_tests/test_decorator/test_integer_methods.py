@@ -1,9 +1,9 @@
-# type: ignore
+# mypy: disable-error-code="attr-defined"
 from mongorepo import RepositoryConfig, async_repository
 from tests.common import SimpleEntity, in_async_collection
 
 
-async def test_can_increment_and_decrement_field_with_decorator():
+async def test_can_increment_and_decrement_field_with_decorator() -> None:
     async with in_async_collection(SimpleEntity) as cl:
         @async_repository(
             integer_fields=['y'],

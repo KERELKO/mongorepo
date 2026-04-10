@@ -31,12 +31,12 @@ class IAddMethodAsync[T: Dataclass](t.Protocol):
 
 
 class IAddBatchMethod[T: Dataclass](t.Protocol):
-    def __call__(self, dto_list: list[T]) -> 'InsertManyResult':
+    def __call__(self, entity_list: list[T]) -> 'InsertManyResult':
         ...
 
 
 class IAddBatchMethodAsync[T: Dataclass](t.Protocol):
-    async def __call__(self, dto_list: list[T]) -> 'InsertManyResult':
+    async def __call__(self, entity_list: list[T]) -> 'InsertManyResult':
         ...
 
 

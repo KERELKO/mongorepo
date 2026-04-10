@@ -59,7 +59,7 @@ async def test_field_alias_with_crud_protocol_methods():
             AddMethod(IRepo.add, entity='model'),
             GetMethod(IRepo.get, filters=[title_alias]),
             UpdateMethod(IRepo.update, entity='model', filters=[title_alias]),
-            AddBatchMethod(IRepo.add_batch, dto_list='models'),
+            AddBatchMethod(IRepo.add_batch, entity_list='models'),
             GetAllMethod(IRepo.get_all_by_title, filters=['title']),
             DeleteMethod(IRepo.delete, filters=[title_alias]),
             GetListMethod(
@@ -93,9 +93,9 @@ async def test_field_alias_with_crud_protocol_methods():
         async for entity in r.get_all_by_title(title='1'):  # type: ignore
             assert entity.title == '1'
 
-        dto_list = await r.get_model_list(dto_title='2', limit=5, offset=0)
-        assert len(dto_list) == 1
-        assert dto_list[0].title == '2'
+        entity_list = await r.get_model_list(dto_title='2', limit=5, offset=0)
+        assert len(entity_list) == 1
+        assert entity_list[0].title == '2'
 
         deleted = await r.delete(dto_title='1')
         assert deleted is True

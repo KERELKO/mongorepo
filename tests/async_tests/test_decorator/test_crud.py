@@ -1,10 +1,11 @@
+# mypy: disable-error-code="attr-defined"
 import random
 
 from mongorepo import RepositoryConfig, async_repository
 from tests.common import SimpleEntity, in_async_collection, r
 
 
-async def test_all_methods_with_async_decorator():
+async def test_all_methods_with_async_decorator() -> None:
     async with in_async_collection(SimpleEntity) as cl:
         @async_repository(config=RepositoryConfig(entity_type=SimpleEntity, collection=cl))
         class TestMongoRepository:
@@ -52,8 +53,8 @@ async def test_get_list_with_add_batch_methods_with_decorator():
             [SimpleEntity(x='hey', y=r()), SimpleEntity(x='second hey!', y=r())],
         )
 
-        dto_list = await repo.get_list(offset=0, limit=10)
-        for entity in dto_list:
+        entity_list = await repo.get_list(offset=0, limit=10)
+        for entity in entity_list:
             assert entity
             assert isinstance(entity, SimpleEntity)
 

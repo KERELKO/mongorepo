@@ -1,4 +1,4 @@
-# type: ignore
+# mypy: disable-error-code="attr-defined"
 from abc import ABC
 from dataclasses import dataclass
 from typing import Generic, Protocol
@@ -8,7 +8,7 @@ from mongorepo.decorators import mongo_repository
 from tests.common import EntityWithID, in_collection
 
 
-def test_decorator_with_abstract_class():
+def test_decorator_with_abstract_class() -> None:
     # Suppose we have abstract repository in our architecture
     # but mongo_repository's methods does not fit to it
     # there is the simplest way to fix it
@@ -48,11 +48,11 @@ def test_decorator_with_abstract_class():
         new_user: UserEntity = repo.create(entity=entity)
         assert new_user.username == 'admin' and new_user.password == '1234'
 
-        resolved_user: UserEntity = repo.get_by_username(username='admin')
+        resolved_user: UserEntity = repo.get_by_username(username='admin')  # type: ignore[assignment]
         assert resolved_user.username == 'admin'
 
 
-def test_decorator_with_protocol_and_dto_with_id():
+def test_decorator_with_protocol_and_dto_with_id() -> None:
     class IRepository(Protocol):
         def add(self, entity: EntityWithID) -> None:
             ...

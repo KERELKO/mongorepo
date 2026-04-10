@@ -1,3 +1,4 @@
+# mypy: disable-error-code="attr-defined"
 from mongorepo import RepositoryConfig
 from mongorepo.implement import implement
 from mongorepo.implement.methods import (
@@ -10,7 +11,7 @@ from mongorepo.implement.methods import (
 from tests.common import NestedListEntity, SimpleEntity, in_collection
 
 
-def test_can_change_order_of_repo_parameters_and_passed_arguments():
+def test_can_change_order_of_repo_parameters_and_passed_arguments() -> None:
 
     class IRepo:
         def add(self, entity: NestedListEntity) -> None:

@@ -59,7 +59,7 @@ async def test_implement_crud_with_specific_method_protocol():
             AddMethod(IRepo.add, entity='model'),
             GetMethod(IRepo.get, filters=['title']),
             UpdateMethod(IRepo.update, entity='model', filters=['title']),
-            AddBatchMethod(IRepo.add_batch, dto_list='models'),
+            AddBatchMethod(IRepo.add_batch, entity_list='models'),
             GetAllMethod(IRepo.get_all_by_title, filters=['title']),
             GetListMethod(IRepo.get_model_list, offset='offset', limit='limit', filters=['title']),
             DeleteMethod(IRepo.delete, filters=['title']),
@@ -91,9 +91,9 @@ async def test_implement_crud_with_specific_method_protocol():
         async for entity in r.get_all_by_title(title='1'):  # type: ignore
             assert entity.title == '1'
 
-        dto_list = await r.get_model_list(title='2', limit=5, offset=0)
-        assert len(dto_list) == 1
-        assert dto_list[0].title == '2'
+        entity_list = await r.get_model_list(title='2', limit=5, offset=0)
+        assert len(entity_list) == 1
+        assert entity_list[0].title == '2'
 
         deleted = await r.delete(title='1')
         assert deleted is True

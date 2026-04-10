@@ -1,4 +1,4 @@
-# type: ignore
+# mypy: disable-error-code="attr-defined"
 from dataclasses import dataclass, field
 from typing import List
 
@@ -11,7 +11,7 @@ from tests.common import (
 )
 
 
-def test_can_push_and_pull_elements_from_list_with_decorator():
+def test_can_push_and_pull_elements_from_list_with_decorator() -> None:
 
     with in_collection(MultiFieldEntity) as cl:
         @repository(list_fields=['skills'], config=RepositoryConfig(entity_type=MultiFieldEntity, collection=cl))
@@ -35,7 +35,7 @@ def test_can_push_and_pull_elements_from_list_with_decorator():
         assert 'c++' in entity.skills
 
 
-def test_can_mix_methods_with_decorators():
+def test_can_mix_methods_with_decorators() -> None:
 
     with in_collection(MultiFieldEntity) as cl:
         @repository(
@@ -52,7 +52,7 @@ def test_can_mix_methods_with_decorators():
         assert hasattr(r, '_skills__remove')
 
 
-def test_pop_method_with_decorator():
+def test_pop_method_with_decorator() -> None:
 
     with in_collection(MultiFieldEntity) as cl:
         @repository(list_fields=['skills'], config=RepositoryConfig(entity_type=MultiFieldEntity, collection=cl))
@@ -74,7 +74,7 @@ def test_pop_method_with_decorator():
         assert cpp == 'c++'
 
 
-def test_list_with_different_type_hints_decorator():
+def test_list_with_different_type_hints_decorator() -> None:
 
     @dataclass
     class A1:

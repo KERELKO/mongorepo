@@ -33,8 +33,8 @@ def mongo_repository(
     - `update` (bool): Enables document updates (default: True).
     - `delete` (bool): Enables document deletion (default: True).
     - `integer_fields` (Iterable[str], optional): Fields that support atomic increment/decrement:
-      - `increment_{field}`: Increments the field.
-      - `decrement_{field}`: Decrements the field.
+      - `increment__{field}`: Increments the field.
+      - `decrement__{field}`: Decrements the field.
     - `list_fields` (Iterable[str], optional): Fields treated as lists, enabling:
       - `{field}__append`: Appends an item to the list.
       - `{field}__remove`: Removes an item from the list.

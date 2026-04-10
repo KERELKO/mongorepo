@@ -1,4 +1,4 @@
-# type: ignore
+# mypy: disable-error-code="attr-defined"
 from mongorepo.decorators import RepositoryConfig, mongo_repository
 from tests.common import (
     DictEntity,

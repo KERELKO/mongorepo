@@ -1,4 +1,4 @@
-# type: ignore
+# mypy: disable-error-code="attr-defined"
 from mongorepo import RepositoryConfig, async_repository
 from tests.common import NestedListEntity, SimpleEntity, in_async_collection
 

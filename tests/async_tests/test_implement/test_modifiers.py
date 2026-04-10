@@ -1,3 +1,6 @@
+# mypy: disable-error-code="attr-defined"
+from typing import cast
+
 import pytest
 
 from mongorepo import RepositoryConfig
@@ -13,7 +16,7 @@ from mongorepo.types import FieldAlias
 from tests.common import Box, SimpleEntity, in_async_collection
 
 
-async def test_after_modifiers():
+async def test_after_modifiers() -> None:
     class CustomAfterModifier(ModifierAfter):
         def modify(self, data: SimpleEntity | None) -> SimpleEntity | None:
             if isinstance(data, SimpleEntity):
@@ -47,7 +50,7 @@ async def test_after_modifiers():
         class Mongorepo:
             ...
 
-        repo: Repo = Mongorepo()  # type: ignore
+        repo = cast(Repo, Mongorepo())
 
         new_dto = SimpleEntity(x='100', y=100)
 
@@ -64,7 +67,7 @@ async def test_after_modifiers():
         assert hello_world.x == 'Hello World'
 
 
-async def test_before_modifiers():
+async def test_before_modifiers() -> None:
     class CustomGetBeforeModifier(ModifierBefore):
         def modify(self, id) -> dict[str, str]:
             print(f'{id=}')
@@ -108,10 +111,10 @@ async def test_before_modifiers():
         class Mongorepo:
             ...
 
-        repo: Repo = Mongorepo()  # type: ignore
+        repo = cast(Repo, Mongorepo())
         box = Box(id='1', value='1kg')
         added_box_id = (await repo.add(box)).id
-        update_box = Box(id=None, value='2kg')  # type: ignore
+        update_box = Box(id=None, value='2kg')  # type: ignore[arg-type]
         # await asyncio.sleep(1000)
         updated_box = await repo.update(update_box, box_id=added_box_id)
         assert updated_box.id == added_box_id and updated_box.value == '2kg'
@@ -120,7 +123,7 @@ async def test_before_modifiers():
         assert get_box.id == added_box_id and get_box.value == '2kg'
 
         with pytest.raises(ValueError):
-            _ = await repo.get(box_id=None)  # type: ignore
+            _ = await repo.get(box_id=None)  # type: ignore[arg-type]
 
         with pytest.raises(TypeError):
-            _ = await repo.get(box_id=1)  # type: ignore
+            _ = await repo.get(box_id=1)  # type: ignore[arg-type]

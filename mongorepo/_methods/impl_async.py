@@ -62,14 +62,14 @@ class AddBatchMethodAsync[T]:
         self.to_document_converter = to_document_converter
         self.kwargs = kwargs
 
-    async def __call__(self, dto_list: list[T]) -> InsertManyResult:
+    async def __call__(self, entity_list: list[T]) -> InsertManyResult:
         collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
-            dto_list = modifier_before.modify(dto_list=dto_list)
+            entity_list = modifier_before.modify(entity_list=entity_list)
 
         result = await collection.insert_many(
-            [self.to_document_converter(d) for d in dto_list], session=self.session,
+            [self.to_document_converter(d) for d in entity_list], session=self.session,
         )
 
         for modifier_after in self.modifiers_after:

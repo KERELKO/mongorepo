@@ -1,5 +1,5 @@
 # mongorepo
-Simple lib for python &amp; mongodb, provides auto repository factory based on DTO type
+Simple lib for python &amp; mongodb, provides auto repository factory based on Entity type
 
 ## Example with **mongorepo.async_repository**
 ```python

@@ -192,7 +192,7 @@ def test_get_list_with_add_batch_methods_with_decorator():
             [SimpleEntity(x='hey', y=r()), SimpleEntity(x='second hey!', y=r())],
         )
 
-        dto_list = repo.get_list(offset=0, limit=10)
-        for entity in dto_list:
+        entity_list = repo.get_list(offset=0, limit=10)
+        for entity in entity_list:
             assert entity
             assert isinstance(entity, SimpleEntity)

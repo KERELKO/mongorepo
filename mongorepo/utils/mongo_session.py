@@ -1,6 +1,7 @@
 from contextlib import contextmanager
 from typing import Any
 
+from mongorepo.exceptions import MongorepoException
 from mongorepo.types import (
     CollectionType,
     HasMongorepoDict,
@@ -19,7 +20,7 @@ def set_session(
             repo, '__mongorepo__', None,
         )
         if not __mongorepo__:
-            raise TypeError(
+            raise MongorepoException(
                 f'Invalid class for mongorepo repository: {type(repo)}: '
                 f'"{type(repo).__name__}" does not implement {str(HasMongorepoDict)} protocol',
             )
@@ -37,7 +38,7 @@ def unset_session(
             repo, '__mongorepo__', None,
         )
         if not __mongorepo__:
-            raise TypeError(
+            raise MongorepoException(
                 f'Invalid class for mongorepo repository: {type(repo)}: '
                 f'"{type(repo).__name__}" does not implement {str(HasMongorepoDict)} protocol',
             )
