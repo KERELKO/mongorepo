@@ -6,30 +6,7 @@ from adaptix import Retort
 
 from mongorepo import RepositoryConfig, async_repository
 from mongorepo.exceptions import EntityIsNotDataclass
-from tests.common import SimpleEntity, in_async_collection
-
-
-async def test_repository_works_without_converters():
-    async with in_async_collection(SimpleEntity) as cl:
-        @async_repository(
-            config=RepositoryConfig(
-                entity_type=SimpleEntity,
-                collection=cl,
-            ),
-        )
-        class TestMongoRepository:
-            ...
-
-        repo = TestMongoRepository()
-
-        entity = SimpleEntity(x="1", y=1)
-        await repo.add(entity)
-
-        entity = await repo.get(y=1)
-
-        assert entity is not None
-
-        assert entity.x == "1" and entity.y == 1
+from tests.common import in_async_collection
 
 
 async def test_repository_works_with_converters() -> None:

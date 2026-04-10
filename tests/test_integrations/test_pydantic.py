@@ -2,7 +2,8 @@
 import random
 import uuid
 from abc import ABC, abstractmethod
-from typing import cast
+from datetime import time
+from typing import Protocol, cast
 
 from pydantic import BaseModel, Field
 
@@ -16,7 +17,7 @@ from mongorepo.implement.methods import (
 )
 from mongorepo.modifiers.base import RaiseExceptionModifier
 from mongorepo.types.field_alias import FieldAlias
-from tests.common import in_async_collection
+from tests.common import in_async_collection, in_collection
 
 
 async def test_methods_for_pydantic_entity_with_async_decorator() -> None:
@@ -135,3 +136,94 @@ async def test_specific_methods_in_implement_decorator_for_msgspec_entity() -> N
         friends = await repo.get_friends(user.id, offset=0, limit=20)
 
         assert len(friends) == 2
+        user = await repo.get(id=user.id)
+
+        assert user.friends[1].id in [f.id for f in friends]
+
+
+def test_can_convert_nested_pydantic_entity() -> None:
+
+    class Job(BaseModel):
+        start_time: time
+        end_time: time
+        description: str
+
+    class Worker(BaseModel):
+        id: str
+        name: str
+        job: Job
+
+    class Manager(BaseModel):
+        id: str
+        name: str
+        managed_workers: list[Worker]
+
+    class Location(BaseModel):
+        id: str
+        name: str
+        managers: list[Manager]
+
+    class LocationRepository(Protocol):
+        def add_location(self, location: Location):
+            ...
+
+        def get_location(self, id: str) -> Location:
+            ...
+
+        def get_managers(self, location_id: str) -> list[Manager]:
+            ...
+
+    with in_collection(Location) as cl:
+        @implement(
+            GetMethod(LocationRepository.get_location, filters=['id']),
+            AddMethod(LocationRepository.add_location, entity='location'),
+            ListItemsMethod(
+                source=LocationRepository.get_managers,
+                field='managers',
+                filters=[FieldAlias('id', 'location_id')],
+            ),
+            config=RepositoryConfig(
+                Location,
+                collection=cl,
+                to_document_converter=lambda entity: entity.model_dump(mode='json'),
+                to_entity_converter=lambda data, model: model(**data),
+            ),
+        )
+        class MongoLocationRepository(LocationRepository):
+            ...
+
+        repo = MongoLocationRepository()  # type: ignore[abstract]
+
+        location = Location(
+            id=str(uuid.uuid4()),
+            name='Location #1',
+            managers=[
+                Manager(
+                    id=str(uuid.uuid4()),
+                    name='Bob Benton',
+                    managed_workers=[
+                        Worker(
+                            id=str(uuid.uuid4()),
+                            name='Antony',
+                            job=Job(
+                                start_time=time(10, 0),
+                                end_time=time(18, 0),
+                                description='Cook',
+                            ),
+                        ),
+                    ],
+                ),
+            ],
+        )
+
+        repo.add_location(location)
+
+        get_location_result = repo.get_location(id=location.id)
+
+        assert get_location_result.managers[0].managed_workers[0].job.start_time == time(10, 0)
+
+        managers = repo.get_managers(location.id)
+
+        assert len(managers) == 1
+        assert managers[0].id == get_location_result.managers[0].id
+        assert managers[0].managed_workers[0].job.start_time == time(10, 0)

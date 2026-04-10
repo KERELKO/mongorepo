@@ -358,7 +358,7 @@ class GetListValuesMethodAsync[T]:
         self.kwargs = kwargs
 
     async def __call__(
-        self, offset: int, limit: int, **filters: Any,
+        self, offset: int = 0, limit: int = 20, **filters: Any,
     ) -> list[T] | list[Any] | None:
         collection = self.owner.__mongorepo__['collection_provider'].provide()
 

@@ -356,7 +356,9 @@ class GetListValuesMethod[T]:
         self.modifiers_before = [m for m in modifiers if isinstance(m, ModifierBefore)]
         self.kwargs = kwargs
 
-    def __call__(self, offset: int, limit: int, **filters: Any) -> list[T] | list[Any] | None:
+    def __call__(
+        self, offset: int = 0, limit: int = 20, **filters: Any,
+    ) -> list[T] | list[Any] | None:
         collection: Collection = self.owner.__mongorepo__['collection_provider'].provide()
 
         for modifier_before in self.modifiers_before:
