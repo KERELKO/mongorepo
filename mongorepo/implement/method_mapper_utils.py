@@ -1,7 +1,6 @@
-from typing import Callable, get_type_hints
+from typing import Callable
 
 from mongorepo import exceptions
-from mongorepo._field import Field
 from mongorepo._methods.impl import AddBatchMethod as CallableAddBatchMethod
 from mongorepo._methods.impl import AddMethod as CallableAddMethod
 from mongorepo._methods.impl import \
@@ -47,7 +46,6 @@ from mongorepo.implement.methods import (
     AddBatchMethod,
     AddMethod,
     DeleteMethod,
-    FieldAlias,
     GetAllMethod,
     GetListMethod,
     GetMethod,
@@ -56,13 +54,10 @@ from mongorepo.implement.methods import (
     ListItemsMethod,
     ListPopMethod,
     ListRemoveMethod,
-    ParameterEnum,
-    SpecificFieldMethod,
     SpecificMethod,
     UpdateMethod,
 )
-
-from .exceptions import FieldDoesNotExist
+from mongorepo.types import Field
 
 
 def implement_mapper(specific_method: SpecificMethod) -> type:
@@ -163,35 +158,3 @@ def initialize_callable_mongorepo_method(
         )
 
     raise exceptions.MongorepoException(f'Cannot initialize {mcls}: {mcls} is not implemented')
-
-
-def field_exists(field_name: str | FieldAlias, entity_type: type) -> bool:
-    """Checks whether `field_name` is a field in `entity`"""
-    for entity_field_type_hint in get_type_hints(entity_type).keys():
-        if isinstance(field_name, str) and field_name == entity_field_type_hint:
-            return True
-        elif isinstance(field_name, FieldAlias) and field_name.name == entity_field_type_hint:
-            return True
-    return False
-
-
-def validate_input_parameters(
-    specific_method: SpecificMethod | SpecificFieldMethod, entity_type: type,
-):
-    for param_name, value in specific_method.params.items():
-        # Validate name of field passed as filter
-        if value == ParameterEnum.FILTER.value and field_exists(param_name, entity_type) is False:
-            raise FieldDoesNotExist(
-                param_name,
-                correct_fields=list(get_type_hints(entity_type).keys()),
-                entity=entity_type.__name__,
-            )
-        # Validate name of field passed as filter alias
-        elif param_name == ParameterEnum.FILTER_ALIAS.value:
-            for field in value.values():  # type: ignore[union-attr]
-                if field_exists(field, entity_type) is False:
-                    raise FieldDoesNotExist(
-                        field,
-                        correct_fields=list(get_type_hints(entity_type).keys()),
-                        entity=entity_type.__name__,
-                    )

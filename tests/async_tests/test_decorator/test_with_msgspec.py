@@ -8,7 +8,6 @@ import msgspec
 
 from mongorepo import RepositoryConfig, async_repository
 from mongorepo.implement import implement
-from mongorepo.implement.field_alias import FieldAlias
 from mongorepo.implement.methods import (
     AddMethod,
     GetMethod,
@@ -16,6 +15,7 @@ from mongorepo.implement.methods import (
     ListItemsMethod,
 )
 from mongorepo.modifiers.base import RaiseExceptionModifier
+from mongorepo.types.field_alias import FieldAlias
 from tests.common import in_async_collection
 
 

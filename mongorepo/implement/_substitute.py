@@ -9,7 +9,10 @@ from mongorepo.utils.type_hints import get_function_default_values
 
 from ._types import MethodAction
 from ._types import ParameterEnum as MongorepoParameter
-from ._utils import implement_mapper, initialize_callable_mongorepo_method
+from .method_mapper_utils import (
+    implement_mapper,
+    initialize_callable_mongorepo_method,
+)
 from .methods import Method, SpecificFieldMethod, SpecificMethod
 
 

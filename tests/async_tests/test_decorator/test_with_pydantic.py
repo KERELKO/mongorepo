@@ -19,7 +19,7 @@ async def test_methods_for_pydantic_entity_with_async_decorator() -> None:
                 entity_type=SimpleEntity,
                 collection=cl,
                 to_document_converter=lambda entity: entity.model_dump(),
-                to_entity_converter=lambda data, _: SimpleEntity(**data),
+                to_entity_converter=lambda data, model: model(**data),
             ),
         )
         class TestMongoRepository:

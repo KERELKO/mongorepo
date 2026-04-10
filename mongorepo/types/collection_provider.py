@@ -1,7 +1,8 @@
 from typing import Any, Generic
 
 from mongorepo import exceptions
-from mongorepo.types import CollectionType
+
+from .base import CollectionType
 
 
 class CollectionProvider(Generic[CollectionType]):

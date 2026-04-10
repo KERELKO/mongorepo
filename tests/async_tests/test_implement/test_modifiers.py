@@ -1,7 +1,7 @@
 import pytest
 
 from mongorepo import RepositoryConfig
-from mongorepo.implement import AddMethod, FieldAlias, GetMethod, implement
+from mongorepo.implement import AddMethod, GetMethod, implement
 from mongorepo.implement.methods import UpdateMethod
 from mongorepo.modifiers.base import (
     ModifierAfter,
@@ -9,6 +9,7 @@ from mongorepo.modifiers.base import (
     RaiseExceptionModifier,
     UpdateSkipModifier,
 )
+from mongorepo.types import FieldAlias
 from tests.common import Box, SimpleEntity, in_async_collection
 
 

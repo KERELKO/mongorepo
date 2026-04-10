@@ -3,9 +3,9 @@ from typing import Any, overload
 from motor.motor_asyncio import AsyncIOMotorCollection
 from pymongo.collection import Collection
 
-from mongorepo._mongorepo_dict import HasMongorepoDict
-from mongorepo.collection_provider import CollectionProvider
 from mongorepo.exceptions import MongorepoDictNotFound
+from mongorepo.types.collection_provider import CollectionProvider
+from mongorepo.types.mongorepo_dict import HasMongorepoDict
 
 
 @overload

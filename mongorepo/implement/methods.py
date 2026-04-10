@@ -1,11 +1,11 @@
 import inspect
 from typing import Any, Callable, Iterable, Protocol
 
-from mongorepo._field import Field
 from mongorepo.modifiers.base import ModifierAfter, ModifierBefore
+from mongorepo.types.field import Field
+from mongorepo.types.field_alias import FieldAlias
 
 from ._types import LParameter, MethodAction, ParameterEnum
-from .field_alias import FieldAlias
 
 Modifiers = Iterable[ModifierBefore | ModifierAfter]
 

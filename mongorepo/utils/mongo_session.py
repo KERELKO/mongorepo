@@ -1,8 +1,12 @@
 from contextlib import contextmanager
 from typing import Any
 
-from mongorepo._mongorepo_dict import HasMongorepoDict, MongorepoDict
-from mongorepo.types import CollectionType, SessionType
+from mongorepo.types import (
+    CollectionType,
+    HasMongorepoDict,
+    MongorepoDict,
+    SessionType,
+)
 
 
 def set_session(

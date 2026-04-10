@@ -8,6 +8,7 @@ from typing import Any, Callable, get_args, get_origin, get_type_hints
 
 from mongorepo import exceptions
 from mongorepo.types import Dataclass, Entity
+from mongorepo.types.field_alias import FieldAlias
 
 
 def is_entity_field(field_type: type, field_owner_type: type) -> bool:
@@ -64,6 +65,16 @@ def get_entity_type_hints(entity: type) -> dict[str, Any]:
             type_hints[field_name] = hint
 
     return type_hints
+
+
+def field_exists(field_name: str | FieldAlias, entity_type: type) -> bool:
+    """Checks whether `field_name` is a field in `entity`"""
+    for entity_field_type_hint in get_type_hints(entity_type).keys():
+        if isinstance(field_name, str) and field_name == entity_field_type_hint:
+            return True
+        elif isinstance(field_name, FieldAlias) and field_name.name == entity_field_type_hint:
+            return True
+    return False
 
 
 def has_entity_fields(entity_type: type[Dataclass]) -> bool:

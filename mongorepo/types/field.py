@@ -1,7 +1,8 @@
 from typing import Any
 
 from mongorepo.exceptions import MongorepoException
-from mongorepo.types import ToDocumentConverter, ToEntityConverter
+
+from .base import ToDocumentConverter, ToEntityConverter
 
 
 class Field[T]:

@@ -4,10 +4,13 @@ from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
 from pymongo.results import InsertManyResult, UpdateResult
 
-from mongorepo._field import Field
-from mongorepo._mongorepo_dict import HasMongorepoDict
 from mongorepo.modifiers.base import ModifierAfter, ModifierBefore
-from mongorepo.types import ToDocumentConverter, ToEntityConverter
+from mongorepo.types import (
+    Field,
+    HasMongorepoDict,
+    ToDocumentConverter,
+    ToEntityConverter,
+)
 
 
 class AddMethod[T]:

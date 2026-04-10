@@ -6,10 +6,10 @@ from motor.motor_asyncio import (
 )
 from pymongo.results import InsertManyResult, UpdateResult
 
-from mongorepo._field import Field
-from mongorepo._mongorepo_dict import HasMongorepoDict
 from mongorepo.modifiers.base import ModifierAfter, ModifierBefore
-from mongorepo.types import ToDocumentConverter, ToEntityConverter
+from mongorepo.types.base import ToDocumentConverter, ToEntityConverter
+from mongorepo.types.field import Field
+from mongorepo.types.mongorepo_dict import HasMongorepoDict
 
 
 class AddMethodAsync[T]:
